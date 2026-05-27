@@ -1,0 +1,182 @@
+import {
+  Dataset,
+  DatasetTopic,
+} from '@app/features/discovery/models/dataset.model';
+
+export const MOCK_TOPICS: DatasetTopic[] = [
+  {
+    slug: 'population',
+    name: 'Population & demography',
+    description:
+      'Census counts, vital statistics, migration, and regional population estimates.',
+    datasetCount: 2,
+  },
+  {
+    slug: 'economy',
+    name: 'Economy & labour',
+    description:
+      'GDP, inflation, employment, trade, and national accounts indicators.',
+    datasetCount: 2,
+  },
+  {
+    slug: 'agriculture',
+    name: 'Agriculture',
+    description: 'Crop production, livestock, and food security statistics.',
+    datasetCount: 1,
+  },
+  {
+    slug: 'health',
+    name: 'Health',
+    description: 'Health facility data, disease surveillance, and outcomes.',
+    datasetCount: 1,
+  },
+  {
+    slug: 'education',
+    name: 'Education',
+    description: 'Enrolment, attainment, and school infrastructure indicators.',
+    datasetCount: 1,
+  },
+];
+
+export const MOCK_DATASETS: Dataset[] = [
+  {
+    id: 'pop-census-2022',
+    title: 'Population and Housing Census 2022',
+    description:
+      'Official population counts and housing characteristics at regional and district level across Tanzania Mainland and Zanzibar.',
+    topicSlug: 'population',
+    topicName: 'Population & demography',
+    format: 'CSV',
+    frequency: 'Annual',
+    region: 'National',
+    keywords: ['census', 'population', 'housing', 'demography'],
+    publisher: 'NBS Demography Division',
+    updatedAt: '2024-03-15',
+    qualityScore: 96,
+    recordCount: 18420,
+    license: 'Open Government Licence — Tanzania',
+    updateHistory: [
+      { date: '2024-03-15', note: 'District-level corrections published' },
+      { date: '2023-11-02', note: 'Initial 2022 census release' },
+    ],
+  },
+  {
+    id: 'pop-projection-dodoma',
+    title: 'Population projections — Dodoma region',
+    description:
+      'Medium-variant population projections by district for Dodoma region, 2010–2035.',
+    topicSlug: 'population',
+    topicName: 'Population & demography',
+    format: 'XLSX',
+    frequency: 'Annual',
+    region: 'Dodoma',
+    keywords: ['projection', 'dodoma', 'population growth'],
+    publisher: 'NBS Demography Division',
+    updatedAt: '2025-01-20',
+    qualityScore: 91,
+    recordCount: 420,
+    license: 'Open Government Licence — Tanzania',
+    updateHistory: [
+      { date: '2025-01-20', note: '2024-based projection revision' },
+    ],
+  },
+  {
+    id: 'gdp-national-accounts',
+    title: 'Gross Domestic Product — quarterly national accounts',
+    description:
+      'Quarterly GDP at current and constant prices by economic activity at national level.',
+    topicSlug: 'economy',
+    topicName: 'Economy & labour',
+    format: 'JSON',
+    frequency: 'Quarterly',
+    region: 'National',
+    keywords: ['gdp', 'national accounts', 'economic growth'],
+    publisher: 'NBS National Accounts',
+    updatedAt: '2025-02-10',
+    qualityScore: 94,
+    recordCount: 3120,
+    license: 'Open Government Licence — Tanzania',
+    updateHistory: [
+      { date: '2025-02-10', note: 'Q4 2024 flash estimate' },
+      { date: '2024-12-05', note: 'Q3 2024 revised series' },
+    ],
+  },
+  {
+    id: 'cpi-inflation-monthly',
+    title: 'Consumer Price Index — monthly',
+    description:
+      'Monthly CPI and year-on-year inflation for national and selected urban centres.',
+    topicSlug: 'economy',
+    topicName: 'Economy & labour',
+    format: 'CSV',
+    frequency: 'Monthly',
+    region: 'National',
+    keywords: ['cpi', 'inflation', 'prices'],
+    publisher: 'NBS Price Statistics',
+    updatedAt: '2025-03-01',
+    qualityScore: 97,
+    recordCount: 8900,
+    license: 'Open Government Licence — Tanzania',
+    updateHistory: [{ date: '2025-03-01', note: 'February 2025 CPI release' }],
+  },
+  {
+    id: 'agri-crop-production',
+    title: 'Crop production survey — major food crops',
+    description:
+      'Annual area planted, production, and yield estimates for maize, rice, and cassava.',
+    topicSlug: 'agriculture',
+    topicName: 'Agriculture',
+    format: 'XLSX',
+    frequency: 'Annual',
+    region: 'National',
+    keywords: ['agriculture', 'crops', 'food security', 'yield'],
+    publisher: 'NBS Agriculture Statistics',
+    updatedAt: '2024-09-18',
+    qualityScore: 88,
+    recordCount: 1560,
+    license: 'Open Government Licence — Tanzania',
+    updateHistory: [
+      { date: '2024-09-18', note: '2023/24 agricultural year final results' },
+    ],
+  },
+  {
+    id: 'health-facility-census',
+    title: 'Health facilities master list',
+    description:
+      'Geocoded registry of public and private health facilities with type and ownership.',
+    topicSlug: 'health',
+    topicName: 'Health',
+    format: 'CSV',
+    frequency: 'Annual',
+    region: 'National',
+    keywords: ['health', 'facilities', 'geocoded'],
+    publisher: 'NBS — Health Sector Working Group',
+    updatedAt: '2024-06-30',
+    qualityScore: 85,
+    recordCount: 7200,
+    license: 'Open Government Licence — Tanzania',
+    updateHistory: [
+      { date: '2024-06-30', note: 'Annual facility census update' },
+    ],
+  },
+  {
+    id: 'edu-enrolment-primary',
+    title: 'Primary school enrolment by region',
+    description:
+      'Enrolment counts by sex and grade for public and private primary schools.',
+    topicSlug: 'education',
+    topicName: 'Education',
+    format: 'SDMX',
+    frequency: 'Annual',
+    region: 'National',
+    keywords: ['education', 'enrolment', 'primary schools'],
+    publisher: 'NBS Education Statistics',
+    updatedAt: '2024-12-12',
+    qualityScore: 90,
+    recordCount: 2640,
+    license: 'Open Government Licence — Tanzania',
+    updateHistory: [
+      { date: '2024-12-12', note: '2024 academic year preliminary data' },
+    ],
+  },
+];
