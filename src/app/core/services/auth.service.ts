@@ -24,6 +24,8 @@ interface CurrentUserResponse {
   email: string;
   first_name: string;
   last_name: string;
+  is_staff: boolean;
+  is_superuser: boolean;
   roles: string[];
 }
 
@@ -154,16 +156,16 @@ export class AuthService {
       id: user.id,
       name: resolvedName,
       email: user.email,
-      role: this.resolveRole(user.roles),
+      role: this.resolveRole(user),
       initials: this.buildInitials(resolvedName),
     };
   }
 
-  private resolveRole(roles: string[]): UserRole {
-    if (roles.includes('admin')) {
+  private resolveRole(user: CurrentUserResponse): UserRole {
+    if (user.is_superuser || user.is_staff || user.roles.includes('admin')) {
       return 'admin';
     }
-    if (roles.includes('publisher') || roles.includes('editor')) {
+    if (user.roles.includes('publisher') || user.roles.includes('editor')) {
       return 'publisher';
     }
     return 'member';

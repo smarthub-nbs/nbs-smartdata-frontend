@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, forkJoin, map, of, switchMap } from 'rxjs';
+import { Observable, forkJoin, map, of, switchMap, throwError } from 'rxjs';
 import { ApiService } from '@app/core/services/api.service';
 import { DatasetAdapter } from '@app/features/discovery/adapters/dataset-adapter.interface';
 import {
@@ -17,6 +17,7 @@ interface BackendCategory {
 }
 
 interface BackendDatasetMetadata {
+  id: string;
   title: string;
   description: string;
   license: string;
@@ -44,6 +45,15 @@ interface BackendDataset {
   published_at: string | null;
 }
 
+interface BackendMetadataWritePayload {
+  title: string;
+  description: string;
+  license: string;
+  frequency: string;
+  region: string;
+  dataset_id?: string;
+}
+
 @Injectable()
 export class HttpDatasetAdapter implements DatasetAdapter {
   private readonly api = inject(ApiService);
@@ -69,6 +79,7 @@ export class HttpDatasetAdapter implements DatasetAdapter {
     return this.api.get<BackendCategory[]>('/v1/dataset/categories/').pipe(
       map((categories) =>
         categories.map((category) => ({
+          id: category.id,
           slug: category.slug,
           name: category.name,
           description: `${category.name} datasets`,
@@ -82,11 +93,60 @@ export class HttpDatasetAdapter implements DatasetAdapter {
     id: string,
     metadata: DatasetMetadataUpdate,
   ): Observable<Dataset> {
-    return this.api
-      .patch<BackendDataset>(`/v1/dataset/${id}/`, {
-        category: metadata.topicSlug,
-      })
-      .pipe(map((dataset) => this.toDataset(dataset)));
+    return forkJoin({
+      categories: this.api.get<BackendCategory[]>('/v1/dataset/categories/'),
+      dataset: this.api.get<BackendDataset>(`/v1/dataset/${id}/`),
+    }).pipe(
+      switchMap(({ categories, dataset }) => {
+        const category = categories.find(
+          (item) => item.slug === metadata.topicSlug,
+        );
+        if (!category) {
+          return throwError(
+            () =>
+              new Error(`Category not found for slug: ${metadata.topicSlug}`),
+          );
+        }
+
+        const metadataPayload = this.toMetadataPayload(metadata);
+        const metadataRecord = dataset.metadata?.[0];
+
+        const categoryUpdate$ = this.api.patch<BackendDataset>(
+          `/v1/dataset/${id}/`,
+          { category: category.id },
+        );
+
+        const metadataUpdate$ = metadataRecord?.id
+          ? this.api.patch<BackendDatasetMetadata>(
+              `/v1/dataset/metadata/${metadataRecord.id}/`,
+              metadataPayload,
+            )
+          : this.api.post<BackendDatasetMetadata>('/v1/dataset/metadata/', {
+              ...metadataPayload,
+              dataset_id: id,
+            });
+
+        return forkJoin({
+          category: categoryUpdate$,
+          metadata: metadataUpdate$,
+        }).pipe(
+          switchMap(() => this.api.get<BackendDataset>(`/v1/dataset/${id}/`)),
+          map((updated) => this.toDataset(updated)),
+        );
+      }),
+    );
+  }
+
+  private toMetadataPayload(
+    metadata: DatasetMetadataUpdate,
+  ): BackendMetadataWritePayload {
+    return {
+      title: metadata.title,
+      description: metadata.description,
+      license: metadata.license,
+      region: metadata.region,
+      frequency: this.toBackendFrequency(metadata.frequency),
+    };
   }
 
   private toDataset(dataset: BackendDataset): Dataset {
@@ -95,6 +155,7 @@ export class HttpDatasetAdapter implements DatasetAdapter {
 
     return {
       id: dataset.id,
+      metadataId: metadata?.id ?? null,
       title: metadata?.title ?? dataset.slug,
       description: metadata?.description ?? 'No description available.',
       topicSlug: topic?.slug ?? 'uncategorized',
@@ -138,6 +199,17 @@ export class HttpDatasetAdapter implements DatasetAdapter {
         return 'Monthly';
       default:
         return 'Annual';
+    }
+  }
+
+  private toBackendFrequency(frequency: DatasetFrequency): string {
+    switch (frequency) {
+      case 'Quarterly':
+        return 'quarterly';
+      case 'Monthly':
+        return 'monthly';
+      default:
+        return 'annual';
     }
   }
 }

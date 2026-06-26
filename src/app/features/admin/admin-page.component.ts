@@ -10,6 +10,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { DatasetUsageRow, AdminAnalyticsService } from '@app/features/admin';
+import { ApiError } from '@app/core/models/api-error.model';
 import {
   Dataset,
   DatasetMetadataUpdate,
@@ -162,6 +163,7 @@ import {
             <app-text-input
               formControlName="publisher"
               label="Publisher"
+              hint="Read-only — set by the backend publisher account."
               [required]="true"
               [error]="controlError('publisher')"
             />
@@ -175,6 +177,7 @@ import {
             <app-select-input
               formControlName="format"
               label="Format"
+              hint="Derived from uploaded files — not editable here."
               [required]="true"
               [options]="formatOptions"
               [error]="controlError('format')"
@@ -197,6 +200,7 @@ import {
               formControlName="qualityScore"
               type="number"
               label="Quality score"
+              hint="Display only — not stored in the backend."
               [required]="true"
               [error]="controlError('qualityScore')"
             />
@@ -205,17 +209,30 @@ import {
               <app-text-input
                 formControlName="keywords"
                 label="Keywords (comma-separated)"
+                hint="Display only — managed via dataset tags in the backend."
                 [required]="true"
                 [error]="controlError('keywords')"
               />
             </div>
 
             <div class="md:col-span-2 flex items-center gap-3">
-              <app-button type="submit" variant="primary" size="sm">
+              <app-button
+                type="submit"
+                variant="primary"
+                size="sm"
+                [loading]="saving()"
+              >
                 Save metadata
               </app-button>
               @if (saveMessage()) {
-                <span class="text-xs text-nbs-accent">{{ saveMessage() }}</span>
+                <span
+                  class="text-xs"
+                  [class.text-nbs-accent]="!saveError()"
+                  [class.text-nbs-danger]="saveError()"
+                  role="status"
+                >
+                  {{ saveMessage() }}
+                </span>
               }
             </div>
           </form>
@@ -236,6 +253,8 @@ export class AdminPageComponent {
   );
   protected readonly selectedDatasetId = signal(this.datasets()[0]?.id ?? '');
   protected readonly saveMessage = signal('');
+  protected readonly saveError = signal(false);
+  protected readonly saving = signal(false);
 
   protected readonly usageColumns: DataTableColumn<DatasetUsageRow>[] = [
     { key: 'title', header: 'Dataset', sortable: true },
@@ -299,12 +318,18 @@ export class AdminPageComponent {
   );
 
   constructor() {
+    this.form.controls.format.disable();
+    this.form.controls.keywords.disable();
+    this.form.controls.qualityScore.disable();
+    this.form.controls.publisher.disable();
+
     this.loadForm(this.selectedDataset());
 
     this.form.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
         this.saveMessage.set('');
+        this.saveError.set(false);
       });
   }
 
@@ -312,6 +337,7 @@ export class AdminPageComponent {
     this.selectedDatasetId.set(id);
     this.loadForm(this.selectedDataset());
     this.saveMessage.set('');
+    this.saveError.set(false);
   }
 
   protected onDatasetChange(event: Event): void {
@@ -342,8 +368,26 @@ export class AdminPageComponent {
       qualityScore: Number(raw.qualityScore),
     };
 
-    this.datasetService.updateMetadata(this.selectedDatasetId(), payload);
-    this.saveMessage.set('Metadata saved successfully.');
+    this.saving.set(true);
+    this.saveMessage.set('');
+    this.saveError.set(false);
+
+    this.datasetService
+      .updateMetadata(this.selectedDatasetId(), payload)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (updated) => {
+          this.saving.set(false);
+          this.saveError.set(false);
+          this.saveMessage.set('Metadata saved successfully.');
+          this.loadForm(updated);
+        },
+        error: (error: unknown) => {
+          this.saving.set(false);
+          this.saveError.set(true);
+          this.saveMessage.set(this.resolveErrorMessage(error));
+        },
+      });
   }
 
   protected controlError(controlName: keyof typeof this.form.controls): string {
@@ -363,6 +407,10 @@ export class AdminPageComponent {
   private loadForm(dataset?: Dataset): void {
     if (!dataset) {
       this.form.reset();
+      this.form.controls.format.disable();
+      this.form.controls.keywords.disable();
+      this.form.controls.qualityScore.disable();
+      this.form.controls.publisher.disable();
       return;
     }
 
@@ -378,5 +426,19 @@ export class AdminPageComponent {
       keywords: dataset.keywords.join(', '),
       qualityScore: dataset.qualityScore,
     });
+    this.form.controls.format.disable();
+    this.form.controls.keywords.disable();
+    this.form.controls.qualityScore.disable();
+    this.form.controls.publisher.disable();
+  }
+
+  private resolveErrorMessage(error: unknown): string {
+    if (error instanceof ApiError) {
+      return error.message;
+    }
+    if (error instanceof Error) {
+      return error.message;
+    }
+    return 'Failed to save metadata.';
   }
 }

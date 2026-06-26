@@ -1,12 +1,5 @@
-import {
-  DestroyRef,
-  Injectable,
-  computed,
-  inject,
-  signal,
-} from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { forkJoin } from 'rxjs';
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { forkJoin, Observable, tap } from 'rxjs';
 import { ApiError } from '@app/core/models/api-error.model';
 import { DATASET_ADAPTER } from '@app/features/discovery/adapters/dataset.adapter';
 import {
@@ -26,7 +19,6 @@ import {
 @Injectable({ providedIn: 'root' })
 export class DatasetService {
   private readonly adapter = inject(DATASET_ADAPTER);
-  private readonly destroyRef = inject(DestroyRef);
 
   private readonly datasets = signal<Dataset[]>([]);
   private readonly topicsState = signal<DatasetTopic[]>([]);
@@ -93,20 +85,20 @@ export class DatasetService {
     return this.datasets().find((d) => d.id === id);
   }
 
-  updateMetadata(id: string, metadata: DatasetMetadataUpdate): void {
-    this.adapter
-      .updateMetadata(id, metadata)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (updated) => {
-          this.datasets.update((items) =>
-            items.map((dataset) => (dataset.id === id ? updated : dataset)),
-          );
-          if (this.catalogState().status === 'success') {
-            this.catalogState.set(successState(this.datasets()));
-          }
-        },
-      });
+  updateMetadata(
+    id: string,
+    metadata: DatasetMetadataUpdate,
+  ): Observable<Dataset> {
+    return this.adapter.updateMetadata(id, metadata).pipe(
+      tap((updated) => {
+        this.datasets.update((items) =>
+          items.map((dataset) => (dataset.id === id ? updated : dataset)),
+        );
+        if (this.catalogState().status === 'success') {
+          this.catalogState.set(successState(this.datasets()));
+        }
+      }),
+    );
   }
 
   getTopic(slug: string): DatasetTopic | undefined {

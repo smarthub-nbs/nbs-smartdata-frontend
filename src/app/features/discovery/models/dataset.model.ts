@@ -9,6 +9,7 @@ export interface DatasetUpdateRecord {
 
 export interface Dataset {
   id: string;
+  metadataId?: string | null;
   title: string;
   description: string;
   topicSlug: string;
@@ -39,6 +40,7 @@ export interface DatasetMetadataUpdate {
 }
 
 export interface DatasetTopic {
+  id: string;
   slug: string;
   name: string;
   description: string;
