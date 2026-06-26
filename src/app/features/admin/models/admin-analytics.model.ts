@@ -1,11 +1,14 @@
-export interface DatasetUsageRow {
+export interface DatasetUsageMetrics {
   datasetId: string;
-  title: string;
-  topic: string;
   apiCalls: number;
   downloads: number;
   views: number;
   lastAccessed: string;
+}
+
+export interface DatasetUsageRow extends DatasetUsageMetrics {
+  title: string;
+  topic: string;
 }
 
 export interface UsageSummary {

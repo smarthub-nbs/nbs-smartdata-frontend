@@ -9,13 +9,12 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { DatasetUsageRow } from '@app/features/admin/models/admin-analytics.model';
-import { AdminAnalyticsService } from '@app/features/admin/services/admin-analytics.service';
+import { DatasetUsageRow, AdminAnalyticsService } from '@app/features/admin';
 import {
-  DatasetMetadataUpdate,
   Dataset,
-} from '@app/features/discovery/models/dataset.model';
-import { DatasetService } from '@app/features/discovery/services/dataset.service';
+  DatasetMetadataUpdate,
+  DatasetService,
+} from '@app/features/discovery';
 import {
   ButtonComponent,
   DataTableColumn,

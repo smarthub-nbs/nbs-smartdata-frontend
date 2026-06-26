@@ -6,7 +6,7 @@ import {
   input,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { Dataset } from '@app/features/discovery/models/dataset.model';
+import { Dataset } from '@app/features/discovery';
 import { SmartSearchService } from '@app/features/search/services/smart-search.service';
 
 @Component({

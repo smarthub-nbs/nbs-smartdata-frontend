@@ -1,4 +1,4 @@
-import { Dataset } from '@app/features/discovery/models/dataset.model';
+import { Dataset } from '@app/features/discovery';
 
 export interface SmartSearchResult {
   dataset: Dataset;

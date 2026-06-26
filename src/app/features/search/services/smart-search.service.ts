@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable, delay, map, of } from 'rxjs';
-import { Dataset } from '@app/features/discovery/models/dataset.model';
-import { DatasetService } from '@app/features/discovery/services/dataset.service';
+import { Dataset } from '@app/features/discovery';
+import { DatasetService } from '@app/features/discovery';
 import {
   SmartSearchResponse,
   SmartSearchResult,

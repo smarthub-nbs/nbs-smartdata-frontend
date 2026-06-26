@@ -9,6 +9,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
+import { ApiError } from '@app/core/models/api-error.model';
 import { SEARCH_EXAMPLE_QUERIES } from '@app/features/search/data/search-examples';
 import { RecommendedDatasetsComponent } from '@app/features/search/components/recommended-datasets.component';
 import { SearchResultCardComponent } from '@app/features/search/components/search-result-card.component';
@@ -84,6 +85,19 @@ import { ButtonComponent } from '@shared/ui';
           label="Smart search"
           message="Matching topics, regions, and indicators…"
         />
+      } @else if (searchError()) {
+        <app-page-state
+          variant="error"
+          title="Search unavailable"
+          label="Error"
+          [message]="searchError()!"
+        >
+          <div class="mt-4">
+            <app-button variant="primary" size="sm" (clicked)="runSearch()">
+              Try again
+            </app-button>
+          </div>
+        </app-page-state>
       } @else if (hasSearched() && response()) {
         <section
           class="rounded-lg border border-nbs-primary/20 bg-nbs-primary/5 p-4"
@@ -175,6 +189,7 @@ export class SearchPageComponent {
   protected readonly loading = signal(false);
   protected readonly response = signal<SmartSearchResponse | null>(null);
   protected readonly hasSearched = signal(false);
+  protected readonly searchError = signal<string | null>(null);
 
   protected readonly topResultId = signal<string | null>(null);
 
@@ -190,6 +205,7 @@ export class SearchPageComponent {
           this.response.set(null);
           this.hasSearched.set(false);
           this.topResultId.set(null);
+          this.searchError.set(null);
         }
       });
   }
@@ -209,6 +225,7 @@ export class SearchPageComponent {
   private executeSmartSearch(query: string): void {
     this.loading.set(true);
     this.hasSearched.set(true);
+    this.searchError.set(null);
 
     this.smartSearch
       .smartSearch(query)
@@ -221,15 +238,21 @@ export class SearchPageComponent {
           this.response.set(result);
           this.topResultId.set(result.results[0]?.dataset.id ?? null);
         },
-        error: () => {
-          this.response.set({
-            query,
-            interpretation: 'Search is temporarily unavailable.',
-            results: [],
-            suggestedIndicators: [],
-          });
+        error: (error: unknown) => {
+          this.response.set(null);
           this.topResultId.set(null);
+          this.searchError.set(this.resolveSearchError(error));
         },
       });
+  }
+
+  private resolveSearchError(error: unknown): string {
+    if (error instanceof ApiError) {
+      return error.message;
+    }
+    if (error instanceof Error) {
+      return error.message;
+    }
+    return 'Search is temporarily unavailable. Please try again.';
   }
 }
