@@ -5,8 +5,8 @@ import {
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ApiTryItResult } from '@app/features/access/models/developer-api.model';
-import { DeveloperApiService } from '@app/features/access/services/developer-api.service';
+import { ApiTryItResult } from '@app/features/developers/models/developer-api.model';
+import { DeveloperApiService } from '@app/features/developers/services/developer-api.service';
 import { ButtonComponent } from '@shared/ui';
 
 @Component({
@@ -32,7 +32,7 @@ import { ButtonComponent } from '@shared/ui';
           >
             @for (endpoint of api.endpoints; track endpoint.path) {
               <option [value]="endpoint.path">
-                {{ endpoint.method }} {{ endpoint.path }}
+                {{ endpoint.method }} {{ api.baseUrl }}{{ endpoint.path }}
               </option>
             }
           </select>
@@ -103,7 +103,8 @@ import { ButtonComponent } from '@shared/ui';
 export class ApiTryItConsoleComponent {
   protected readonly api = inject(DeveloperApiService);
 
-  protected selectedPath = this.api.endpoints[0]?.path ?? '/api/v1/datasets';
+  protected selectedPath =
+    this.api.endpoints[0]?.path ?? '/v1/gateway/datasets/';
   protected apiKey = '';
   protected readonly loading = signal(false);
   protected readonly result = signal<ApiTryItResult | null>(null);

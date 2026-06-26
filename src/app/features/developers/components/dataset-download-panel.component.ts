@@ -5,13 +5,13 @@ import {
   input,
   signal,
 } from '@angular/core';
-import { Dataset } from '@app/features/discovery/models/dataset.model';
+import { Dataset } from '@app/features/discovery';
 import { finalize } from 'rxjs';
 import {
   DatasetExportFormat,
   EXPORT_FORMAT_OPTIONS,
-} from '@app/features/access/models/export-format.model';
-import { DatasetExportService } from '@app/features/access/services/dataset-export.service';
+} from '@app/features/developers/models/export-format.model';
+import { DatasetExportService } from '@app/features/developers/services/dataset-export.service';
 import { ButtonComponent } from '@shared/ui';
 
 @Component({

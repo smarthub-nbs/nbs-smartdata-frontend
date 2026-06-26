@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { DeveloperApiService } from '@app/features/access/services/developer-api.service';
+import { DeveloperApiService } from '@app/features/developers/services/developer-api.service';
 
 @Component({
   selector: 'app-api-docs-panel',
@@ -22,14 +22,14 @@ import { DeveloperApiService } from '@app/features/access/services/developer-api
                 class="mr-2 rounded bg-nbs-primary/10 px-1.5 py-0.5 text-xs font-semibold text-nbs-primary"
                 >{{ endpoint.method }}</span
               >
-              {{ endpoint.path }}
+              {{ api.baseUrl }}{{ endpoint.path }}
             </p>
             <p class="mt-2 text-sm text-nbs-muted">{{ endpoint.summary }}</p>
             <p class="mt-2 text-xs font-medium text-slate-600">
               Authentication
             </p>
             <p class="text-xs text-nbs-muted">
-              Header: <code>Authorization: Bearer &lt;api_key&gt;</code>
+              Header: <code>X-API-Key: &lt;api_key&gt;</code>
             </p>
           </li>
         }

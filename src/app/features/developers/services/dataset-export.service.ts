@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
 import { Observable, delay, map, of } from 'rxjs';
-import { Dataset } from '@app/features/discovery/models/dataset.model';
-import { DatasetExportFormat } from '@app/features/access/models/export-format.model';
-import { downloadText } from '@app/features/access/utils/file-download.util';
+import { Dataset } from '@app/features/discovery';
+import { DatasetExportFormat } from '@app/features/developers/models/export-format.model';
+import { downloadText } from '@app/features/developers/utils/file-download.util';
 
 interface SampleRow {
   region: string;
