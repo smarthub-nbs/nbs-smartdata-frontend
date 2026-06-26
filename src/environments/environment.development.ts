@@ -1,5 +1,9 @@
-export const environment = {
+import { Environment } from './environment.model';
+
+export const environment: Environment = {
   production: false,
-  apiBaseUrl: 'http://localhost:8000/api',
+  useMockApi: false,
+  useMockExploreApi: true,
+  apiBaseUrl: '/api',
   appName: 'NBS SmartData Hub',
 };
