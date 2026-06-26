@@ -9,10 +9,9 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { map } from 'rxjs';
 import { DatasetMetadataPanelComponent } from '@app/features/discovery/components/dataset-metadata-panel.component';
-import { QualityBadgeComponent } from '@app/features/discovery/components/quality-badge.component';
-import { DatasetService } from '@app/features/discovery/services/dataset.service';
-import { DatasetDownloadPanelComponent } from '@app/features/access/components/dataset-download-panel.component';
-import { RecommendedDatasetsComponent } from '@app/features/search/components/recommended-datasets.component';
+import { DatasetService, QualityBadgeComponent } from '@app/features/discovery';
+import { DatasetDownloadPanelComponent } from '@app/features/developers';
+import { RecommendedDatasetsComponent } from '@app/features/search';
 import { PageStateComponent } from '@app/shared/components/page-state/page-state.component';
 import { ButtonComponent } from '@shared/ui';
 

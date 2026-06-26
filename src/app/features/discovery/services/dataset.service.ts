@@ -1,8 +1,14 @@
-import { Injectable, computed, signal } from '@angular/core';
 import {
-  MOCK_DATASETS,
-  MOCK_TOPICS,
-} from '@app/features/discovery/data/mock-datasets';
+  DestroyRef,
+  Injectable,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { forkJoin } from 'rxjs';
+import { ApiError } from '@app/core/models/api-error.model';
+import { DATASET_ADAPTER } from '@app/features/discovery/adapters/dataset.adapter';
 import {
   Dataset,
   DatasetFilters,
@@ -10,16 +16,28 @@ import {
   DatasetTopic,
   EMPTY_DATASET_FILTERS,
 } from '@app/features/discovery/models/dataset.model';
+import {
+  AsyncState,
+  errorState,
+  loadingState,
+  successState,
+} from '@app/shared/models/async-state.model';
 
 @Injectable({ providedIn: 'root' })
 export class DatasetService {
-  private readonly datasets = signal<Dataset[]>(MOCK_DATASETS);
+  private readonly adapter = inject(DATASET_ADAPTER);
+  private readonly destroyRef = inject(DestroyRef);
+
+  private readonly datasets = signal<Dataset[]>([]);
+  private readonly topicsState = signal<DatasetTopic[]>([]);
   private readonly filters = signal<DatasetFilters>({
     ...EMPTY_DATASET_FILTERS,
   });
+  private readonly catalogState = signal<AsyncState<Dataset[]>>(loadingState());
 
-  readonly topics = signal<DatasetTopic[]>(MOCK_TOPICS);
+  readonly topics = this.topicsState.asReadonly();
   readonly activeFilters = this.filters.asReadonly();
+  readonly catalogLoadState = this.catalogState.asReadonly();
 
   readonly filteredDatasets = computed(() =>
     this.applyFilters(this.datasets(), this.filters()),
@@ -37,6 +55,10 @@ export class DatasetService {
     ...new Set(this.datasets().map((d) => d.frequency)),
   ]);
 
+  constructor() {
+    this.loadCatalog();
+  }
+
   setFilters(partial: Partial<DatasetFilters>): void {
     this.filters.update((current) => ({ ...current, ...partial }));
   }
@@ -49,41 +71,50 @@ export class DatasetService {
     return this.datasets();
   }
 
+  /** Stable slice for demos, seeds, and previews without exposing mutable state. */
+  getSnapshot(limit?: number): Dataset[] {
+    const all = this.datasets();
+    if (limit === undefined) {
+      return [...all];
+    }
+    return all.slice(0, Math.max(0, limit));
+  }
+
+  listByIds(ids: string[]): Dataset[] {
+    const byId = new Map(
+      this.datasets().map((dataset) => [dataset.id, dataset]),
+    );
+    return ids
+      .map((id) => byId.get(id))
+      .filter((dataset): dataset is Dataset => dataset !== undefined);
+  }
+
   getById(id: string): Dataset | undefined {
     return this.datasets().find((d) => d.id === id);
   }
 
   updateMetadata(id: string, metadata: DatasetMetadataUpdate): void {
-    const topic = this.topics().find(
-      (item) => item.slug === metadata.topicSlug,
-    );
-    const now = new Date().toISOString().slice(0, 10);
-
-    this.datasets.update((items) =>
-      items.map((dataset) => {
-        if (dataset.id !== id) {
-          return dataset;
-        }
-
-        return {
-          ...dataset,
-          ...metadata,
-          topicName: topic?.name ?? dataset.topicName,
-          updatedAt: now,
-          updateHistory: [
-            {
-              date: now,
-              note: 'Metadata updated by admin',
-            },
-            ...dataset.updateHistory,
-          ].slice(0, 6),
-        };
-      }),
-    );
+    this.adapter
+      .updateMetadata(id, metadata)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (updated) => {
+          this.datasets.update((items) =>
+            items.map((dataset) => (dataset.id === id ? updated : dataset)),
+          );
+          if (this.catalogState().status === 'success') {
+            this.catalogState.set(successState(this.datasets()));
+          }
+        },
+      });
   }
 
   getTopic(slug: string): DatasetTopic | undefined {
-    return this.topics().find((t) => t.slug === slug);
+    return this.topicsState().find((t) => t.slug === slug);
+  }
+
+  getTopics(): DatasetTopic[] {
+    return this.topicsState();
   }
 
   getByTopic(slug: string): Dataset[] {
@@ -107,6 +138,42 @@ export class DatasetService {
         .toLowerCase();
       return haystack.includes(normalized);
     });
+  }
+
+  refreshCatalog(): void {
+    this.loadCatalog();
+  }
+
+  private loadCatalog(): void {
+    this.catalogState.set(loadingState());
+
+    forkJoin({
+      datasets: this.adapter.list(),
+      topics: this.adapter.listTopics(),
+    }).subscribe({
+      next: ({ datasets, topics }) => {
+        this.datasets.set(datasets);
+        this.topicsState.set(topics);
+        this.catalogState.set(successState(datasets));
+      },
+      error: (error: unknown) => {
+        this.catalogState.set(
+          errorState(
+            this.resolveErrorMessage(error, 'Failed to load datasets.'),
+          ),
+        );
+      },
+    });
+  }
+
+  private resolveErrorMessage(error: unknown, fallback: string): string {
+    if (error instanceof ApiError) {
+      return error.message;
+    }
+    if (error instanceof Error) {
+      return error.message;
+    }
+    return fallback;
   }
 
   private applyFilters(
