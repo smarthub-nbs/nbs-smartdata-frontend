@@ -1,34 +1,43 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { Observable, catchError, map, of, switchMap, tap } from 'rxjs';
 import { UserProfile, UserRole } from '@app/core/models/user.model';
-
-export type AuthUsername = 'admin' | 'member';
+import { environment } from '@env/environment';
 
 export interface AuthError {
   message: string;
 }
 
-const DEMO_USERS: Record<AuthUsername, UserProfile> = {
-  admin: {
-    id: 'demo-admin',
-    name: 'NBS Administrator',
-    email: 'admin@nbs.go.tz',
-    role: 'admin',
-    initials: 'NA',
-  },
-  member: {
-    id: 'demo-member',
-    name: 'NBS Member',
-    email: 'member@nbs.go.tz',
-    role: 'member',
-    initials: 'NM',
-  },
-};
+interface ApiEnvelope<T> {
+  success: boolean;
+  message: string;
+  data: T;
+}
 
-const DEMO_PASSWORD = 'mkulima90';
+interface LoginResponse {
+  access: string;
+  refresh: string;
+}
+
+interface CurrentUserResponse {
+  id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  roles: string[];
+}
+
+const ACCESS_TOKEN_KEY = 'nbs_access_token';
+const REFRESH_TOKEN_KEY = 'nbs_refresh_token';
+const USER_KEY = 'nbs_user';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private readonly currentUser = signal<UserProfile | null>(null);
+  private readonly http = inject(HttpClient);
+  private readonly currentUser = signal<UserProfile | null>(this.readUser());
+  private readonly accessToken = signal<string | null>(
+    localStorage.getItem(ACCESS_TOKEN_KEY),
+  );
 
   readonly user = this.currentUser.asReadonly();
   readonly isAuthenticated = computed(() => this.currentUser() !== null);
@@ -43,25 +52,44 @@ export class AuthService {
     return user !== null && roles.includes(user.role);
   }
 
-  signIn(username: AuthUsername): void {
-    this.currentUser.set(DEMO_USERS[username]);
-  }
-
-  signInWithPassword(username: string, password: string): AuthError | null {
-    const normalized = username.trim().toLowerCase();
-    if (normalized !== 'admin' && normalized !== 'member') {
-      return { message: 'Unknown username. Use admin or member.' };
-    }
-    if (password !== DEMO_PASSWORD) {
-      return { message: 'Incorrect password.' };
-    }
-
-    this.signIn(normalized);
-    return null;
+  signInWithPassword(
+    username: string,
+    password: string,
+  ): Observable<AuthError | null> {
+    return this.http
+      .post<ApiEnvelope<LoginResponse>>(
+        `${environment.apiBaseUrl}/v1/auth/login/`,
+        {
+          email: username.trim(),
+          password,
+        },
+      )
+      .pipe(
+        tap((response) => this.saveTokens(response.data)),
+        switchMap(() =>
+          this.http.get<ApiEnvelope<CurrentUserResponse>>(
+            `${environment.apiBaseUrl}/v1/auth/me/`,
+          ),
+        ),
+        map((response) => this.toUserProfile(response.data)),
+        tap((user) => this.saveUser(user)),
+        map(() => null),
+        catchError((error: unknown) =>
+          of({ message: this.resolveErrorMessage(error) }),
+        ),
+      );
   }
 
   signOut(): void {
     this.currentUser.set(null);
+    this.accessToken.set(null);
+    localStorage.removeItem(ACCESS_TOKEN_KEY);
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
+  }
+
+  getAccessToken(): string | null {
+    return this.accessToken();
   }
 
   updateProfile(update: Partial<Pick<UserProfile, 'name' | 'email'>>): void {
@@ -91,5 +119,79 @@ export class AuthService {
       .join('');
 
     return letters || 'NU';
+  }
+
+  private saveTokens(tokens: LoginResponse): void {
+    this.accessToken.set(tokens.access);
+    localStorage.setItem(ACCESS_TOKEN_KEY, tokens.access);
+    localStorage.setItem(REFRESH_TOKEN_KEY, tokens.refresh);
+  }
+
+  private saveUser(user: UserProfile): void {
+    this.currentUser.set(user);
+    localStorage.setItem(USER_KEY, JSON.stringify(user));
+  }
+
+  private readUser(): UserProfile | null {
+    const rawUser = localStorage.getItem(USER_KEY);
+    if (!rawUser) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(rawUser) as UserProfile;
+    } catch {
+      localStorage.removeItem(USER_KEY);
+      return null;
+    }
+  }
+
+  private toUserProfile(user: CurrentUserResponse): UserProfile {
+    const name = [user.first_name, user.last_name].filter(Boolean).join(' ');
+    const resolvedName = name || user.email;
+
+    return {
+      id: user.id,
+      name: resolvedName,
+      email: user.email,
+      role: this.resolveRole(user.roles),
+      initials: this.buildInitials(resolvedName),
+    };
+  }
+
+  private resolveRole(roles: string[]): UserRole {
+    if (roles.includes('admin')) {
+      return 'admin';
+    }
+    if (roles.includes('publisher') || roles.includes('editor')) {
+      return 'publisher';
+    }
+    return 'member';
+  }
+
+  private resolveErrorMessage(error: unknown): string {
+    if (error instanceof HttpErrorResponse) {
+      const body = error.error;
+
+      if (
+        typeof body === 'object' &&
+        body !== null &&
+        'error' in body &&
+        typeof body.error === 'object' &&
+        body.error !== null &&
+        'message' in body.error &&
+        typeof body.error.message === 'string'
+      ) {
+        return body.error.message;
+      }
+
+      return error.message || 'Sign in failed.';
+    }
+
+    if (error instanceof Error) {
+      return error.message;
+    }
+
+    return 'Sign in failed.';
   }
 }

@@ -1,9 +1,11 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   inject,
   signal,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { AuthService } from '@app/core/services/auth.service';
@@ -23,7 +25,7 @@ import { ButtonComponent, TextInputComponent } from '@shared/ui';
       <header>
         <h1 class="text-2xl font-semibold text-slate-900">Sign in</h1>
         <p class="mt-1 text-sm text-nbs-muted">
-          Demo accounts for SmartData Hub.
+          Use your SmartData Hub account.
         </p>
       </header>
 
@@ -33,8 +35,8 @@ import { ButtonComponent, TextInputComponent } from '@shared/ui';
         <form class="space-y-4" [formGroup]="form" (ngSubmit)="submit()">
           <app-text-input
             formControlName="username"
-            label="Username"
-            placeholder="admin or member"
+            label="Email"
+            placeholder="you@example.com"
             [required]="true"
             [error]="fieldError('username')"
           />
@@ -43,7 +45,7 @@ import { ButtonComponent, TextInputComponent } from '@shared/ui';
             formControlName="password"
             label="Password"
             type="password"
-            placeholder="mkulima90"
+            placeholder="Enter your password"
             [required]="true"
             [error]="fieldError('password')"
           />
@@ -71,13 +73,9 @@ import { ButtonComponent, TextInputComponent } from '@shared/ui';
           </div>
         </form>
 
-        <div class="mt-6 rounded-md bg-nbs-surface p-4 text-sm text-slate-700">
-          <p class="font-medium text-slate-900">Demo credentials</p>
-          <ul class="mt-2 list-inside list-disc text-sm text-slate-700">
-            <li><strong>admin</strong> / <code>mkulima90</code></li>
-            <li><strong>member</strong> / <code>mkulima90</code></li>
-          </ul>
-        </div>
+        <p class="mt-6 rounded-md bg-nbs-surface p-4 text-sm text-slate-700">
+          Sign in with the email and password registered in the backend.
+        </p>
       </section>
     </div>
   `,
@@ -88,6 +86,7 @@ export class LoginPageComponent {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly fb = inject(FormBuilder);
+  private readonly destroyRef = inject(DestroyRef);
 
   protected readonly submitting = signal(false);
   protected readonly errorMessage = signal('');
@@ -107,15 +106,21 @@ export class LoginPageComponent {
     this.errorMessage.set('');
 
     const { username, password } = this.form.getRawValue();
-    const err = this.auth.signInWithPassword(username, password);
-    if (err) {
-      this.submitting.set(false);
-      this.errorMessage.set(err.message);
-      return;
-    }
+    this.auth
+      .signInWithPassword(username, password)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((err) => {
+        this.submitting.set(false);
 
-    const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') ?? '/';
-    void this.router.navigateByUrl(returnUrl);
+        if (err) {
+          this.errorMessage.set(err.message);
+          return;
+        }
+
+        const returnUrl =
+          this.route.snapshot.queryParamMap.get('returnUrl') ?? '/';
+        void this.router.navigateByUrl(returnUrl);
+      });
   }
 
   protected fieldError(name: 'username' | 'password'): string {
