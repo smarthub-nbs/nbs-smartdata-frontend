@@ -1,7 +1,9 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   computed,
+  effect,
   inject,
 } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -22,7 +24,25 @@ import { ButtonComponent } from '@shared/ui';
     PageStateComponent,
   ],
   template: `
-    @if (!topic()) {
+    @if (catalogLoading()) {
+      <app-page-state
+        variant="loading"
+        title="Loading topic"
+        label="Topic"
+        message="Fetching datasets for this topic…"
+      />
+    } @else if (catalogError()) {
+      <app-page-state
+        variant="error"
+        title="Could not load topic datasets"
+        label="Error"
+        [message]="catalogError()!"
+      >
+        <a routerLink="/datasets" class="mt-4 inline-block">
+          <app-button variant="primary">Browse all datasets</app-button>
+        </a>
+      </app-page-state>
+    } @else if (!topic()) {
       <app-page-state
         title="Topic not found"
         label="404"
@@ -72,6 +92,7 @@ import { ButtonComponent } from '@shared/ui';
 export class TopicPageComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly datasetService = inject(DatasetService);
+  private readonly destroyRef = inject(DestroyRef);
 
   private readonly topicSlug = toSignal(
     this.route.paramMap.pipe(map((params) => params.get('slug') ?? '')),
@@ -87,4 +108,32 @@ export class TopicPageComponent {
     const slug = this.topicSlug();
     return slug ? this.datasetService.getByTopic(slug) : [];
   });
+
+  protected readonly catalogLoading = computed(
+    () => this.datasetService.catalogLoadState().status === 'loading',
+  );
+
+  protected readonly catalogError = computed(() => {
+    const state = this.datasetService.catalogLoadState();
+    return state.status === 'error' ? state.message : null;
+  });
+
+  constructor() {
+    effect(() => {
+      const slug = this.topicSlug();
+      if (!slug) {
+        return;
+      }
+
+      if (this.datasetService.activeFilters().topicSlug !== slug) {
+        this.datasetService.setFilters({ topicSlug: slug });
+      }
+    });
+
+    this.destroyRef.onDestroy(() => {
+      if (this.datasetService.activeFilters().topicSlug) {
+        this.datasetService.resetFilters();
+      }
+    });
+  }
 }

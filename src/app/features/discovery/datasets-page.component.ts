@@ -8,8 +8,7 @@ import {
 import { Router, RouterLink } from '@angular/router';
 import { DatasetCardComponent } from '@app/features/discovery/components/dataset-card.component';
 import { DatasetFilterBarComponent } from '@app/features/discovery/components/dataset-filter-bar.component';
-import { Dataset } from '@app/features/discovery';
-import { DatasetService } from '@app/features/discovery';
+import { Dataset, DatasetService } from '@app/features/discovery';
 import { PageStateComponent } from '@app/shared/components/page-state/page-state.component';
 import {
   ButtonComponent,
@@ -76,6 +75,9 @@ type CatalogView = 'cards' | 'table';
                 class="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-nbs-primary hover:text-nbs-primary"
               >
                 {{ topic.name }}
+                <span class="ml-1 text-nbs-muted">
+                  {{ topic.datasetCount }}
+                </span>
               </a>
             }
           </div>

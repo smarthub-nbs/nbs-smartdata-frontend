@@ -1,0 +1,133 @@
+<section class="rounded-lg border border-nbs-border bg-white p-5 shadow-sm">
+  <h2 class="text-sm font-semibold text-slate-900">
+    Dataset publishing workflow
+  </h2>
+  <p class="mt-1 text-xs text-nbs-muted">
+    Create drafts, upload files, and publish datasets for Discovery testing.
+  </p>
+
+  <form class="mt-4 grid gap-4 md:grid-cols-2" [formGroup]="createForm" (ngSubmit)="createDataset()">
+    <app-select-input formControlName="categoryId" label="Category" [required]="true" [options]="categoryOptions()"
+      [error]="createError('categoryId')" />
+    <app-text-input formControlName="slug" label="Slug (optional)" hint="Auto-generated if left blank." />
+    <app-text-input formControlName="title" label="Title" [required]="true" [error]="createError('title')" />
+    <app-text-input formControlName="tagName" label="Tag" hint="Required before review." [required]="true"
+      [error]="createError('tagName')" />
+    <app-text-input formControlName="region" label="Region" [required]="true" [error]="createError('region')" />
+    <app-text-input formControlName="year" type="number" label="Year" [required]="true" [error]="createError('year')" />
+    <app-select-input formControlName="frequency" label="Frequency" [required]="true" [options]="frequencyOptions" />
+    <app-text-input formControlName="license" label="License" [required]="true" [error]="createError('license')" />
+    <div class="md:col-span-2">
+      <app-form-field label="Description" [required]="true">
+        <textarea formControlName="description" rows="3"
+          class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-nbs-primary focus:outline-none focus:ring-2 focus:ring-nbs-primary/30"></textarea>
+      </app-form-field>
+    </div>
+    <div class="md:col-span-2">
+      <label class="block">
+        <span class="mb-1 block text-xs font-medium text-slate-600">Data file (optional on create)</span>
+        <input type="file" accept=".csv,.json,.xlsx,.xls,.xml,.sdmx,.pdf,.tsv,.txt,.zip" class="block w-full text-sm"
+          (change)="onCreateFileSelected($event)" />
+      </label>
+    </div>
+    <div class="md:col-span-2">
+      <app-button type="submit" variant="primary" size="sm" [loading]="creating()">
+        Create draft dataset
+      </app-button>
+    </div>
+  </form>
+
+  @if (datasets().length > 0) {
+  <div class="mt-6 space-y-4">
+    <label class="block">
+      <span class="mb-1 block text-xs font-medium text-slate-600">Workflow dataset</span>
+      <select class="h-10 w-full rounded-md border border-slate-300 px-3 text-sm" [value]="selectedId()"
+        (change)="onSelect($event)">
+        @for (item of datasets(); track item.id) {
+        <option [value]="item.id">
+          {{ item.title }} ({{ item.status }})
+        </option>
+        }
+      </select>
+    </label>
+
+    @if (selected(); as record) {
+    <ul class="grid gap-2 text-xs sm:grid-cols-2">
+      <li class="flex items-center gap-2">
+        <span class="inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-semibold"
+          [class.bg-nbs-accent]="record.hasMetadata" [class.text-white]="record.hasMetadata"
+          [class.bg-slate-200]="!record.hasMetadata">
+          {{ record.hasMetadata ? '✓' : '·' }}
+        </span>
+        Metadata complete
+      </li>
+      <li class="flex items-center gap-2">
+        <span class="inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-semibold"
+          [class.bg-nbs-accent]="record.hasTag" [class.text-white]="record.hasTag"
+          [class.bg-slate-200]="!record.hasTag">
+          {{ record.hasTag ? '✓' : '·' }}
+        </span>
+        Tag linked
+      </li>
+      <li class="flex items-center gap-2">
+        <span class="inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-semibold"
+          [class.bg-nbs-accent]="record.hasFile" [class.text-white]="record.hasFile"
+          [class.bg-slate-200]="!record.hasFile">
+          {{ record.hasFile ? '✓' : '·' }}
+        </span>
+        Primary file uploaded
+      </li>
+      <li class="flex items-center gap-2">
+        <span class="inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-semibold"
+          [class.bg-nbs-accent]="record.status === 'published'" [class.text-white]="record.status === 'published'"
+          [class.bg-slate-200]="record.status !== 'published'">
+          {{ record.status === 'published' ? '✓' : '·' }}
+        </span>
+        Status: {{ record.status }}
+      </li>
+    </ul>
+
+    <label class="block">
+      <span class="mb-1 block text-xs font-medium text-slate-600">Upload data file</span>
+      <input type="file" accept=".csv,.json,.xlsx,.xls,.xml,.sdmx,.pdf,.tsv,.txt,.zip" class="block w-full text-sm"
+        (change)="onFileSelected($event)" />
+    </label>
+
+    <div class="flex flex-wrap gap-2">
+      @if (canSubmit(record)) {
+      <app-button variant="outline" size="sm" [loading]="actionLoading() === 'submit'" (clicked)="submit(record.id)">
+        Submit for review
+      </app-button>
+      }
+      @if (canReview(record)) {
+      <app-button variant="primary" size="sm" [loading]="actionLoading() === 'approve'" (clicked)="approve(record.id)">
+        Approve
+      </app-button>
+      <app-button variant="outline" size="sm" [loading]="actionLoading() === 'reject'" (clicked)="reject(record.id)">
+        Reject
+      </app-button>
+      }
+      @if (canPublish(record)) {
+      <app-button variant="primary" size="sm" [loading]="actionLoading() === 'publish'" (clicked)="publish(record.id)">
+        Publish
+      </app-button>
+      }
+    </div>
+
+    @if (publishedId() === record.id) {
+    <a [routerLink]="['/datasets', record.id]"
+      class="inline-block text-sm font-medium text-nbs-primary hover:underline">
+      View published dataset →
+    </a>
+    }
+    }
+  </div>
+  }
+
+  @if (message()) {
+  <p class="mt-3 text-xs" [class.text-nbs-accent]="!messageError()" [class.text-nbs-danger]="messageError()"
+    role="status">
+    {{ message() }}
+  </p>
+  }
+</section>

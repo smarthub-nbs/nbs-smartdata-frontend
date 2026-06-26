@@ -14,10 +14,7 @@ import { ButtonComponent } from '@shared/ui';
   standalone: true,
   imports: [FormsModule, ButtonComponent],
   template: `
-    <div
-      class="rounded-lg border border-nbs-border bg-white p-4 shadow-sm"
-      role="search"
-    >
+    <div class="nbs-panel-compact" role="search">
       <div class="grid gap-3 md:grid-cols-2 lg:grid-cols-6">
         <label class="lg:col-span-2">
           <span class="mb-1 block text-xs font-medium text-slate-600"

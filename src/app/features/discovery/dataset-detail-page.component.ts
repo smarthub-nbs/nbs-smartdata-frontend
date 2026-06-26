@@ -1,115 +1,86 @@
-import { DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
   computed,
   inject,
 } from '@angular/core';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { map } from 'rxjs';
 import { DatasetMetadataPanelComponent } from '@app/features/discovery/components/dataset-metadata-panel.component';
-import { DatasetService, QualityBadgeComponent } from '@app/features/discovery';
+import { DatasetFilePreviewComponent } from '@app/features/discovery/components/dataset-file-preview.component';
+import { DatasetUpdateHistoryComponent } from '@app/features/discovery/components/dataset-update-history.component';
+import { DatasetAuditTrailComponent } from '@app/features/discovery/components/dataset-audit-trail.component';
+import { DatasetDetailHeaderComponent } from '@app/features/discovery/components/dataset-detail-header.component';
+import { DatasetDetailFallbackComponent } from '@app/features/discovery/components/dataset-detail-fallback.component';
+import { DatasetService } from '@app/features/discovery';
 import { DatasetDownloadPanelComponent } from '@app/features/developers';
 import { RecommendedDatasetsComponent } from '@app/features/search';
 import { PageStateComponent } from '@app/shared/components/page-state/page-state.component';
-import { ButtonComponent } from '@shared/ui';
+import { resolveIndicatorForTopic } from '@app/features/explore';
+import { DatasetDetailFacadeService } from '@app/features/discovery/services/dataset-detail-facade.service';
 
 @Component({
   selector: 'app-dataset-detail-page',
   standalone: true,
+  providers: [DatasetDetailFacadeService],
   imports: [
     RouterLink,
-    DatePipe,
-    ButtonComponent,
+    DatasetDetailHeaderComponent,
+    DatasetDetailFallbackComponent,
     DatasetMetadataPanelComponent,
-    QualityBadgeComponent,
+    DatasetFilePreviewComponent,
+    DatasetUpdateHistoryComponent,
+    DatasetAuditTrailComponent,
     RecommendedDatasetsComponent,
     DatasetDownloadPanelComponent,
     PageStateComponent,
   ],
   template: `
-    @if (!dataset()) {
+    @if (detailLoading()) {
       <app-page-state
+        variant="loading"
+        title="Loading dataset"
+        label="Dataset"
+        message="Fetching dataset details…"
+      />
+    } @else if (detailError()) {
+      <app-dataset-detail-fallback
+        variant="error"
+        title="Could not load dataset"
+        label="Error"
+        [message]="detailError()!"
+      />
+    } @else if (!dataset()) {
+      <app-dataset-detail-fallback
         title="Dataset not found"
         label="404"
         message="The dataset you requested does not exist or may have been removed."
-      >
-        <a routerLink="/datasets" class="mt-4 inline-block">
-          <app-button variant="primary">Back to catalog</app-button>
-        </a>
-      </app-page-state>
+      />
     } @else {
       <div class="space-y-6">
-        <nav class="text-sm text-nbs-muted" aria-label="Breadcrumb">
-          <a routerLink="/datasets" class="hover:text-nbs-primary">Datasets</a>
-          <span class="mx-2">/</span>
-          <a
-            [routerLink]="['/topics', dataset()!.topicSlug]"
-            class="hover:text-nbs-primary"
-            >{{ dataset()!.topicName }}</a
-          >
-        </nav>
-
-        <header
-          class="rounded-lg border border-nbs-border bg-white p-6 shadow-sm"
-        >
-          <div class="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h1 class="text-2xl font-semibold text-slate-900">
-                {{ dataset()!.title }}
-              </h1>
-              <p class="mt-2 max-w-3xl text-sm text-nbs-muted">
-                {{ dataset()!.description }}
-              </p>
-            </div>
-            <app-quality-badge [score]="dataset()!.qualityScore" />
-          </div>
-
-          <div class="mt-4 flex flex-wrap gap-2">
-            @for (keyword of dataset()!.keywords; track keyword) {
-              <span
-                class="rounded-full bg-nbs-surface px-2.5 py-1 text-xs font-medium text-slate-700"
-              >
-                {{ keyword }}
-              </span>
-            }
-          </div>
-
-          <div class="mt-6">
-            <app-button variant="outline" (clicked)="goToExplore()">
-              Explore data
-            </app-button>
-          </div>
-        </header>
+        <app-dataset-detail-header
+          [dataset]="dataset()!"
+          [indexingStatus]="facade.indexing()"
+          (explore)="goToExplore()"
+        />
 
         <div class="grid gap-6 lg:grid-cols-3">
           <div class="lg:col-span-2 space-y-6">
             <app-dataset-download-panel [dataset]="dataset()!" />
+            <app-dataset-file-preview
+              [dataset]="dataset()!"
+              (totalRowsLoaded)="updateRecordCount($event)"
+            />
             <app-dataset-metadata-panel [dataset]="dataset()!" />
+            <app-dataset-update-history
+              [loading]="facade.loading()"
+              [entries]="facade.history()"
+            />
 
-            <section
-              class="rounded-lg border border-nbs-border bg-white p-6 shadow-sm"
-            >
-              <h2
-                class="text-sm font-semibold uppercase tracking-wide text-nbs-muted"
-              >
-                Update history
-              </h2>
-              <ul class="mt-4 divide-y divide-slate-100">
-                @for (entry of dataset()!.updateHistory; track entry.date) {
-                  <li class="flex flex-col gap-1 py-3 sm:flex-row sm:gap-4">
-                    <time
-                      class="shrink-0 text-sm font-medium text-slate-900"
-                      [dateTime]="entry.date"
-                    >
-                      {{ entry.date | date: 'mediumDate' }}
-                    </time>
-                    <span class="text-sm text-nbs-muted">{{ entry.note }}</span>
-                  </li>
-                }
-              </ul>
-            </section>
+            @if (facade.isAdmin() && facade.audit().length > 0) {
+              <app-dataset-audit-trail [entries]="facade.audit()" />
+            }
           </div>
 
           <aside class="space-y-4">
@@ -119,9 +90,7 @@ import { ButtonComponent } from '@shared/ui';
               subtitle="Intelligent recommendations (SRS 5.6)"
             />
 
-            <section
-              class="rounded-lg border border-nbs-border bg-nbs-surface p-5"
-            >
+            <section class="nbs-panel-muted">
               <h2 class="text-sm font-semibold text-slate-900">
                 Related topic
               </h2>
@@ -146,6 +115,7 @@ export class DatasetDetailPageComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly datasetService = inject(DatasetService);
+  protected readonly facade = inject(DatasetDetailFacadeService);
 
   private readonly datasetId = toSignal(
     this.route.paramMap.pipe(map((params) => params.get('id') ?? '')),
@@ -157,19 +127,42 @@ export class DatasetDetailPageComponent {
     return id ? this.datasetService.getById(id) : undefined;
   });
 
+  protected readonly detailLoading = computed(() => {
+    const id = this.datasetId();
+    if (!id || this.dataset()) {
+      return false;
+    }
+    return this.datasetService.detailLoadState().status === 'loading';
+  });
+
+  protected readonly detailError = computed(() => {
+    const id = this.datasetId();
+    if (!id || this.dataset()) {
+      return null;
+    }
+    const state = this.datasetService.detailLoadState();
+    return state.status === 'error' ? state.message : null;
+  });
+
+  constructor() {
+    this.facade.watchDatasetId(this.datasetId);
+  }
+
   protected goToExplore(): void {
     const dataset = this.dataset();
-    const indicatorMap: Record<string, string> = {
-      population: 'population-growth',
-      economy: 'cpi-inflation',
-      agriculture: 'maize-yield',
-    };
     const indicator = dataset
-      ? (indicatorMap[dataset.topicSlug] ?? 'population-growth')
-      : 'population-growth';
+      ? resolveIndicatorForTopic(dataset.topicSlug)
+      : resolveIndicatorForTopic('');
 
     void this.router.navigate(['/explore'], {
       queryParams: { indicator },
     });
+  }
+
+  protected updateRecordCount(totalRows: number | null): void {
+    const id = this.datasetId();
+    if (id) {
+      this.datasetService.patchRecordCountFromPreview(id, totalRows);
+    }
   }
 }

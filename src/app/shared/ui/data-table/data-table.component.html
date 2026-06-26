@@ -1,0 +1,106 @@
+<div
+  class="w-full overflow-hidden rounded-lg border border-nbs-border bg-white shadow-sm"
+>
+  <div class="overflow-x-auto">
+    <table class="min-w-full divide-y divide-slate-200">
+      <thead class="bg-nbs-surface">
+        <tr>
+          @for (column of columns(); track column.key) {
+            <th
+              [class]="headerCellClasses(column)"
+              [style.width]="column.width ?? null"
+              scope="col"
+            >
+              @if (column.sortable) {
+                <button
+                  type="button"
+                  class="inline-flex items-center gap-1 font-semibold text-slate-700 hover:text-nbs-primary"
+                  (click)="toggleSort(column.key)"
+                >
+                  {{ column.header }}
+                  <span class="text-xs text-slate-400" aria-hidden="true">
+                    {{ sortIndicator(column.key) }}
+                  </span>
+                </button>
+              } @else {
+                <span class="font-semibold text-slate-700">{{
+                  column.header
+                }}</span>
+              }
+            </th>
+          }
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100 bg-white">
+        @if (loading()) {
+          <tr>
+            <td
+              [attr.colspan]="columns().length"
+              class="px-4 py-12 text-center text-sm text-nbs-muted"
+            >
+              <span
+                class="mr-2 inline-block size-4 animate-spin rounded-full border-2 border-nbs-primary border-t-transparent"
+                aria-hidden="true"
+              ></span>
+              Loading…
+            </td>
+          </tr>
+        } @else if (paginatedRows().length === 0) {
+          <tr>
+            <td
+              [attr.colspan]="columns().length"
+              class="px-4 py-12 text-center text-sm text-nbs-muted"
+            >
+              {{ emptyMessage() }}
+            </td>
+          </tr>
+        } @else {
+          @for (row of paginatedRows(); track trackRow($index, row)) {
+            <tr
+              class="transition-colors hover:bg-slate-50"
+              [class.cursor-pointer]="rowClickable()"
+              (click)="onRowClick(row)"
+            >
+              @for (column of columns(); track column.key) {
+                <td [class]="bodyCellClasses(column)">
+                  {{ formatCell(row, column) }}
+                </td>
+              }
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+
+  @if (showPagination() && totalPages() > 1) {
+    <div
+      class="flex items-center justify-between border-t border-nbs-border px-4 py-3 text-sm text-slate-600"
+    >
+      <span>
+        {{ rangeLabel() }}
+      </span>
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          class="rounded-md border border-slate-300 px-3 py-1.5 hover:bg-slate-50 disabled:opacity-50"
+          [disabled]="currentPage() === 1"
+          (click)="goToPage(currentPage() - 1)"
+        >
+          Previous
+        </button>
+        <span class="tabular-nums">
+          Page {{ currentPage() }} of {{ totalPages() }}
+        </span>
+        <button
+          type="button"
+          class="rounded-md border border-slate-300 px-3 py-1.5 hover:bg-slate-50 disabled:opacity-50"
+          [disabled]="currentPage() === totalPages()"
+          (click)="goToPage(currentPage() + 1)"
+        >
+          Next
+        </button>
+      </div>
+    </div>
+  }
+</div>

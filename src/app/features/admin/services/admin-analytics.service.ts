@@ -1,47 +1,21 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
+import { Observable } from 'rxjs';
 import {
   DatasetUsageMetrics,
   DatasetUsageRow,
   UsageSummary,
 } from '@app/features/admin/models/admin-analytics.model';
 import { DatasetService } from '@app/features/discovery';
-
-const USAGE_METRICS: DatasetUsageMetrics[] = [
-  {
-    datasetId: 'pop-census-2022',
-    apiCalls: 12450,
-    downloads: 1870,
-    views: 53400,
-    lastAccessed: '2026-05-26',
-  },
-  {
-    datasetId: 'cpi-inflation-monthly',
-    apiCalls: 10890,
-    downloads: 1420,
-    views: 41800,
-    lastAccessed: '2026-05-26',
-  },
-  {
-    datasetId: 'gdp-national-accounts',
-    apiCalls: 9620,
-    downloads: 980,
-    views: 35200,
-    lastAccessed: '2026-05-25',
-  },
-  {
-    datasetId: 'agri-crop-production',
-    apiCalls: 4160,
-    downloads: 790,
-    views: 19800,
-    lastAccessed: '2026-05-23',
-  },
-];
+import { DeveloperApiService } from '@app/features/developers/services/developer-api.service';
 
 @Injectable({ providedIn: 'root' })
 export class AdminAnalyticsService {
   private readonly datasetService = inject(DatasetService);
+  private readonly developerApi = inject(DeveloperApiService);
 
-  private readonly usageMetrics = signal<DatasetUsageMetrics[]>(USAGE_METRICS);
+  private readonly usageMetrics = signal<DatasetUsageMetrics[]>([]);
+  private readonly loading = signal(false);
+  private readonly loadError = signal<string | null>(null);
 
   readonly rows = computed<DatasetUsageRow[]>(() =>
     this.usageMetrics().map((metrics) => this.toUsageRow(metrics)),
@@ -69,6 +43,29 @@ export class AdminAnalyticsService {
   readonly datasetCount = computed(
     () => this.datasetService.listDatasets().length,
   );
+
+  readonly analyticsLoading = this.loading.asReadonly();
+  readonly analyticsError = this.loadError.asReadonly();
+
+  constructor() {
+    this.refresh();
+  }
+
+  refresh(): void {
+    this.loading.set(true);
+    this.loadError.set(null);
+    this.developerApi.loadUsageLogs().subscribe({
+      next: (metrics) => {
+        this.usageMetrics.set(metrics);
+        this.loading.set(false);
+      },
+      error: (error: Error) => {
+        this.usageMetrics.set([]);
+        this.loading.set(false);
+        this.loadError.set(error.message);
+      },
+    });
+  }
 
   private toUsageRow(metrics: DatasetUsageMetrics): DatasetUsageRow {
     const dataset = this.datasetService.getById(metrics.datasetId);

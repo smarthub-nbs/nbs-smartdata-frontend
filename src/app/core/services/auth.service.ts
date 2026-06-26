@@ -19,6 +19,10 @@ interface LoginResponse {
   refresh: string;
 }
 
+interface RefreshResponse {
+  access: string;
+}
+
 interface CurrentUserResponse {
   id: string;
   email: string;
@@ -40,6 +44,7 @@ export class AuthService {
   private readonly accessToken = signal<string | null>(
     localStorage.getItem(ACCESS_TOKEN_KEY),
   );
+  private refreshInFlight: Observable<string | null> | null = null;
 
   readonly user = this.currentUser.asReadonly();
   readonly isAuthenticated = computed(() => this.currentUser() !== null);
@@ -68,13 +73,7 @@ export class AuthService {
       )
       .pipe(
         tap((response) => this.saveTokens(response.data)),
-        switchMap(() =>
-          this.http.get<ApiEnvelope<CurrentUserResponse>>(
-            `${environment.apiBaseUrl}/v1/auth/me/`,
-          ),
-        ),
-        map((response) => this.toUserProfile(response.data)),
-        tap((user) => this.saveUser(user)),
+        switchMap(() => this.fetchCurrentUser()),
         map(() => null),
         catchError((error: unknown) =>
           of({ message: this.resolveErrorMessage(error) }),
@@ -83,11 +82,45 @@ export class AuthService {
   }
 
   signOut(): void {
-    this.currentUser.set(null);
-    this.accessToken.set(null);
-    localStorage.removeItem(ACCESS_TOKEN_KEY);
-    localStorage.removeItem(REFRESH_TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
+    const refresh = localStorage.getItem(REFRESH_TOKEN_KEY);
+    if (refresh) {
+      this.http
+        .post(`${environment.apiBaseUrl}/v1/auth/logout/`, { refresh })
+        .subscribe({ error: () => undefined });
+    }
+    this.clearSession();
+  }
+
+  refreshAccessToken(): Observable<string | null> {
+    const refresh = localStorage.getItem(REFRESH_TOKEN_KEY);
+    if (!refresh) {
+      return of(null);
+    }
+
+    if (this.refreshInFlight) {
+      return this.refreshInFlight;
+    }
+
+    this.refreshInFlight = this.http
+      .post<
+        ApiEnvelope<RefreshResponse>
+      >(`${environment.apiBaseUrl}/v1/auth/refresh/`, { refresh })
+      .pipe(
+        map((response) => {
+          this.accessToken.set(response.data.access);
+          localStorage.setItem(ACCESS_TOKEN_KEY, response.data.access);
+          return response.data.access;
+        }),
+        catchError(() => {
+          this.clearSession();
+          return of(null);
+        }),
+        tap(() => {
+          this.refreshInFlight = null;
+        }),
+      );
+
+    return this.refreshInFlight;
   }
 
   getAccessToken(): string | null {
@@ -110,6 +143,25 @@ export class AuthService {
         initials: this.buildInitials(name),
       };
     });
+  }
+
+  private fetchCurrentUser(): Observable<UserProfile> {
+    return this.http
+      .get<
+        ApiEnvelope<CurrentUserResponse>
+      >(`${environment.apiBaseUrl}/v1/auth/me/`)
+      .pipe(
+        map((response) => this.toUserProfile(response.data)),
+        tap((user) => this.saveUser(user)),
+      );
+  }
+
+  private clearSession(): void {
+    this.currentUser.set(null);
+    this.accessToken.set(null);
+    localStorage.removeItem(ACCESS_TOKEN_KEY);
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
   }
 
   private buildInitials(name: string): string {

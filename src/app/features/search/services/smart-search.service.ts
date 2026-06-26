@@ -1,7 +1,6 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, delay, map, of } from 'rxjs';
-import { Dataset } from '@app/features/discovery';
-import { DatasetService } from '@app/features/discovery';
+import { Observable, map } from 'rxjs';
+import { Dataset, DatasetService } from '@app/features/discovery';
 import {
   SmartSearchResponse,
   SmartSearchResult,
@@ -61,20 +60,18 @@ export class SmartSearchService {
   smartSearch(query: string): Observable<SmartSearchResponse> {
     const trimmed = query.trim();
     const parsed = this.parseQuery(trimmed);
-    const results = this.scoreDatasets(
-      this.datasetService.listDatasets(),
-      parsed,
-      trimmed,
+
+    return this.datasetService.searchCatalog(trimmed).pipe(
+      map((datasets) => {
+        const results = this.scoreDatasets(datasets, parsed, trimmed);
+        return {
+          query: trimmed,
+          interpretation: this.buildInterpretation(parsed, results.length),
+          results,
+          suggestedIndicators: this.suggestIndicators(parsed),
+        };
+      }),
     );
-
-    const response: SmartSearchResponse = {
-      query: trimmed,
-      interpretation: this.buildInterpretation(parsed, results.length),
-      results,
-      suggestedIndicators: this.suggestIndicators(parsed),
-    };
-
-    return of(response).pipe(delay(350));
   }
 
   getRecommendations(datasetId: string, limit = 3): Dataset[] {

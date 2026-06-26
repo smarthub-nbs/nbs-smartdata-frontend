@@ -7,3 +7,17 @@
     @apply bg-white font-sans text-slate-900 antialiased;
   }
 }
+
+@layer components {
+  .nbs-panel {
+    @apply rounded-lg border border-nbs-border bg-white p-6 shadow-sm;
+  }
+
+  .nbs-panel-compact {
+    @apply rounded-lg border border-nbs-border bg-white p-4 shadow-sm;
+  }
+
+  .nbs-panel-muted {
+    @apply rounded-lg border border-nbs-border bg-nbs-surface p-5;
+  }
+}

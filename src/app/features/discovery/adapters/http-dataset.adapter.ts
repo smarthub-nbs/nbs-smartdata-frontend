@@ -4,10 +4,12 @@ import { ApiService } from '@app/core/services/api.service';
 import { DatasetAdapter } from '@app/features/discovery/adapters/dataset-adapter.interface';
 import {
   Dataset,
+  DatasetFilters,
   DatasetMetadataUpdate,
   DatasetFrequency,
   DatasetFormat,
   DatasetTopic,
+  DatasetWorkflowStatus,
 } from '@app/features/discovery/models/dataset.model';
 
 interface BackendCategory {
@@ -28,19 +30,31 @@ interface BackendDatasetMetadata {
 }
 
 interface BackendDatasetFile {
+  id: string;
+  filename: string;
   file_format: string;
+  is_primary: boolean;
 }
 
 interface BackendDatasetVersion {
+  version_number: number | string;
   created_by?: string | null;
   files?: BackendDatasetFile[];
+}
+
+interface BackendTag {
+  id: string;
+  name: string;
+  slug: string;
 }
 
 interface BackendDataset {
   id: string;
   slug: string;
+  status?: string;
   category: BackendCategory | null;
   metadata?: BackendDatasetMetadata[];
+  tags?: BackendTag[];
   versions?: BackendDatasetVersion[];
   published_at: string | null;
 }
@@ -58,21 +72,19 @@ interface BackendMetadataWritePayload {
 export class HttpDatasetAdapter implements DatasetAdapter {
   private readonly api = inject(ApiService);
 
-  list(): Observable<Dataset[]> {
-    return this.api.get<BackendDataset[]>('/v1/dataset/').pipe(
-      switchMap((datasets) => {
-        if (datasets.length === 0) {
-          return of([]);
-        }
+  list(filters?: DatasetFilters): Observable<Dataset[]> {
+    const params = this.toListParams(filters);
 
-        return forkJoin(
-          datasets.map((dataset) =>
-            this.api.get<BackendDataset>(`/v1/dataset/${dataset.id}/`),
-          ),
-        );
-      }),
-      map((datasets) => datasets.map((dataset) => this.toDataset(dataset))),
+    return this.api.get<BackendDataset[]>('/v1/dataset/', params).pipe(
+      switchMap((datasets) => this.hydrateDatasetDetails(datasets)),
+      map((items) => items.map((dataset) => this.toDataset(dataset))),
     );
+  }
+
+  getById(id: string): Observable<Dataset> {
+    return this.api
+      .get<BackendDataset>(`/v1/dataset/${id}/`)
+      .pipe(map((dataset) => this.toDataset(dataset)));
   }
 
   listTopics(): Observable<DatasetTopic[]> {
@@ -137,6 +149,48 @@ export class HttpDatasetAdapter implements DatasetAdapter {
     );
   }
 
+  private hydrateDatasetDetails(
+    summaries: BackendDataset[],
+  ): Observable<BackendDataset[]> {
+    if (summaries.length === 0) {
+      return of([]);
+    }
+
+    return forkJoin(
+      summaries.map((dataset) =>
+        this.api.get<BackendDataset>(`/v1/dataset/${dataset.id}/`),
+      ),
+    );
+  }
+
+  private toListParams(
+    filters?: DatasetFilters,
+  ): Record<string, string> | undefined {
+    if (!filters) {
+      return undefined;
+    }
+
+    const params: Record<string, string> = {};
+    const query = filters.query.trim();
+    if (query) {
+      params['q'] = query;
+    }
+    if (filters.topicSlug) {
+      params['category'] = filters.topicSlug;
+    }
+    if (filters.region) {
+      params['region'] = filters.region;
+    }
+    if (filters.frequency) {
+      params['frequency'] = filters.frequency.toLowerCase();
+    }
+    if (filters.format) {
+      params['file_format'] = filters.format.toLowerCase();
+    }
+
+    return Object.keys(params).length > 0 ? params : undefined;
+  }
+
   private toMetadataPayload(
     metadata: DatasetMetadataUpdate,
   ): BackendMetadataWritePayload {
@@ -156,6 +210,9 @@ export class HttpDatasetAdapter implements DatasetAdapter {
     return {
       id: dataset.id,
       metadataId: metadata?.id ?? null,
+      primaryFileId: this.resolvePrimaryFileId(dataset),
+      status: this.resolveStatus(dataset.status),
+      year: metadata?.year ?? null,
       title: metadata?.title ?? dataset.slug,
       description: metadata?.description ?? 'No description available.',
       topicSlug: topic?.slug ?? 'uncategorized',
@@ -163,30 +220,74 @@ export class HttpDatasetAdapter implements DatasetAdapter {
       format: this.resolveFormat(dataset),
       frequency: this.resolveFrequency(metadata?.frequency),
       region: metadata?.region ?? 'National',
-      keywords: [dataset.slug, topic?.slug].filter((value): value is string =>
-        Boolean(value),
-      ),
+      keywords: this.resolveKeywords(dataset, topic?.slug),
       publisher: metadata?.publisher_name ?? 'NBS',
       updatedAt: dataset.published_at ?? new Date().toISOString(),
       qualityScore: 80,
       recordCount: dataset.versions?.length ?? 0,
       license: metadata?.license ?? 'Open Government Licence - Tanzania',
-      updateHistory: [
-        {
-          date: dataset.published_at ?? new Date().toISOString(),
-          note: 'Published',
-        },
-      ],
+      updateHistory: [],
     };
+  }
+
+  private resolveStatus(status?: string): DatasetWorkflowStatus | undefined {
+    if (
+      status === 'draft' ||
+      status === 'in_review' ||
+      status === 'approved' ||
+      status === 'rejected' ||
+      status === 'published'
+    ) {
+      return status;
+    }
+    return undefined;
+  }
+
+  private resolveKeywords(
+    dataset: BackendDataset,
+    topicSlug?: string,
+  ): string[] {
+    const tagNames = dataset.tags?.map((tag) => tag.name) ?? [];
+    if (tagNames.length > 0) {
+      return tagNames;
+    }
+    return [dataset.slug, topicSlug].filter((value): value is string =>
+      Boolean(value),
+    );
+  }
+
+  private resolvePrimaryFileId(dataset: BackendDataset): string | null {
+    const latestVersion = [...(dataset.versions ?? [])].sort(
+      (a, b) => Number(b.version_number) - Number(a.version_number),
+    )[0];
+    if (!latestVersion?.files?.length) {
+      return null;
+    }
+
+    const primary =
+      latestVersion.files.find((file) => file.is_primary) ??
+      latestVersion.files[0];
+    return primary?.id ?? null;
   }
 
   private resolveFormat(dataset: BackendDataset): DatasetFormat {
     const fileFormat = dataset.versions
       ?.flatMap((version) => version.files ?? [])
       .map((file) => file.file_format.toUpperCase())
-      .find((format) => ['CSV', 'XLSX', 'JSON', 'SDMX'].includes(format)) as
-      | DatasetFormat
-      | undefined;
+      .find((format) =>
+        [
+          'CSV',
+          'TSV',
+          'TXT',
+          'XLS',
+          'XLSX',
+          'JSON',
+          'XML',
+          'SDMX',
+          'PDF',
+          'ZIP',
+        ].includes(format),
+      ) as DatasetFormat | undefined;
 
     return fileFormat ?? 'CSV';
   }

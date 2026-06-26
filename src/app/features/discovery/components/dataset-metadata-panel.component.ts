@@ -8,7 +8,7 @@ import { QualityBadgeComponent } from '@app/features/discovery/components/qualit
   standalone: true,
   imports: [DatePipe, DecimalPipe, QualityBadgeComponent],
   template: `
-    <section class="rounded-lg border border-nbs-border bg-white p-6 shadow-sm">
+    <section class="nbs-panel">
       <h2 class="text-sm font-semibold uppercase tracking-wide text-nbs-muted">
         Metadata
       </h2>
@@ -43,6 +43,14 @@ import { QualityBadgeComponent } from '@app/features/discovery/components/qualit
             {{ dataset().region }}
           </dd>
         </div>
+        @if (dataset().year) {
+          <div>
+            <dt class="text-xs text-nbs-muted">Year</dt>
+            <dd class="mt-0.5 text-sm font-medium text-slate-900">
+              {{ dataset().year }}
+            </dd>
+          </div>
+        }
         <div>
           <dt class="text-xs text-nbs-muted">Records</dt>
           <dd class="mt-0.5 text-sm font-medium text-slate-900">
@@ -63,6 +71,9 @@ import { QualityBadgeComponent } from '@app/features/discovery/components/qualit
               >{{ dataset().qualityScore }}%</span
             >
           </dd>
+          <p class="mt-1 text-xs text-nbs-muted">
+            Display score only — not stored in backend metadata.
+          </p>
         </div>
       </dl>
     </section>

@@ -10,7 +10,7 @@ import { QualityBadgeComponent } from '@app/features/discovery/components/qualit
   imports: [RouterLink, DatePipe, QualityBadgeComponent],
   template: `
     <article
-      class="flex h-full flex-col rounded-lg border border-nbs-border bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
+      class="nbs-panel-compact flex h-full flex-col p-5 transition-shadow hover:shadow-md"
     >
       <div class="flex items-start justify-between gap-2">
         <a
