@@ -1,0 +1,197 @@
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { Observable, catchError, map, of, switchMap, tap } from 'rxjs';
+import { UserProfile, UserRole } from '@app/core/models/user.model';
+import { environment } from '@env/environment';
+
+export interface AuthError {
+  message: string;
+}
+
+interface ApiEnvelope<T> {
+  success: boolean;
+  message: string;
+  data: T;
+}
+
+interface LoginResponse {
+  access: string;
+  refresh: string;
+}
+
+interface CurrentUserResponse {
+  id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  roles: string[];
+}
+
+const ACCESS_TOKEN_KEY = 'nbs_access_token';
+const REFRESH_TOKEN_KEY = 'nbs_refresh_token';
+const USER_KEY = 'nbs_user';
+
+@Injectable({ providedIn: 'root' })
+export class AuthService {
+  private readonly http = inject(HttpClient);
+  private readonly currentUser = signal<UserProfile | null>(this.readUser());
+  private readonly accessToken = signal<string | null>(
+    localStorage.getItem(ACCESS_TOKEN_KEY),
+  );
+
+  readonly user = this.currentUser.asReadonly();
+  readonly isAuthenticated = computed(() => this.currentUser() !== null);
+  readonly isAdmin = computed(
+    () =>
+      this.currentUser()?.role === 'admin' ||
+      this.currentUser()?.role === 'publisher',
+  );
+
+  hasRole(...roles: UserRole[]): boolean {
+    const user = this.currentUser();
+    return user !== null && roles.includes(user.role);
+  }
+
+  signInWithPassword(
+    username: string,
+    password: string,
+  ): Observable<AuthError | null> {
+    return this.http
+      .post<ApiEnvelope<LoginResponse>>(
+        `${environment.apiBaseUrl}/v1/auth/login/`,
+        {
+          email: username.trim(),
+          password,
+        },
+      )
+      .pipe(
+        tap((response) => this.saveTokens(response.data)),
+        switchMap(() =>
+          this.http.get<ApiEnvelope<CurrentUserResponse>>(
+            `${environment.apiBaseUrl}/v1/auth/me/`,
+          ),
+        ),
+        map((response) => this.toUserProfile(response.data)),
+        tap((user) => this.saveUser(user)),
+        map(() => null),
+        catchError((error: unknown) =>
+          of({ message: this.resolveErrorMessage(error) }),
+        ),
+      );
+  }
+
+  signOut(): void {
+    this.currentUser.set(null);
+    this.accessToken.set(null);
+    localStorage.removeItem(ACCESS_TOKEN_KEY);
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
+  }
+
+  getAccessToken(): string | null {
+    return this.accessToken();
+  }
+
+  updateProfile(update: Partial<Pick<UserProfile, 'name' | 'email'>>): void {
+    this.currentUser.update((current) => {
+      if (!current) {
+        return current;
+      }
+
+      const name = update.name?.trim() || current.name;
+      const email = update.email?.trim() || current.email;
+
+      return {
+        ...current,
+        name,
+        email,
+        initials: this.buildInitials(name),
+      };
+    });
+  }
+
+  private buildInitials(name: string): string {
+    const letters = name
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase() ?? '')
+      .join('');
+
+    return letters || 'NU';
+  }
+
+  private saveTokens(tokens: LoginResponse): void {
+    this.accessToken.set(tokens.access);
+    localStorage.setItem(ACCESS_TOKEN_KEY, tokens.access);
+    localStorage.setItem(REFRESH_TOKEN_KEY, tokens.refresh);
+  }
+
+  private saveUser(user: UserProfile): void {
+    this.currentUser.set(user);
+    localStorage.setItem(USER_KEY, JSON.stringify(user));
+  }
+
+  private readUser(): UserProfile | null {
+    const rawUser = localStorage.getItem(USER_KEY);
+    if (!rawUser) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(rawUser) as UserProfile;
+    } catch {
+      localStorage.removeItem(USER_KEY);
+      return null;
+    }
+  }
+
+  private toUserProfile(user: CurrentUserResponse): UserProfile {
+    const name = [user.first_name, user.last_name].filter(Boolean).join(' ');
+    const resolvedName = name || user.email;
+
+    return {
+      id: user.id,
+      name: resolvedName,
+      email: user.email,
+      role: this.resolveRole(user.roles),
+      initials: this.buildInitials(resolvedName),
+    };
+  }
+
+  private resolveRole(roles: string[]): UserRole {
+    if (roles.includes('admin')) {
+      return 'admin';
+    }
+    if (roles.includes('publisher') || roles.includes('editor')) {
+      return 'publisher';
+    }
+    return 'member';
+  }
+
+  private resolveErrorMessage(error: unknown): string {
+    if (error instanceof HttpErrorResponse) {
+      const body = error.error;
+
+      if (
+        typeof body === 'object' &&
+        body !== null &&
+        'error' in body &&
+        typeof body.error === 'object' &&
+        body.error !== null &&
+        'message' in body.error &&
+        typeof body.error.message === 'string'
+      ) {
+        return body.error.message;
+      }
+
+      return error.message || 'Sign in failed.';
+    }
+
+    if (error instanceof Error) {
+      return error.message;
+    }
+
+    return 'Sign in failed.';
+  }
+}
