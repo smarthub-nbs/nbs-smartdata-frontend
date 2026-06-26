@@ -15,11 +15,7 @@ import { ExploreIndicator } from '@app/features/explore/models/explore.model';
 @Component({
   selector: 'app-regional-comparison-chart',
   standalone: true,
-  template: `
-    <div class="relative h-80 w-full">
-      <canvas #canvas aria-label="Regional comparison chart"></canvas>
-    </div>
-  `,
+  templateUrl: './regional-comparison-chart.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RegionalComparisonChartComponent implements AfterViewInit {

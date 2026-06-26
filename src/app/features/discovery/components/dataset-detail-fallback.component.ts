@@ -8,18 +8,7 @@ import { ButtonComponent } from '@shared/ui';
   selector: 'app-dataset-detail-fallback',
   standalone: true,
   imports: [RouterLink, PageStateComponent, ButtonComponent],
-  template: `
-    <app-page-state
-      [variant]="variant()"
-      [title]="title()"
-      [label]="label()"
-      [message]="message()"
-    >
-      <a routerLink="/datasets" class="mt-4 inline-block">
-        <app-button variant="primary">Back to catalog</app-button>
-      </a>
-    </app-page-state>
-  `,
+  templateUrl: './dataset-detail-fallback.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DatasetDetailFallbackComponent {

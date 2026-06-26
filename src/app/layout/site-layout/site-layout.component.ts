@@ -15,17 +15,7 @@ import { MobileNavService } from '@app/layout/mobile-nav.service';
   selector: 'app-site-layout',
   standalone: true,
   imports: [RouterOutlet, HeaderComponent, FooterComponent],
-  template: `
-    <div class="flex min-h-dvh flex-col bg-slate-50">
-      <app-header />
-      <main class="flex-1">
-        <div class="mx-auto max-w-7xl px-4 py-6 lg:px-6">
-          <router-outlet />
-        </div>
-      </main>
-      <app-footer />
-    </div>
-  `,
+  templateUrl: './site-layout.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SiteLayoutComponent {

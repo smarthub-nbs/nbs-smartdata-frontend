@@ -25,11 +25,7 @@ Chart.register(...registerables);
 @Component({
   selector: 'app-indicator-chart',
   standalone: true,
-  template: `
-    <div class="relative h-72 w-full sm:h-80">
-      <canvas #canvas aria-label="Indicator trend chart"></canvas>
-    </div>
-  `,
+  templateUrl: './indicator-chart.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class IndicatorChartComponent implements AfterViewInit {

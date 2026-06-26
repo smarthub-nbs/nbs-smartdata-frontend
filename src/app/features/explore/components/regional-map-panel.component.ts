@@ -11,32 +11,7 @@ import { ExploreDataService } from '@app/features/explore/services/explore-data.
 @Component({
   selector: 'app-regional-map-panel',
   standalone: true,
-  template: `
-    <section class="rounded-lg border border-nbs-border bg-white p-5 shadow-sm">
-      <h2 class="text-sm font-semibold text-slate-900">Regional map view</h2>
-      <p class="mt-1 text-xs text-nbs-muted">
-        Intensity by region (simplified grid — full geospatial map in a later
-        release).
-      </p>
-
-      <div class="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
-        @for (cell of cells(); track cell.region) {
-          <div
-            class="rounded-md border border-slate-200 p-3 transition-colors"
-            [style.background-color]="cell.color"
-            [attr.title]="cell.region + ': ' + cell.label"
-          >
-            <p class="text-xs font-semibold text-slate-900">
-              {{ cell.region }}
-            </p>
-            <p class="mt-1 text-sm font-medium text-slate-800">
-              {{ cell.label }}
-            </p>
-          </div>
-        }
-      </div>
-    </section>
-  `,
+  templateUrl: './regional-map-panel.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RegionalMapPanelComponent {

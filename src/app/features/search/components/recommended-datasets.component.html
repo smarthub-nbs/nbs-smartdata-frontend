@@ -1,0 +1,29 @@
+    <section class="rounded-lg border border-nbs-border bg-white p-5 shadow-sm">
+      <h2 class="text-sm font-semibold text-slate-900">{{ title() }}</h2>
+      <p class="mt-1 text-xs text-nbs-muted">{{ subtitle() }}</p>
+
+      @if (resolvedDatasets().length === 0) {
+        <p class="mt-4 text-sm text-slate-500">No recommendations available.</p>
+      } @else {
+        <ul class="mt-4 space-y-3">
+          @for (dataset of resolvedDatasets(); track dataset.id) {
+            <li>
+              <a
+                [routerLink]="['/datasets', dataset.id]"
+                class="group block rounded-md p-2 hover:bg-nbs-surface"
+              >
+                <span
+                  class="text-sm font-medium text-slate-900 group-hover:text-nbs-primary"
+                >
+                  {{ dataset.title }}
+                </span>
+                <span class="mt-0.5 block text-xs text-nbs-muted">
+                  {{ dataset.topicName }} · {{ dataset.region }}
+                </span>
+              </a>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+  

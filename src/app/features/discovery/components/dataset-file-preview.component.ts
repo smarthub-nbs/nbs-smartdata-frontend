@@ -37,59 +37,7 @@ type PreviewLoadState =
 @Component({
   selector: 'app-dataset-file-preview',
   standalone: true,
-  template: `
-    <section class="nbs-panel">
-      <h2
-        id="dataset-preview-heading"
-        class="text-sm font-semibold uppercase tracking-wide text-nbs-muted"
-      >
-        Data preview
-      </h2>
-
-      @if (loading()) {
-        <p class="mt-3 text-sm text-nbs-muted">Loading preview rows…</p>
-      } @else if (error()) {
-        <p class="mt-3 text-sm text-nbs-danger" role="alert">{{ error() }}</p>
-      } @else if (columns().length === 0) {
-        <p class="mt-3 text-sm text-nbs-muted">
-          No preview available for this dataset.
-        </p>
-      } @else {
-        <div class="mt-4 overflow-x-auto">
-          <table
-            class="min-w-full border-collapse text-sm"
-            aria-labelledby="dataset-preview-heading"
-          >
-            <thead>
-              <tr>
-                @for (column of columns(); track column) {
-                  <th
-                    scope="col"
-                    class="border border-slate-200 bg-nbs-surface px-3 py-2 text-left font-medium text-slate-700"
-                  >
-                    {{ column }}
-                  </th>
-                }
-              </tr>
-            </thead>
-            <tbody>
-              @for (row of rows(); track row.id) {
-                <tr>
-                  @for (column of columns(); track column) {
-                    <td
-                      class="border border-slate-200 px-3 py-2 text-slate-700"
-                    >
-                      {{ formatCell(row.cells[column]) }}
-                    </td>
-                  }
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
-      }
-    </section>
-  `,
+  templateUrl: './dataset-file-preview.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DatasetFilePreviewComponent {

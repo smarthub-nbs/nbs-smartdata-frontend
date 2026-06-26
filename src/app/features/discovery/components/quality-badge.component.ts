@@ -12,11 +12,7 @@ import {
 @Component({
   selector: 'app-quality-badge',
   standalone: true,
-  template: `
-    <span [class]="badgeClasses()" [attr.title]="'Quality score: ' + score()">
-      {{ label() }}
-    </span>
-  `,
+  templateUrl: './quality-badge.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class QualityBadgeComponent {
