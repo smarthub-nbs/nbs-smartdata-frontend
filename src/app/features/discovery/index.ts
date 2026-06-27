@@ -7,7 +7,6 @@ export { DatasetCardComponent } from './components/dataset-card.component';
 export { QualityBadgeComponent } from './components/quality-badge.component';
 export type {
   Dataset,
-  DatasetAuditEntry,
   DatasetFilters,
   DatasetFormat,
   DatasetFrequency,

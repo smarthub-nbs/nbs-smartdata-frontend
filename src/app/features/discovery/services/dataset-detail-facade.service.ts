@@ -10,7 +10,6 @@ import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { combineLatest, distinctUntilChanged, of, switchMap, tap } from 'rxjs';
 import { AuthService } from '@app/core/services/auth.service';
 import {
-  DatasetAuditEntry,
   DatasetIndexingStatus,
   DatasetUpdateRecord,
 } from '@app/features/discovery/models/dataset.model';
@@ -23,12 +22,10 @@ export class DatasetDetailFacadeService {
   private readonly destroyRef = inject(DestroyRef);
 
   private readonly detailHistory = signal<DatasetUpdateRecord[]>([]);
-  private readonly auditTrail = signal<DatasetAuditEntry[]>([]);
   private readonly indexingStatus = signal<DatasetIndexingStatus | null>(null);
   private readonly historyLoading = signal(false);
 
   readonly history = this.detailHistory.asReadonly();
-  readonly audit = this.auditTrail.asReadonly();
   readonly indexing = this.indexingStatus.asReadonly();
   readonly loading = this.historyLoading.asReadonly();
   readonly isAdmin = computed(() => this.auth.isAdmin());
@@ -62,7 +59,6 @@ export class DatasetDetailFacadeService {
         }
 
         this.detailHistory.set(state.history);
-        this.auditTrail.set(state.audit);
         this.indexingStatus.set(state.indexing);
         this.historyLoading.set(false);
       });
@@ -70,16 +66,11 @@ export class DatasetDetailFacadeService {
 
   private reset(): void {
     this.detailHistory.set([]);
-    this.auditTrail.set([]);
     this.indexingStatus.set(null);
     this.historyLoading.set(false);
   }
 
   private hasEnrichment(): boolean {
-    return (
-      this.detailHistory().length > 0 ||
-      this.auditTrail().length > 0 ||
-      this.indexingStatus() !== null
-    );
+    return this.detailHistory().length > 0 || this.indexingStatus() !== null;
   }
 }

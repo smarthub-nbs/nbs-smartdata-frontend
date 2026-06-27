@@ -2,7 +2,6 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { ApiService } from '@app/core/services/api.service';
 import {
-  DatasetAuditEntry,
   DatasetFilePreview,
   DatasetIndexingStatus,
   DatasetUpdateRecord,
@@ -33,14 +32,6 @@ interface BackendStatusHistory {
   new_status: string;
   reason: string;
   changed_at: string;
-}
-
-interface BackendAuditLog {
-  dataset?: string | { id: string };
-  action: string;
-  actor_email?: string | null;
-  created_at: string;
-  details: Record<string, unknown>;
 }
 
 interface BackendIndexingStatus {
@@ -74,27 +65,6 @@ export class DatasetEnrichmentService {
               date: entry.changed_at,
               note: `${entry.old_status} → ${entry.new_status}: ${entry.reason}`,
             })),
-        ),
-      );
-  }
-
-  getAuditTrail(datasetId: string): Observable<DatasetAuditEntry[]> {
-    return this.api
-      .get<BackendAuditLog[]>('/v1/dataset/audit-logs/', { dataset: datasetId })
-      .pipe(
-        map((entries) =>
-          entries
-            .map((entry) => ({
-              action: entry.action,
-              actor: entry.actor_email ?? 'System',
-              createdAt: entry.created_at,
-              details: entry.details,
-            }))
-            .sort(
-              (a, b) =>
-                new Date(b.createdAt).getTime() -
-                new Date(a.createdAt).getTime(),
-            ),
         ),
       );
   }

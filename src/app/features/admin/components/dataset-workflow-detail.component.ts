@@ -19,6 +19,7 @@ import {
 } from '@app/features/admin/utils/admin-workflow-status.util';
 import { DatasetMetadataEditorComponent } from '@app/features/admin/components/dataset-metadata-editor.component';
 import { DatasetResourceManagerComponent } from '@app/features/admin/components/dataset-resource-manager.component';
+import { DatasetActivityLogComponent } from '@app/features/admin/components/dataset-activity-log.component';
 import { ButtonComponent, IconComponent } from '@shared/ui';
 
 @Component({
@@ -30,6 +31,7 @@ import { ButtonComponent, IconComponent } from '@shared/ui';
     IconComponent,
     DatasetMetadataEditorComponent,
     DatasetResourceManagerComponent,
+    DatasetActivityLogComponent,
   ],
   templateUrl: './dataset-workflow-detail.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,

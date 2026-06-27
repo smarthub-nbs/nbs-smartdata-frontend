@@ -10,7 +10,6 @@ import { map } from 'rxjs';
 import { DatasetMetadataPanelComponent } from '@app/features/discovery/components/dataset-metadata-panel.component';
 import { DatasetFilePreviewComponent } from '@app/features/discovery/components/dataset-file-preview.component';
 import { DatasetUpdateHistoryComponent } from '@app/features/discovery/components/dataset-update-history.component';
-import { DatasetAuditTrailComponent } from '@app/features/discovery/components/dataset-audit-trail.component';
 import { DatasetDetailHeaderComponent } from '@app/features/discovery/components/dataset-detail-header.component';
 import { DatasetDetailFallbackComponent } from '@app/features/discovery/components/dataset-detail-fallback.component';
 import { AuthService } from '@app/core/services/auth.service';
@@ -32,7 +31,6 @@ import { DatasetDetailFacadeService } from '@app/features/discovery/services/dat
     DatasetMetadataPanelComponent,
     DatasetFilePreviewComponent,
     DatasetUpdateHistoryComponent,
-    DatasetAuditTrailComponent,
     RecommendedDatasetsComponent,
     DatasetDownloadPanelComponent,
     PageStateComponent,

@@ -16,7 +16,8 @@ export type IconName =
   | 'sliders'
   | 'search'
   | 'shield'
-  | 'bar-chart';
+  | 'bar-chart'
+  | 'clock';
 
 @Component({
   selector: 'app-icon',
@@ -100,6 +101,10 @@ export type IconName =
         }
         @case ('bar-chart') {
           <path d="M3 3v18h18M8 17V9M13 17V5M18 17v-6" />
+        }
+        @case ('clock') {
+          <circle cx="12" cy="12" r="10" />
+          <path d="M12 6v6l4 2" />
         }
       }
     </svg>

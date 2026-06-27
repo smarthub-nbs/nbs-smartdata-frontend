@@ -20,10 +20,6 @@
       @if (auth.isAuthenticated()) {
       <app-dataset-update-history [loading]="facade.loading()" [entries]="facade.history()" />
       }
-
-      @if (facade.isAdmin()) {
-      <app-dataset-audit-trail [entries]="facade.audit()" />
-      }
     </div>
 
     <aside class="space-y-4">
