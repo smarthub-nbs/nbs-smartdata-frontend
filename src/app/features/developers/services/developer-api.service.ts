@@ -91,13 +91,25 @@ export class DeveloperApiService {
   private readonly keys = signal<ApiKeyRecord[]>([]);
   private readonly loadingKeys = signal(false);
   private readonly keysError = signal<string | null>(null);
+  private readonly tryPath = signal<string | null>(null);
+  private readonly issuedKey = signal<string | null>(null);
 
   readonly baseUrl = environment.apiBaseUrl;
   readonly endpoints = GATEWAY_ENDPOINTS;
   readonly apiKeys = this.keys.asReadonly();
   readonly keysLoading = this.loadingKeys.asReadonly();
   readonly keysLoadError = this.keysError.asReadonly();
+  readonly selectedTryPath = this.tryPath.asReadonly();
+  readonly lastIssuedKey = this.issuedKey.asReadonly();
   readonly activeKeys = computed(() => this.keys().filter((k) => !k.revoked));
+
+  selectTryPath(path: string): void {
+    this.tryPath.set(path);
+  }
+
+  setLastIssuedKey(key: string): void {
+    this.issuedKey.set(key);
+  }
 
   loadKeys(): Observable<ApiKeyRecord[]> {
     if (!this.auth.isAuthenticated()) {

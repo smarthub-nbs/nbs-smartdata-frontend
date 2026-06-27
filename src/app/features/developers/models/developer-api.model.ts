@@ -13,6 +13,8 @@ export interface ApiEndpointDoc {
   summary: string;
 }
 
+export type ApiEndpointGroup = 'datasets' | 'files' | 'taxonomy';
+
 export interface ApiTryItResult {
   status: number;
   statusText: string;
