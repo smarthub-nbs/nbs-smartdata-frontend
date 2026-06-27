@@ -5,7 +5,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { AuthService } from '@app/core/services/auth.service';
 import { AccountService } from '@app/features/account/services/account.service';
 import { DatasetCardComponent } from '@app/features/discovery/components/dataset-card.component';
@@ -24,7 +24,6 @@ type CatalogView = 'cards' | 'table';
   selector: 'app-datasets-page',
   standalone: true,
   imports: [
-    RouterLink,
     ButtonComponent,
     DatasetFilterBarComponent,
     DatasetCardComponent,
@@ -46,6 +45,13 @@ export class DatasetsPageComponent {
   });
 
   protected readonly view = signal<CatalogView>('cards');
+
+  protected readonly hasActiveFilters = computed(() => {
+    const f = this.datasetService.activeFilters();
+    return [f.query, f.topicSlug, f.format, f.frequency, f.region].some(
+      (value) => !!value,
+    );
+  });
 
   protected readonly tableColumns: DataTableColumn<Dataset>[] = [
     { key: 'title', header: 'Title', sortable: true },

@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  computed,
   inject,
   input,
   output,
@@ -51,6 +52,14 @@ export class DatasetFilePreviewComponent {
   protected readonly error = signal<string | null>(null);
   protected readonly columns = signal<string[]>([]);
   protected readonly rows = signal<PreviewRow[]>([]);
+
+  protected readonly hasGenericColumns = computed(() => {
+    const columns = this.columns();
+    return (
+      columns.length > 0 &&
+      columns.every((column) => /^column_\d+$/i.test(column.trim()))
+    );
+  });
 
   constructor() {
     toObservable(this.dataset)

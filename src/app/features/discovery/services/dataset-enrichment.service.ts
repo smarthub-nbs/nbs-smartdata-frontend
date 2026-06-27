@@ -79,17 +79,24 @@ export class DatasetEnrichmentService {
   }
 
   getAuditTrail(datasetId: string): Observable<DatasetAuditEntry[]> {
-    return this.api.get<BackendAuditLog[]>('/v1/dataset/audit-logs/').pipe(
-      map((entries) =>
-        entries
-          .filter((entry) => this.matchesDataset(entry.dataset, datasetId))
-          .map((entry) => ({
-            action: entry.action,
-            actor: entry.actor_email ?? 'System',
-            createdAt: entry.created_at,
-          })),
-      ),
-    );
+    return this.api
+      .get<BackendAuditLog[]>('/v1/dataset/audit-logs/', { dataset: datasetId })
+      .pipe(
+        map((entries) =>
+          entries
+            .map((entry) => ({
+              action: entry.action,
+              actor: entry.actor_email ?? 'System',
+              createdAt: entry.created_at,
+              details: entry.details,
+            }))
+            .sort(
+              (a, b) =>
+                new Date(b.createdAt).getTime() -
+                new Date(a.createdAt).getTime(),
+            ),
+        ),
+      );
   }
 
   getIndexingStatus(

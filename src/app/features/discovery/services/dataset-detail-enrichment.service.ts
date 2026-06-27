@@ -29,11 +29,9 @@ export class DatasetDetailEnrichmentService {
     }
 
     const cached = this.datasetService.getById(datasetId);
-    const dataset$ = cached
-      ? of(cached)
-      : this.datasetService
-          .loadDatasetById(datasetId)
-          .pipe(catchError(() => of(null)));
+    const dataset$ = this.datasetService
+      .loadDatasetById(datasetId)
+      .pipe(catchError(() => (cached ? of(cached) : of(null))));
 
     return dataset$.pipe(
       switchMap((dataset) => {

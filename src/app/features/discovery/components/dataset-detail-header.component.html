@@ -7,54 +7,47 @@
 </nav>
 
 <header class="nbs-panel">
-  <div class="flex flex-wrap items-start justify-between gap-3">
-    <div>
+  <div class="flex flex-wrap items-start justify-between gap-4">
+    <div class="min-w-0 flex-1">
       <h1 class="text-2xl font-semibold text-slate-900">
         {{ dataset().title }}
       </h1>
+
+      @if (showDescription()) {
       <p class="mt-2 max-w-3xl text-sm text-nbs-muted">
         {{ dataset().description }}
       </p>
-    </div>
-    <div class="flex flex-col items-end gap-2">
-      @if (dataset().year) {
-      <span class="rounded-full bg-nbs-surface px-2.5 py-1 text-xs font-medium text-slate-700">
-        {{ dataset().year }}
-      </span>
       }
-      <app-quality-badge [score]="dataset().qualityScore" />
-      @if (indexingStatus()) {
-      <span class="rounded-full bg-nbs-surface px-2.5 py-1 text-xs font-medium text-slate-700">
-        Index: {{ indexingStatus()!.status }}
-      </span>
-      }
-    </div>
-  </div>
 
-  <div class="mt-4 flex flex-wrap gap-2">
-    @for (keyword of dataset().keywords; track keyword) {
-    <span class="rounded-full bg-nbs-surface px-2.5 py-1 text-xs font-medium text-slate-700">
-      {{ keyword }}
-    </span>
-    }
-  </div>
-
-  <div class="mt-6 flex flex-wrap gap-2">
-    @if (canSave()) {
-    <app-button [variant]="saved() ? 'primary' : 'outline'" [attr.aria-pressed]="saved()"
-      [attr.aria-label]="saved() ? 'Remove from saved datasets' : 'Save dataset'" (clicked)="saveToggle.emit()">
-      <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-        @if (saved()) {
-        <path d="M6 4.5h12v16l-6-4.5L6 20.5v-16z" fill="currentColor" stroke="none" />
-        } @else {
-        <path d="M6 4.5h12v16l-6-4.5L6 20.5v-16z" stroke-linejoin="round" />
+      @if (visibleKeywords().length) {
+      <div class="mt-3 flex flex-wrap gap-2" aria-label="Keywords">
+        @for (keyword of visibleKeywords(); track keyword) {
+        <span class="rounded-full bg-nbs-surface px-2.5 py-1 text-xs font-medium text-slate-700">
+          {{ keyword }}
+        </span>
         }
-      </svg>
-      {{ saved() ? 'Saved' : 'Save' }}
-    </app-button>
-    }
-    <app-button variant="outline" (clicked)="explore.emit()">
-      Explore data
-    </app-button>
+      </div>
+      }
+    </div>
+
+    <div class="flex shrink-0 flex-wrap gap-2">
+      <app-button variant="primary" (clicked)="explore.emit()">
+        <app-icon name="bar-chart" [size]="16" />
+        Explore data
+      </app-button>
+      @if (canSave()) {
+      <app-button variant="outline" [attr.aria-pressed]="saved()"
+        [attr.aria-label]="saved() ? 'Remove from saved datasets' : 'Save dataset'" (clicked)="saveToggle.emit()">
+        <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          @if (saved()) {
+          <path d="M6 4.5h12v16l-6-4.5L6 20.5v-16z" fill="currentColor" stroke="none" />
+          } @else {
+          <path d="M6 4.5h12v16l-6-4.5L6 20.5v-16z" stroke-linejoin="round" />
+          }
+        </svg>
+        {{ saved() ? 'Saved' : 'Save' }}
+      </app-button>
+      }
+    </div>
   </div>
 </header>

@@ -27,6 +27,7 @@ export interface DatasetAuditEntry {
   action: string;
   actor: string;
   createdAt: string;
+  details?: Record<string, unknown>;
 }
 
 export interface DatasetIndexingStatus {

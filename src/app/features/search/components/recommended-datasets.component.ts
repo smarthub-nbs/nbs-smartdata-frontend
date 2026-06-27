@@ -8,11 +8,12 @@ import {
 import { RouterLink } from '@angular/router';
 import { Dataset } from '@app/features/discovery';
 import { SmartSearchService } from '@app/features/search/services/smart-search.service';
+import { IconComponent } from '@shared/ui';
 
 @Component({
   selector: 'app-recommended-datasets',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, IconComponent],
   templateUrl: './recommended-datasets.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
