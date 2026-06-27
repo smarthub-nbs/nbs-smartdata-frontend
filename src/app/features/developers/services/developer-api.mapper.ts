@@ -9,8 +9,8 @@ export function toApiKeyRecord(key: BackendApiKey): ApiKeyRecord {
     id: key.id,
     label: key.name,
     keyPrefix: `${key.prefix}••••`,
-    createdAt: formatDate(key.created_at),
-    lastUsedAt: key.last_used_at ? formatDate(key.last_used_at) : null,
+    createdAt: key.created_at,
+    lastUsedAt: key.last_used_at,
     revoked: key.status === 'revoked',
   };
 }
@@ -23,8 +23,4 @@ export function toIssuedApiKeyRecord(key: BackendIssuedApiKey): {
     record: toApiKeyRecord(key),
     plainKey: key.api_key,
   };
-}
-
-function formatDate(iso: string): string {
-  return iso.slice(0, 10);
 }

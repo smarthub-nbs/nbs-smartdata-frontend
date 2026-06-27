@@ -1,3 +1,4 @@
+import { DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -13,12 +14,20 @@ import { ApiError } from '@app/core/models/api-error.model';
 import { AuthService } from '@app/core/services/auth.service';
 import { ApiKeyUsageListComponent } from '@app/features/developers/components/api-key-usage-list.component';
 import { DeveloperApiService } from '@app/features/developers/services/developer-api.service';
-import { ButtonComponent } from '@shared/ui';
+import { PageStateComponent } from '@app/shared/components/page-state/page-state.component';
+import { ButtonComponent, CopyButtonComponent } from '@shared/ui';
 
 @Component({
   selector: 'app-api-key-manager',
   standalone: true,
-  imports: [FormsModule, ButtonComponent, ApiKeyUsageListComponent],
+  imports: [
+    FormsModule,
+    ButtonComponent,
+    CopyButtonComponent,
+    ApiKeyUsageListComponent,
+    PageStateComponent,
+    DatePipe,
+  ],
   templateUrl: './api-key-manager.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -33,8 +42,10 @@ export class ApiKeyManagerComponent implements OnInit {
   protected readonly revokingId = signal('');
   protected readonly regeneratingId = signal('');
   protected readonly revealedKey = signal('');
+  protected readonly keyVisible = signal(false);
   protected readonly errorMessage = signal('');
   protected readonly expandedKeyId = signal<string | null>(null);
+  protected readonly confirmRevokeId = signal<string | null>(null);
 
   ngOnInit(): void {
     if (this.auth.canManageApiKeys()) {
@@ -51,6 +62,7 @@ export class ApiKeyManagerComponent implements OnInit {
     this.creating.set(true);
     this.errorMessage.set('');
     this.revealedKey.set('');
+    this.keyVisible.set(false);
 
     this.api
       .createKey(label)
@@ -60,6 +72,8 @@ export class ApiKeyManagerComponent implements OnInit {
           this.creating.set(false);
           this.newKeyLabel = '';
           this.revealedKey.set(plainKey);
+          this.keyVisible.set(true);
+          this.api.setLastIssuedKey(plainKey);
         },
         error: (err: unknown) => {
           this.creating.set(false);
@@ -72,6 +86,7 @@ export class ApiKeyManagerComponent implements OnInit {
     this.regeneratingId.set(id);
     this.errorMessage.set('');
     this.revealedKey.set('');
+    this.keyVisible.set(false);
 
     this.api
       .regenerateKey(id)
@@ -80,6 +95,8 @@ export class ApiKeyManagerComponent implements OnInit {
         next: ({ plainKey }) => {
           this.regeneratingId.set('');
           this.revealedKey.set(plainKey);
+          this.keyVisible.set(true);
+          this.api.setLastIssuedKey(plainKey);
         },
         error: (err: unknown) => {
           this.regeneratingId.set('');
@@ -88,10 +105,24 @@ export class ApiKeyManagerComponent implements OnInit {
       });
   }
 
+  protected requestRevoke(id: string): void {
+    this.confirmRevokeId.set(id);
+  }
+
+  protected cancelRevoke(): void {
+    this.confirmRevokeId.set(null);
+  }
+
+  protected confirmRevoke(id: string): void {
+    this.confirmRevokeId.set(null);
+    this.revoke(id);
+  }
+
   protected revoke(id: string): void {
     this.revokingId.set(id);
     this.errorMessage.set('');
     this.revealedKey.set('');
+    this.keyVisible.set(false);
 
     this.api
       .revokeKey(id)
@@ -115,6 +146,21 @@ export class ApiKeyManagerComponent implements OnInit {
 
   protected toggleUsage(keyId: string): void {
     this.expandedKeyId.update((current) => (current === keyId ? null : keyId));
+  }
+
+  protected toggleKeyVisibility(): void {
+    this.keyVisible.update((visible) => !visible);
+  }
+
+  protected maskedKey(key: string): string {
+    if (key.length <= 8) {
+      return '••••••••';
+    }
+    return `${key.slice(0, 4)}${'•'.repeat(Math.min(key.length - 8, 20))}${key.slice(-4)}`;
+  }
+
+  protected retryLoadKeys(): void {
+    this.loadKeys();
   }
 
   private loadKeys(): void {

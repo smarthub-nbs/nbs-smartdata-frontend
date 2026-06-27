@@ -1,4 +1,9 @@
 export { ButtonComponent } from '@shared/ui/button/button.component';
+export {
+  CopyButtonComponent,
+  type CopyButtonSize,
+  type CopyButtonTone,
+} from '@shared/ui/copy-button/copy-button.component';
 export { FormFieldComponent } from '@shared/ui/form/form-field.component';
 export { TextInputComponent } from '@shared/ui/form/text-input.component';
 export {
