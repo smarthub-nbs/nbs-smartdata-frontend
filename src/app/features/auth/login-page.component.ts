@@ -32,6 +32,9 @@ export class LoginPageComponent {
 
   protected readonly submitting = signal(false);
   protected readonly errorMessage = signal('');
+  protected readonly registerQueryParams = {
+    returnUrl: this.route.snapshot.queryParamMap.get('returnUrl') ?? '/',
+  };
 
   protected readonly form = this.fb.nonNullable.group({
     username: ['', Validators.required],

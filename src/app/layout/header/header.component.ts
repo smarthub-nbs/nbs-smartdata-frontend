@@ -44,6 +44,8 @@ export class HeaderComponent {
         return 'Administrator';
       case 'publisher':
         return 'Publisher';
+      case 'developer':
+        return 'Developer';
       case 'member':
         return 'Member';
       default:

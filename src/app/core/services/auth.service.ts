@@ -23,6 +23,18 @@ interface RefreshResponse {
   access: string;
 }
 
+interface RegisterRequest {
+  email: string;
+  password: string;
+  first_name: string;
+  last_name: string;
+}
+
+interface RegisterResponse {
+  access: string;
+  refresh: string;
+}
+
 interface CurrentUserResponse {
   id: string;
   email: string;
@@ -53,6 +65,11 @@ export class AuthService {
       this.currentUser()?.role === 'admin' ||
       this.currentUser()?.role === 'publisher',
   );
+  readonly canManageApiKeys = computed(
+    () =>
+      this.currentUser()?.role === 'admin' ||
+      this.currentUser()?.role === 'developer',
+  );
 
   hasRole(...roles: UserRole[]): boolean {
     const user = this.currentUser();
@@ -76,7 +93,24 @@ export class AuthService {
         switchMap(() => this.fetchCurrentUser()),
         map(() => null),
         catchError((error: unknown) =>
-          of({ message: this.resolveErrorMessage(error) }),
+          of({ message: this.resolveErrorMessage(error, 'Sign in failed.') }),
+        ),
+      );
+  }
+
+  register(request: RegisterRequest): Observable<AuthError | null> {
+    return this.http
+      .post<
+        ApiEnvelope<RegisterResponse>
+      >(`${environment.apiBaseUrl}/v1/auth/register/`, request)
+      .pipe(
+        tap((response) => this.saveTokens(response.data)),
+        switchMap(() => this.fetchCurrentUser()),
+        map(() => null),
+        catchError((error: unknown) =>
+          of({
+            message: this.resolveErrorMessage(error, 'Registration failed.'),
+          }),
         ),
       );
   }
@@ -220,10 +254,13 @@ export class AuthService {
     if (user.roles.includes('publisher') || user.roles.includes('editor')) {
       return 'publisher';
     }
+    if (user.roles.includes('developer')) {
+      return 'developer';
+    }
     return 'member';
   }
 
-  private resolveErrorMessage(error: unknown): string {
+  private resolveErrorMessage(error: unknown, fallback: string): string {
     if (error instanceof HttpErrorResponse) {
       const body = error.error;
 
@@ -239,13 +276,13 @@ export class AuthService {
         return body.error.message;
       }
 
-      return error.message || 'Sign in failed.';
+      return error.message || fallback;
     }
 
     if (error instanceof Error) {
       return error.message;
     }
 
-    return 'Sign in failed.';
+    return fallback;
   }
 }

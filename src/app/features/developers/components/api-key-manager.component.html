@@ -1,97 +1,95 @@
-    <section class="rounded-lg border border-nbs-border bg-white p-5 shadow-sm">
-      <h2 class="text-sm font-semibold text-slate-900">API keys</h2>
-      <p class="mt-1 text-xs text-nbs-muted">
-        Authenticate requests to the Unified Open API Gateway (SRS 5.2).
-      </p>
+<section class="rounded-lg border border-nbs-border bg-white p-5 shadow-sm">
+  <h2 class="text-sm font-semibold text-slate-900">API keys</h2>
+  <p class="mt-1 text-xs text-nbs-muted">
+    Authenticate requests to the Unified Open API Gateway (SRS 5.2).
+  </p>
 
-      @if (!auth.isAuthenticated()) {
-        <p class="mt-4 text-sm text-slate-600">
-          <app-button variant="primary" size="sm" (clicked)="goToLogin()">
-            Sign in
-          </app-button>
-          <span class="ml-2">to create and manage API keys.</span>
-        </p>
-      } @else {
-        <form
-          class="mt-4 flex flex-col gap-2 sm:flex-row"
-          (ngSubmit)="createKey()"
-        >
-          <input
-            type="text"
-            class="h-10 flex-1 rounded-md border border-slate-300 px-3 text-sm focus:border-nbs-primary focus:outline-none focus:ring-2 focus:ring-nbs-primary/30"
-            placeholder="Key label (e.g. Production app)"
-            [(ngModel)]="newKeyLabel"
-            name="label"
-            required
-          />
-          <app-button
-            type="submit"
-            variant="primary"
-            size="sm"
-            [loading]="creating()"
-          >
-            Create key
-          </app-button>
-        </form>
+  @if (!auth.isAuthenticated()) {
+  <p class="mt-4 text-sm text-slate-600">
+    <app-button variant="primary" size="sm" (clicked)="goToLogin()">
+      Sign in
+    </app-button>
+    <span class="ml-2">to create and manage API keys.</span>
+  </p>
+  } @else if (!auth.canManageApiKeys()) {
+  <p class="mt-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+    API key management requires a developer or administrator account. You can
+    still browse API docs and use the Try It console below.
+  </p>
+  } @else {
+  <form class="mt-4 flex flex-col gap-2 sm:flex-row" (ngSubmit)="createKey()">
+    <label class="sr-only" for="api-key-label">API key label</label>
+    <input id="api-key-label" type="text"
+      class="h-10 flex-1 rounded-md border border-slate-300 px-3 text-sm focus:border-nbs-primary focus:outline-none focus:ring-2 focus:ring-nbs-primary/30"
+      placeholder="Key label (e.g. Production app)" [(ngModel)]="newKeyLabel" name="label" required />
+    <app-button type="submit" variant="primary" size="sm" [loading]="creating()">
+      Create key
+    </app-button>
+  </form>
 
-        @if (revealedKey()) {
-          <div
-            class="mt-4 rounded-md border border-nbs-accent/30 bg-nbs-accent/5 p-3"
-            role="alert"
-          >
-            <p class="text-xs font-medium text-nbs-accent">
-              Copy your key now — it will not be shown again:
-            </p>
-            <code class="mt-1 block break-all text-sm text-slate-800">{{
-              revealedKey()
-            }}</code>
-          </div>
-        }
+  @if (revealedKey()) {
+  <div class="mt-4 rounded-md border border-nbs-accent/30 bg-nbs-accent/5 p-3" role="alert">
+    <p class="text-xs font-medium text-nbs-accent">
+      Copy your key now — it will not be shown again:
+    </p>
+    <code class="mt-1 block break-all text-sm text-slate-800">{{
+          revealedKey()
+        }}</code>
+  </div>
+  }
 
-        @if (errorMessage()) {
-          <p class="mt-3 text-xs text-nbs-danger" role="alert">
-            {{ errorMessage() }}
+  @if (errorMessage()) {
+  <p class="mt-3 text-xs text-nbs-danger" role="alert">
+    {{ errorMessage() }}
+  </p>
+  }
+
+  @if (api.keysLoading()) {
+  <p class="mt-4 text-sm text-nbs-muted">Loading API keys…</p>
+  } @else if (api.keysLoadError()) {
+  <p class="mt-4 text-sm text-nbs-danger" role="alert">
+    {{ api.keysLoadError() }}
+  </p>
+  } @else if (api.activeKeys().length === 0) {
+  <p class="mt-4 text-sm text-nbs-muted">
+    No active API keys yet. Create one to access the gateway.
+  </p>
+  } @else {
+  <ul class="mt-4 divide-y divide-slate-100">
+    @for (key of api.activeKeys(); track key.id) {
+    <li class="py-3">
+      <div class="flex items-center justify-between gap-3">
+        <div>
+          <p class="text-sm font-medium text-slate-900">
+            {{ key.label }}
           </p>
-        }
-
-        @if (api.keysLoading()) {
-          <p class="mt-4 text-sm text-nbs-muted">Loading API keys…</p>
-        } @else if (api.keysLoadError()) {
-          <p class="mt-4 text-sm text-nbs-danger" role="alert">
-            {{ api.keysLoadError() }}
-          </p>
-        } @else if (api.activeKeys().length === 0) {
-          <p class="mt-4 text-sm text-nbs-muted">
-            No active API keys yet. Create one to access the gateway.
-          </p>
-        } @else {
-          <ul class="mt-4 divide-y divide-slate-100">
-            @for (key of api.activeKeys(); track key.id) {
-              <li class="flex items-center justify-between gap-3 py-3">
-                <div>
-                  <p class="text-sm font-medium text-slate-900">
-                    {{ key.label }}
-                  </p>
-                  <p class="text-xs text-nbs-muted">
-                    {{ key.keyPrefix }}
-                    @if (key.lastUsedAt) {
-                      · last used {{ key.lastUsedAt }}
-                    }
-                    · created {{ key.createdAt }}
-                  </p>
-                </div>
-                <app-button
-                  variant="danger"
-                  size="sm"
-                  [loading]="revokingId() === key.id"
-                  (clicked)="revoke(key.id)"
-                >
-                  Revoke
-                </app-button>
-              </li>
+          <p class="text-xs text-nbs-muted">
+            {{ key.keyPrefix }}
+            @if (key.lastUsedAt) {
+            · last used {{ key.lastUsedAt }}
             }
-          </ul>
-        }
+            · created {{ key.createdAt }}
+          </p>
+        </div>
+        <div class="flex shrink-0 items-center gap-2">
+          <app-button variant="outline" size="sm" (clicked)="toggleUsage(key.id)">
+            {{ expandedKeyId() === key.id ? 'Hide usage' : 'Usage' }}
+          </app-button>
+          <app-button variant="outline" size="sm" [loading]="regeneratingId() === key.id"
+            (clicked)="regenerate(key.id)">
+            Regenerate
+          </app-button>
+          <app-button variant="danger" size="sm" [loading]="revokingId() === key.id" (clicked)="revoke(key.id)">
+            Revoke
+          </app-button>
+        </div>
+      </div>
+      @if (expandedKeyId() === key.id) {
+      <app-api-key-usage-list [keyId]="key.id" />
       }
-    </section>
-  
+    </li>
+    }
+  </ul>
+  }
+  }
+</section>

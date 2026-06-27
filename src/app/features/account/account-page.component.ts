@@ -126,6 +126,8 @@ export class AccountPageComponent {
         return 'Admin';
       case 'publisher':
         return 'Publisher';
+      case 'developer':
+        return 'Developer';
       case 'member':
         return 'Member';
       default:

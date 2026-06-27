@@ -1,133 +1,239 @@
-<section class="rounded-lg border border-nbs-border bg-white p-5 shadow-sm">
-  <h2 class="text-sm font-semibold text-slate-900">
-    Dataset publishing workflow
-  </h2>
-  <p class="mt-1 text-xs text-nbs-muted">
-    Create drafts, upload files, and publish datasets for Discovery testing.
-  </p>
+<section class="nbs-panel space-y-6">
+  <div>
+    <h2 class="text-sm font-semibold text-slate-900">Publishing queue</h2>
+    <p class="mt-1 text-xs text-nbs-muted">
+      Select a dataset, complete requirements, and move it toward publication.
+    </p>
+  </div>
 
-  <form class="mt-4 grid gap-4 md:grid-cols-2" [formGroup]="createForm" (ngSubmit)="createDataset()">
-    <app-select-input formControlName="categoryId" label="Category" [required]="true" [options]="categoryOptions()"
-      [error]="createError('categoryId')" />
-    <app-text-input formControlName="slug" label="Slug (optional)" hint="Auto-generated if left blank." />
-    <app-text-input formControlName="title" label="Title" [required]="true" [error]="createError('title')" />
-    <app-text-input formControlName="tagName" label="Tag" hint="Required before review." [required]="true"
-      [error]="createError('tagName')" />
-    <app-text-input formControlName="region" label="Region" [required]="true" [error]="createError('region')" />
-    <app-text-input formControlName="year" type="number" label="Year" [required]="true" [error]="createError('year')" />
-    <app-select-input formControlName="frequency" label="Frequency" [required]="true" [options]="frequencyOptions" />
-    <app-text-input formControlName="license" label="License" [required]="true" [error]="createError('license')" />
-    <div class="md:col-span-2">
-      <app-form-field label="Description" [required]="true">
-        <textarea formControlName="description" rows="3"
-          class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-nbs-primary focus:outline-none focus:ring-2 focus:ring-nbs-primary/30"></textarea>
-      </app-form-field>
-    </div>
-    <div class="md:col-span-2">
-      <label class="block">
-        <span class="mb-1 block text-xs font-medium text-slate-600">Data file (optional on create)</span>
-        <input type="file" accept=".csv,.json,.xlsx,.xls,.xml,.sdmx,.pdf,.tsv,.txt,.zip" class="block w-full text-sm"
-          (change)="onCreateFileSelected($event)" />
-      </label>
-    </div>
-    <div class="md:col-span-2">
-      <app-button type="submit" variant="primary" size="sm" [loading]="creating()">
-        Create draft dataset
-      </app-button>
-    </div>
-  </form>
+  @if (datasetsLoading()) {
+  <p class="text-sm text-nbs-muted" role="status">Loading datasets…</p>
+  } @else if (datasetsError()) {
+  <p class="text-sm text-nbs-danger" role="alert">{{ datasetsError() }}</p>
+  } @else if (datasets().length === 0) {
+  <div class="rounded-md border border-dashed border-slate-300 bg-nbs-surface p-4">
+    <p class="text-sm font-medium text-slate-900">No datasets yet</p>
+    <p class="mt-1 text-sm text-nbs-muted">
+      Create your first draft below, then upload a primary file and submit for
+      review.
+    </p>
+  </div>
+  } @else {
+  <div class="flex flex-wrap gap-2" role="group" aria-label="Filter by status">
+    <button type="button" [class]="filterChipClasses('all')" (click)="setStatusFilter('all')">
+      All {{ statusCounts().all }}
+    </button>
+    <button type="button" [class]="filterChipClasses('draft')" (click)="setStatusFilter('draft')">
+      Draft {{ statusCounts().draft }}
+    </button>
+    <button type="button" [class]="filterChipClasses('in_review')" (click)="setStatusFilter('in_review')">
+      In review {{ statusCounts().in_review }}
+    </button>
+    <button type="button" [class]="filterChipClasses('approved')" (click)="setStatusFilter('approved')">
+      Approved {{ statusCounts().approved }}
+    </button>
+    <button type="button" [class]="filterChipClasses('rejected')" (click)="setStatusFilter('rejected')">
+      Rejected {{ statusCounts().rejected }}
+    </button>
+    <button type="button" [class]="filterChipClasses('published')" (click)="setStatusFilter('published')">
+      Published {{ statusCounts().published }}
+    </button>
+  </div>
 
-  @if (datasets().length > 0) {
-  <div class="mt-6 space-y-4">
-    <label class="block">
-      <span class="mb-1 block text-xs font-medium text-slate-600">Workflow dataset</span>
-      <select class="h-10 w-full rounded-md border border-slate-300 px-3 text-sm" [value]="selectedId()"
-        (change)="onSelect($event)">
-        @for (item of datasets(); track item.id) {
-        <option [value]="item.id">
-          {{ item.title }} ({{ item.status }})
-        </option>
-        }
-      </select>
-    </label>
+  <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
+    <div class="space-y-2">
+      <p class="text-xs font-medium uppercase tracking-wide text-nbs-muted">
+        Datasets
+      </p>
+      @if (filteredDatasets().length === 0) {
+      <p class="text-sm text-nbs-muted">No datasets in this status.</p>
+      } @else {
+      @for (item of filteredDatasets(); track item.id) {
+      <button type="button" [class]="queueItemClasses(item.id)" (click)="selectDataset(item.id)">
+        <div class="flex items-start justify-between gap-2">
+          <div class="min-w-0">
+            <p class="truncate text-sm font-medium text-slate-900">
+              {{ item.title }}
+            </p>
+            <p class="mt-0.5 text-xs text-nbs-muted">
+              {{ readinessCount(item) }}/3 requirements complete
+            </p>
+          </div>
+          <span [class]="statusChipClasses(item.status)">
+            {{ statusLabel(item.status) }}
+          </span>
+        </div>
+      </button>
+      }
+      }
+    </div>
 
     @if (selected(); as record) {
-    <ul class="grid gap-2 text-xs sm:grid-cols-2">
-      <li class="flex items-center gap-2">
-        <span class="inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-semibold"
-          [class.bg-nbs-accent]="record.hasMetadata" [class.text-white]="record.hasMetadata"
-          [class.bg-slate-200]="!record.hasMetadata">
-          {{ record.hasMetadata ? '✓' : '·' }}
-        </span>
-        Metadata complete
-      </li>
-      <li class="flex items-center gap-2">
-        <span class="inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-semibold"
-          [class.bg-nbs-accent]="record.hasTag" [class.text-white]="record.hasTag"
-          [class.bg-slate-200]="!record.hasTag">
-          {{ record.hasTag ? '✓' : '·' }}
-        </span>
-        Tag linked
-      </li>
-      <li class="flex items-center gap-2">
-        <span class="inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-semibold"
-          [class.bg-nbs-accent]="record.hasFile" [class.text-white]="record.hasFile"
-          [class.bg-slate-200]="!record.hasFile">
-          {{ record.hasFile ? '✓' : '·' }}
-        </span>
-        Primary file uploaded
-      </li>
-      <li class="flex items-center gap-2">
-        <span class="inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-semibold"
-          [class.bg-nbs-accent]="record.status === 'published'" [class.text-white]="record.status === 'published'"
-          [class.bg-slate-200]="record.status !== 'published'">
-          {{ record.status === 'published' ? '✓' : '·' }}
-        </span>
-        Status: {{ record.status }}
-      </li>
-    </ul>
+    <div class="space-y-4 rounded-md border border-slate-200 bg-nbs-surface p-4">
+      <div>
+        <div class="flex flex-wrap items-center gap-2">
+          <h3 class="text-sm font-semibold text-slate-900">{{ record.title }}</h3>
+          <span [class]="statusChipClasses(record.status)">
+            {{ statusLabel(record.status) }}
+          </span>
+        </div>
+        @if (nextActionText()) {
+        <p class="mt-2 text-sm text-slate-700">{{ nextActionText() }}</p>
+        }
+      </div>
 
-    <label class="block">
-      <span class="mb-1 block text-xs font-medium text-slate-600">Upload data file</span>
-      <input type="file" accept=".csv,.json,.xlsx,.xls,.xml,.sdmx,.pdf,.tsv,.txt,.zip" class="block w-full text-sm"
-        (change)="onFileSelected($event)" />
-    </label>
+      <div>
+        <p class="text-xs font-medium uppercase tracking-wide text-nbs-muted">
+          Readiness
+        </p>
+        <ul class="mt-2 space-y-2 text-sm">
+          <li class="flex items-center gap-2">
+            <span
+              class="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold"
+              [class.bg-nbs-accent]="record.hasMetadata" [class.text-white]="record.hasMetadata"
+              [class.bg-slate-200]="!record.hasMetadata" aria-hidden="true">
+              {{ record.hasMetadata ? '✓' : '·' }}
+            </span>
+            Metadata complete
+          </li>
+          <li class="flex items-center gap-2">
+            <span
+              class="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold"
+              [class.bg-nbs-accent]="record.hasTag" [class.text-white]="record.hasTag"
+              [class.bg-slate-200]="!record.hasTag" aria-hidden="true">
+              {{ record.hasTag ? '✓' : '·' }}
+            </span>
+            Tag linked
+          </li>
+          <li class="flex items-center gap-2">
+            <span
+              class="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold"
+              [class.bg-nbs-accent]="record.hasFile" [class.text-white]="record.hasFile"
+              [class.bg-slate-200]="!record.hasFile" aria-hidden="true">
+              {{ record.hasFile ? '✓' : '·' }}
+            </span>
+            Primary file uploaded
+          </li>
+        </ul>
+      </div>
 
-    <div class="flex flex-wrap gap-2">
-      @if (canSubmit(record)) {
-      <app-button variant="outline" size="sm" [loading]="actionLoading() === 'submit'" (clicked)="submit(record.id)">
-        Submit for review
-      </app-button>
+      @if (record.status !== 'published') {
+      <label class="block">
+        <span class="mb-1 block text-xs font-medium text-slate-600">
+          Upload primary data file
+        </span>
+        <input type="file" accept=".csv,.json,.xlsx,.xls,.xml,.sdmx,.pdf,.tsv,.txt,.zip" class="block w-full text-sm"
+          [disabled]="actionLoading() === 'upload'" (change)="onFileSelected($event)" />
+      </label>
       }
-      @if (canReview(record)) {
-      <app-button variant="primary" size="sm" [loading]="actionLoading() === 'approve'" (clicked)="approve(record.id)">
-        Approve
-      </app-button>
-      <app-button variant="outline" size="sm" [loading]="actionLoading() === 'reject'" (clicked)="reject(record.id)">
-        Reject
-      </app-button>
-      }
-      @if (canPublish(record)) {
-      <app-button variant="primary" size="sm" [loading]="actionLoading() === 'publish'" (clicked)="publish(record.id)">
-        Publish
-      </app-button>
+
+      <div class="space-y-2">
+        <p class="text-xs font-medium uppercase tracking-wide text-nbs-muted">
+          Next action
+        </p>
+        <div class="flex flex-wrap gap-2">
+          @if (record.status === 'draft' || record.status === 'rejected') {
+          <app-button variant="primary" size="sm" [loading]="actionLoading() === 'submit'"
+            [disabled]="!canSubmit(record)" (clicked)="submit(record.id)">
+            Submit for review
+          </app-button>
+          }
+          @if (canReview(record)) {
+          <app-button variant="primary" size="sm" [loading]="actionLoading() === 'approve'"
+            (clicked)="approve(record.id)">
+            Approve
+          </app-button>
+          <app-button variant="outline" size="sm" [loading]="actionLoading() === 'reject'"
+            (clicked)="reject(record.id)">
+            Reject
+          </app-button>
+          }
+          @if (canPublish(record)) {
+          <app-button variant="primary" size="sm" [loading]="actionLoading() === 'publish'"
+            (clicked)="publish(record.id)">
+            Publish
+          </app-button>
+          }
+        </div>
+        @if (submitBlockedReason(record)) {
+        <p class="text-xs text-nbs-muted">{{ submitBlockedReason(record) }}</p>
+        }
+      </div>
+
+      @if (record.status === 'published' || publishedId() === record.id) {
+      <a [routerLink]="['/datasets', record.id]"
+        class="inline-block text-sm font-medium text-nbs-primary hover:underline">
+        View in Discovery →
+      </a>
       }
     </div>
-
-    @if (publishedId() === record.id) {
-    <a [routerLink]="['/datasets', record.id]"
-      class="inline-block text-sm font-medium text-nbs-primary hover:underline">
-      View published dataset →
-    </a>
-    }
     }
   </div>
   }
 
   @if (message()) {
-  <p class="mt-3 text-xs" [class.text-nbs-accent]="!messageError()" [class.text-nbs-danger]="messageError()"
-    role="status">
+  <p class="text-sm" [class.text-nbs-accent]="!messageError()" [class.text-nbs-danger]="messageError()" role="status"
+    [attr.aria-live]="messageError() ? 'assertive' : 'polite'">
     {{ message() }}
   </p>
   }
+
+  <div class="border-t border-nbs-border pt-4">
+    <button type="button" class="flex w-full items-center justify-between gap-2 text-left"
+      [attr.aria-expanded]="createExpanded()" (click)="toggleCreateExpanded()">
+      <span>
+        <span class="block text-sm font-semibold text-slate-900">Create draft</span>
+        <span class="mt-0.5 block text-xs text-nbs-muted">
+          Start a new dataset when you are ready to publish something new.
+        </span>
+      </span>
+      <span class="text-sm text-nbs-muted" aria-hidden="true">
+        {{ createExpanded() ? '−' : '+' }}
+      </span>
+    </button>
+
+    @if (createExpanded()) {
+    @if (categoriesLoading()) {
+    <p class="mt-4 text-sm text-nbs-muted">Loading categories…</p>
+    } @else if (categoriesError()) {
+    <p class="mt-4 text-sm text-nbs-danger" role="alert">
+      {{ categoriesError() }}
+    </p>
+    } @else {
+    <form class="mt-4 grid gap-4 md:grid-cols-2" [formGroup]="createForm" (ngSubmit)="createDataset()">
+      <app-select-input formControlName="categoryId" label="Category" [required]="true" [options]="categoryOptions()"
+        [error]="createError('categoryId')" />
+      <app-text-input formControlName="slug" label="Slug (optional)" hint="Auto-generated if left blank." />
+      <app-text-input formControlName="title" label="Title" [required]="true" [error]="createError('title')" />
+      <app-text-input formControlName="tagName" label="Tag" hint="Required before review." [required]="true"
+        [error]="createError('tagName')" />
+      <app-text-input formControlName="region" label="Region" [required]="true" [error]="createError('region')" />
+      <app-text-input formControlName="year" type="number" label="Year" [required]="true"
+        [error]="createError('year')" />
+      <app-select-input formControlName="frequency" label="Frequency" [required]="true" [options]="frequencyOptions" />
+      <app-text-input formControlName="license" label="License" [required]="true" [error]="createError('license')" />
+      <div class="md:col-span-2">
+        <app-form-field label="Description" [required]="true">
+          <textarea formControlName="description" rows="3"
+            class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-nbs-primary focus:outline-none focus:ring-2 focus:ring-nbs-primary/30"></textarea>
+        </app-form-field>
+      </div>
+      <div class="md:col-span-2">
+        <label class="block">
+          <span class="mb-1 block text-xs font-medium text-slate-600">
+            Data file (optional on create)
+          </span>
+          <input type="file" accept=".csv,.json,.xlsx,.xls,.xml,.sdmx,.pdf,.tsv,.txt,.zip" class="block w-full text-sm"
+            (change)="onCreateFileSelected($event)" />
+        </label>
+      </div>
+      <div class="md:col-span-2">
+        <app-button type="submit" variant="primary" size="sm" [loading]="creating()">
+          Create draft dataset
+        </app-button>
+      </div>
+    </form>
+    }
+    }
+  </div>
 </section>

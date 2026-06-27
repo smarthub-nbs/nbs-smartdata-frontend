@@ -224,7 +224,7 @@ export class HttpDatasetAdapter implements DatasetAdapter {
       publisher: metadata?.publisher_name ?? 'NBS',
       updatedAt: dataset.published_at ?? new Date().toISOString(),
       qualityScore: 80,
-      recordCount: dataset.versions?.length ?? 0,
+      recordCount: 0,
       license: metadata?.license ?? 'Open Government Licence - Tanzania',
       updateHistory: [],
     };

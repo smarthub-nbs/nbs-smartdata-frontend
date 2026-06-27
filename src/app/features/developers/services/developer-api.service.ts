@@ -162,6 +162,21 @@ export class DeveloperApiService {
       );
   }
 
+  regenerateKey(
+    id: string,
+  ): Observable<{ record: ApiKeyRecord; plainKey: string }> {
+    return this.api
+      .post<BackendIssuedApiKey>(`/v1/developer/api-keys/${id}/regenerate/`, {})
+      .pipe(
+        map((issued) => toIssuedApiKeyRecord(issued)),
+        tap((result) => {
+          this.keys.update((list) =>
+            list.map((key) => (key.id === id ? result.record : key)),
+          );
+        }),
+      );
+  }
+
   loadUsageLogs(): Observable<
     Array<{
       datasetId: string;

@@ -5,11 +5,11 @@ export const HEADER_NAV_ITEMS: HeaderNavItem[] = [
   { label: 'Datasets', route: '/datasets' },
   { label: 'Explore', route: '/explore' },
   { label: 'Search', route: '/search' },
-  { label: 'Developers', route: '/developers' },
+  { label: 'Developers', route: '/developers', roles: ['developer', 'admin'] },
   {
     label: 'My hub',
     route: '/account',
-    roles: ['member', 'publisher', 'admin'],
+    roles: ['member', 'developer', 'publisher', 'admin'],
   },
   { label: 'Admin', route: '/admin', roles: ['publisher', 'admin'] },
 ];

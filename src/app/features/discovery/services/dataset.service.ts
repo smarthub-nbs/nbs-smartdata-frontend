@@ -200,7 +200,11 @@ export class DatasetService {
 
   searchCatalog(query: string): Observable<Dataset[]> {
     const filters = { ...EMPTY_DATASET_FILTERS, query };
-    return this.adapter.list(filters);
+    return this.adapter.list(filters).pipe(
+      tap((datasets) => {
+        datasets.forEach((dataset) => this.mergeDataset(dataset));
+      }),
+    );
   }
 
   private loadFacetCache(): void {

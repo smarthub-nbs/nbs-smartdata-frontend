@@ -30,6 +30,13 @@ export class DatasetDownloadPanelComponent {
   readonly dataset = input.required<Dataset>();
 
   protected readonly formats = EXPORT_FORMAT_OPTIONS;
+  protected readonly liveApi = !environment.useMockApi;
+  protected readonly visibleFormats = computed(() => {
+    if (environment.useMockApi) {
+      return this.formats;
+    }
+    return this.formats.filter((format) => this.isFormatAvailable(format.id));
+  });
   protected readonly exporting = signal(false);
   protected readonly errorMessage = signal('');
   protected readonly successMessage = signal('');

@@ -11,13 +11,14 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ApiError } from '@app/core/models/api-error.model';
 import { AuthService } from '@app/core/services/auth.service';
+import { ApiKeyUsageListComponent } from '@app/features/developers/components/api-key-usage-list.component';
 import { DeveloperApiService } from '@app/features/developers/services/developer-api.service';
 import { ButtonComponent } from '@shared/ui';
 
 @Component({
   selector: 'app-api-key-manager',
   standalone: true,
-  imports: [FormsModule, ButtonComponent],
+  imports: [FormsModule, ButtonComponent, ApiKeyUsageListComponent],
   templateUrl: './api-key-manager.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -30,11 +31,13 @@ export class ApiKeyManagerComponent implements OnInit {
   protected newKeyLabel = '';
   protected readonly creating = signal(false);
   protected readonly revokingId = signal('');
+  protected readonly regeneratingId = signal('');
   protected readonly revealedKey = signal('');
   protected readonly errorMessage = signal('');
+  protected readonly expandedKeyId = signal<string | null>(null);
 
   ngOnInit(): void {
-    if (this.auth.isAuthenticated()) {
+    if (this.auth.canManageApiKeys()) {
       this.loadKeys();
     }
   }
@@ -65,6 +68,26 @@ export class ApiKeyManagerComponent implements OnInit {
       });
   }
 
+  protected regenerate(id: string): void {
+    this.regeneratingId.set(id);
+    this.errorMessage.set('');
+    this.revealedKey.set('');
+
+    this.api
+      .regenerateKey(id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: ({ plainKey }) => {
+          this.regeneratingId.set('');
+          this.revealedKey.set(plainKey);
+        },
+        error: (err: unknown) => {
+          this.regeneratingId.set('');
+          this.errorMessage.set(this.resolveErrorMessage(err));
+        },
+      });
+  }
+
   protected revoke(id: string): void {
     this.revokingId.set(id);
     this.errorMessage.set('');
@@ -88,6 +111,10 @@ export class ApiKeyManagerComponent implements OnInit {
     void this.router.navigate(['/login'], {
       queryParams: { returnUrl: '/developers' },
     });
+  }
+
+  protected toggleUsage(keyId: string): void {
+    this.expandedKeyId.update((current) => (current === keyId ? null : keyId));
   }
 
   private loadKeys(): void {
