@@ -1,0 +1,48 @@
+<div class="mx-auto max-w-lg space-y-6">
+  <header>
+    <h1 class="text-2xl font-semibold text-slate-900">Create account</h1>
+    <p class="mt-1 text-sm text-nbs-muted">
+      Register for SmartData Hub access.
+    </p>
+  </header>
+
+  <section class="rounded-lg border border-nbs-border bg-white p-6 shadow-sm">
+    <form class="space-y-4" [formGroup]="form" (ngSubmit)="submit()">
+      <div class="grid gap-4 sm:grid-cols-2">
+        <app-text-input formControlName="firstName" label="First name" placeholder="Data" [required]="true"
+          [error]="fieldError('firstName')" />
+        <app-text-input formControlName="lastName" label="Last name" placeholder="User" [required]="true"
+          [error]="fieldError('lastName')" />
+      </div>
+
+      <app-text-input formControlName="email" label="Email" type="email" placeholder="you@example.com" [required]="true"
+        [error]="fieldError('email')" />
+
+      <app-text-input formControlName="password" label="Password" type="password"
+        placeholder="Use at least 8 characters" [required]="true" [error]="fieldError('password')" />
+
+      <app-text-input formControlName="confirmPassword" label="Confirm password" type="password"
+        placeholder="Repeat your password" [required]="true" [error]="fieldError('confirmPassword')" />
+
+      @if (errorMessage()) {
+      <p class="text-sm text-nbs-danger" role="alert">
+        {{ errorMessage() }}
+      </p>
+      }
+
+      <div class="flex items-center gap-2">
+        <app-button type="submit" variant="primary" [loading]="submitting()">
+          Create account
+        </app-button>
+        <a routerLink="/login" [queryParams]="loginQueryParams" class="text-sm text-slate-600 hover:text-nbs-primary">
+          Sign in instead
+        </a>
+      </div>
+    </form>
+
+    <p class="mt-6 rounded-md bg-nbs-surface p-4 text-sm text-slate-700">
+      Accounts are created through the backend registration API and signed in
+      immediately after registration.
+    </p>
+  </section>
+</div>

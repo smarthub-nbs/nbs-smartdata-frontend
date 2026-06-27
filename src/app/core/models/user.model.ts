@@ -1,4 +1,9 @@
-export type UserRole = 'public' | 'member' | 'publisher' | 'admin';
+export type UserRole =
+  | 'public'
+  | 'member'
+  | 'developer'
+  | 'publisher'
+  | 'admin';
 
 export interface UserProfile {
   id: string;

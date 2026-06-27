@@ -19,11 +19,29 @@ interface LoginResponse {
   refresh: string;
 }
 
+interface RefreshResponse {
+  access: string;
+}
+
+interface RegisterRequest {
+  email: string;
+  password: string;
+  first_name: string;
+  last_name: string;
+}
+
+interface RegisterResponse {
+  access: string;
+  refresh: string;
+}
+
 interface CurrentUserResponse {
   id: string;
   email: string;
   first_name: string;
   last_name: string;
+  is_staff: boolean;
+  is_superuser: boolean;
   roles: string[];
 }
 
@@ -38,6 +56,7 @@ export class AuthService {
   private readonly accessToken = signal<string | null>(
     localStorage.getItem(ACCESS_TOKEN_KEY),
   );
+  private refreshInFlight: Observable<string | null> | null = null;
 
   readonly user = this.currentUser.asReadonly();
   readonly isAuthenticated = computed(() => this.currentUser() !== null);
@@ -45,6 +64,11 @@ export class AuthService {
     () =>
       this.currentUser()?.role === 'admin' ||
       this.currentUser()?.role === 'publisher',
+  );
+  readonly canManageApiKeys = computed(
+    () =>
+      this.currentUser()?.role === 'admin' ||
+      this.currentUser()?.role === 'developer',
   );
 
   hasRole(...roles: UserRole[]): boolean {
@@ -66,26 +90,71 @@ export class AuthService {
       )
       .pipe(
         tap((response) => this.saveTokens(response.data)),
-        switchMap(() =>
-          this.http.get<ApiEnvelope<CurrentUserResponse>>(
-            `${environment.apiBaseUrl}/v1/auth/me/`,
-          ),
-        ),
-        map((response) => this.toUserProfile(response.data)),
-        tap((user) => this.saveUser(user)),
+        switchMap(() => this.fetchCurrentUser()),
         map(() => null),
         catchError((error: unknown) =>
-          of({ message: this.resolveErrorMessage(error) }),
+          of({ message: this.resolveErrorMessage(error, 'Sign in failed.') }),
+        ),
+      );
+  }
+
+  register(request: RegisterRequest): Observable<AuthError | null> {
+    return this.http
+      .post<
+        ApiEnvelope<RegisterResponse>
+      >(`${environment.apiBaseUrl}/v1/auth/register/`, request)
+      .pipe(
+        tap((response) => this.saveTokens(response.data)),
+        switchMap(() => this.fetchCurrentUser()),
+        map(() => null),
+        catchError((error: unknown) =>
+          of({
+            message: this.resolveErrorMessage(error, 'Registration failed.'),
+          }),
         ),
       );
   }
 
   signOut(): void {
-    this.currentUser.set(null);
-    this.accessToken.set(null);
-    localStorage.removeItem(ACCESS_TOKEN_KEY);
-    localStorage.removeItem(REFRESH_TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
+    const refresh = localStorage.getItem(REFRESH_TOKEN_KEY);
+    if (refresh) {
+      this.http
+        .post(`${environment.apiBaseUrl}/v1/auth/logout/`, { refresh })
+        .subscribe({ error: () => undefined });
+    }
+    this.clearSession();
+  }
+
+  refreshAccessToken(): Observable<string | null> {
+    const refresh = localStorage.getItem(REFRESH_TOKEN_KEY);
+    if (!refresh) {
+      return of(null);
+    }
+
+    if (this.refreshInFlight) {
+      return this.refreshInFlight;
+    }
+
+    this.refreshInFlight = this.http
+      .post<
+        ApiEnvelope<RefreshResponse>
+      >(`${environment.apiBaseUrl}/v1/auth/refresh/`, { refresh })
+      .pipe(
+        map((response) => {
+          this.accessToken.set(response.data.access);
+          localStorage.setItem(ACCESS_TOKEN_KEY, response.data.access);
+          return response.data.access;
+        }),
+        catchError(() => {
+          this.clearSession();
+          return of(null);
+        }),
+        tap(() => {
+          this.refreshInFlight = null;
+        }),
+      );
+
+    return this.refreshInFlight;
   }
 
   getAccessToken(): string | null {
@@ -108,6 +177,25 @@ export class AuthService {
         initials: this.buildInitials(name),
       };
     });
+  }
+
+  private fetchCurrentUser(): Observable<UserProfile> {
+    return this.http
+      .get<
+        ApiEnvelope<CurrentUserResponse>
+      >(`${environment.apiBaseUrl}/v1/auth/me/`)
+      .pipe(
+        map((response) => this.toUserProfile(response.data)),
+        tap((user) => this.saveUser(user)),
+      );
+  }
+
+  private clearSession(): void {
+    this.currentUser.set(null);
+    this.accessToken.set(null);
+    localStorage.removeItem(ACCESS_TOKEN_KEY);
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
   }
 
   private buildInitials(name: string): string {
@@ -154,22 +242,25 @@ export class AuthService {
       id: user.id,
       name: resolvedName,
       email: user.email,
-      role: this.resolveRole(user.roles),
+      role: this.resolveRole(user),
       initials: this.buildInitials(resolvedName),
     };
   }
 
-  private resolveRole(roles: string[]): UserRole {
-    if (roles.includes('admin')) {
+  private resolveRole(user: CurrentUserResponse): UserRole {
+    if (user.is_superuser || user.is_staff || user.roles.includes('admin')) {
       return 'admin';
     }
-    if (roles.includes('publisher') || roles.includes('editor')) {
+    if (user.roles.includes('publisher') || user.roles.includes('editor')) {
       return 'publisher';
+    }
+    if (user.roles.includes('developer')) {
+      return 'developer';
     }
     return 'member';
   }
 
-  private resolveErrorMessage(error: unknown): string {
+  private resolveErrorMessage(error: unknown, fallback: string): string {
     if (error instanceof HttpErrorResponse) {
       const body = error.error;
 
@@ -185,13 +276,13 @@ export class AuthService {
         return body.error.message;
       }
 
-      return error.message || 'Sign in failed.';
+      return error.message || fallback;
     }
 
     if (error instanceof Error) {
       return error.message;
     }
 
-    return 'Sign in failed.';
+    return fallback;
   }
 }

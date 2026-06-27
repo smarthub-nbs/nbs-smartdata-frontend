@@ -25,6 +25,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'register',
+        loadComponent: () =>
+          import('@app/features/auth/register-page.component').then(
+            (m) => m.RegisterPageComponent,
+          ),
+      },
+      {
         path: 'datasets',
         loadComponent: () =>
           import('@app/features/discovery/datasets-page.component').then(
@@ -85,7 +92,13 @@ export const routes: Routes = [
       { path: 'dashboard', redirectTo: '', pathMatch: 'full' },
       { path: 'data', redirectTo: 'datasets', pathMatch: 'full' },
       { path: 'settings', redirectTo: 'account', pathMatch: 'full' },
-      { path: '**', redirectTo: '' },
+      {
+        path: '**',
+        loadComponent: () =>
+          import('@app/features/not-found/not-found-page.component').then(
+            (m) => m.NotFoundPageComponent,
+          ),
+      },
     ],
   },
 ];

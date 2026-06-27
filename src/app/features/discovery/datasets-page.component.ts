@@ -8,8 +8,7 @@ import {
 import { Router, RouterLink } from '@angular/router';
 import { DatasetCardComponent } from '@app/features/discovery/components/dataset-card.component';
 import { DatasetFilterBarComponent } from '@app/features/discovery/components/dataset-filter-bar.component';
-import { Dataset } from '@app/features/discovery';
-import { DatasetService } from '@app/features/discovery';
+import { Dataset, DatasetService } from '@app/features/discovery';
 import { PageStateComponent } from '@app/shared/components/page-state/page-state.component';
 import {
   ButtonComponent,
@@ -30,105 +29,7 @@ type CatalogView = 'cards' | 'table';
     DataTableComponent,
     PageStateComponent,
   ],
-  template: `
-    <div class="space-y-6">
-      <header
-        class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between"
-      >
-        <div>
-          <h1 class="text-2xl font-semibold text-slate-900">Datasets</h1>
-          <p class="mt-1 text-sm text-nbs-muted">
-            Browse official national statistics with structured metadata.
-          </p>
-        </div>
-        <p class="text-sm text-slate-600">
-          {{ datasetService.filteredDatasets().length }} result(s)
-        </p>
-      </header>
-
-      @if (datasetService.catalogLoadState().status === 'loading') {
-        <app-page-state
-          variant="loading"
-          title="Loading dataset catalog"
-          label="Datasets"
-          message="Fetching official statistics metadata…"
-        />
-      } @else if (datasetService.catalogLoadState().status === 'error') {
-        <app-page-state
-          variant="error"
-          title="Could not load datasets"
-          label="Error"
-          [message]="catalogErrorMessage() ?? 'Request failed'"
-        >
-          <div class="mt-4">
-            <app-button variant="primary" size="sm" (clicked)="retryCatalog()">
-              Try again
-            </app-button>
-          </div>
-        </app-page-state>
-      } @else {
-        <section>
-          <h2 class="mb-3 text-sm font-semibold text-slate-800">Topics</h2>
-          <div class="flex flex-wrap gap-2">
-            @for (topic of datasetService.topics(); track topic.slug) {
-              <a
-                [routerLink]="['/topics', topic.slug]"
-                class="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-nbs-primary hover:text-nbs-primary"
-              >
-                {{ topic.name }}
-              </a>
-            }
-          </div>
-        </section>
-
-        <app-dataset-filter-bar (clear)="clearFilters()" />
-
-        <div class="flex items-center gap-2">
-          <app-button
-            [variant]="view() === 'cards' ? 'primary' : 'outline'"
-            size="sm"
-            (clicked)="view.set('cards')"
-          >
-            Cards
-          </app-button>
-          <app-button
-            [variant]="view() === 'table' ? 'primary' : 'outline'"
-            size="sm"
-            (clicked)="view.set('table')"
-          >
-            Table
-          </app-button>
-        </div>
-
-        @if (datasetService.filteredDatasets().length === 0) {
-          <app-page-state
-            title="No datasets match your filters"
-            label="Empty results"
-            message="Try clearing filters or searching with a broader keyword."
-          />
-        } @else if (view() === 'cards') {
-          <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            @for (
-              dataset of datasetService.filteredDatasets();
-              track dataset.id
-            ) {
-              <app-dataset-card [dataset]="dataset" />
-            }
-          </div>
-        } @else {
-          <app-data-table
-            [data]="datasetService.filteredDatasets()"
-            [columns]="tableColumns"
-            [showPagination]="true"
-            [pageSize]="8"
-            [rowClickable]="true"
-            trackByKey="id"
-            (rowClicked)="openDataset($event)"
-          />
-        }
-      }
-    </div>
-  `,
+  templateUrl: './datasets-page.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DatasetsPageComponent {

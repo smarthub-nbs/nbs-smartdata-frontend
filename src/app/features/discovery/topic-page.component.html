@@ -1,0 +1,63 @@
+    @if (catalogLoading()) {
+      <app-page-state
+        variant="loading"
+        title="Loading topic"
+        label="Topic"
+        message="Fetching datasets for this topic…"
+      />
+    } @else if (catalogError()) {
+      <app-page-state
+        variant="error"
+        title="Could not load topic datasets"
+        label="Error"
+        [message]="catalogError()!"
+      >
+        <a routerLink="/datasets" class="mt-4 inline-block">
+          <app-button variant="primary">Browse all datasets</app-button>
+        </a>
+      </app-page-state>
+    } @else if (!topic()) {
+      <app-page-state
+        title="Topic not found"
+        label="404"
+        message="This thematic category does not exist."
+      >
+        <a routerLink="/datasets" class="mt-4 inline-block">
+          <app-button variant="primary">Browse all datasets</app-button>
+        </a>
+      </app-page-state>
+    } @else {
+      <div class="space-y-6">
+        <nav class="text-sm text-nbs-muted" aria-label="Breadcrumb">
+          <a routerLink="/datasets" class="hover:text-nbs-primary">Datasets</a>
+          <span class="mx-2">/</span>
+          <span>{{ topic()!.name }}</span>
+        </nav>
+
+        <header>
+          <h1 class="text-2xl font-semibold text-slate-900">
+            {{ topic()!.name }}
+          </h1>
+          <p class="mt-2 max-w-2xl text-sm text-nbs-muted">
+            {{ topic()!.description }}
+          </p>
+          <p class="mt-2 text-sm text-slate-600">
+            {{ datasets().length }} dataset(s) in this topic
+          </p>
+        </header>
+
+        @if (datasets().length === 0) {
+          <app-page-state
+            title="No datasets in this topic yet"
+            label="Empty topic"
+          />
+        } @else {
+          <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            @for (dataset of datasets(); track dataset.id) {
+              <app-dataset-card [dataset]="dataset" />
+            }
+          </div>
+        }
+      </div>
+    }
+  

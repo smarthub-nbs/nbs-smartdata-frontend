@@ -14,6 +14,7 @@ import {
   ApiTryItResult,
   BackendApiKey,
   BackendApiKeyActionResponse,
+  BackendApiUsageLog,
   BackendIssuedApiKey,
   BackendPaginatedResponse,
 } from '@app/features/developers/models/developer-api.model';
@@ -31,18 +32,53 @@ const GATEWAY_ENDPOINTS: ApiEndpointDoc[] = [
   },
   {
     method: 'GET',
-    path: '/v1/gateway/categories/',
-    summary: 'List dataset categories available in the gateway.',
-  },
-  {
-    method: 'GET',
     path: '/v1/gateway/datasets/facets/',
     summary: 'Return facet counts for dataset discovery filters.',
   },
   {
     method: 'GET',
+    path: '/v1/gateway/datasets/changes/',
+    summary: 'List datasets changed since a given timestamp.',
+  },
+  {
+    method: 'GET',
+    path: '/v1/gateway/datasets/formats/',
+    summary: 'List distinct validated file formats.',
+  },
+  {
+    method: 'GET',
+    path: '/v1/gateway/categories/',
+    summary: 'List dataset categories available in the gateway.',
+  },
+  {
+    method: 'GET',
     path: '/v1/gateway/tags/',
     summary: 'List tags attached to published datasets.',
+  },
+  {
+    method: 'GET',
+    path: '/v1/gateway/licenses/',
+    summary: 'List license facet values with counts.',
+  },
+  {
+    method: 'GET',
+    path: '/v1/gateway/publishers/',
+    summary: 'List publisher facet values with counts.',
+  },
+  {
+    method: 'GET',
+    path: '/v1/gateway/files/{file_id}/preview/',
+    summary: 'Preview a few rows from a gateway file.',
+  },
+  {
+    method: 'GET',
+    path: '/v1/gateway/files/{file_id}/schema/',
+    summary: 'Return inferred schema for a gateway file.',
+  },
+  {
+    method: 'GET',
+    path: '/v1/gateway/files/{file_id}/data/',
+    summary: 'Read structured rows from a gateway file.',
   },
 ];
 
@@ -124,6 +160,45 @@ export class DeveloperApiService {
         }),
         map(() => undefined),
       );
+  }
+
+  regenerateKey(
+    id: string,
+  ): Observable<{ record: ApiKeyRecord; plainKey: string }> {
+    return this.api
+      .post<BackendIssuedApiKey>(`/v1/developer/api-keys/${id}/regenerate/`, {})
+      .pipe(
+        map((issued) => toIssuedApiKeyRecord(issued)),
+        tap((result) => {
+          this.keys.update((list) =>
+            list.map((key) => (key.id === id ? result.record : key)),
+          );
+        }),
+      );
+  }
+
+  loadUsageLogs(): Observable<
+    Array<{
+      datasetId: string;
+      apiCalls: number;
+      downloads: number;
+      views: number;
+      lastAccessed: string;
+    }>
+  > {
+    return this.api
+      .get<
+        BackendPaginatedResponse<BackendApiUsageLog>
+      >('/v1/developer/api-usage/')
+      .pipe(map((response) => this.aggregateUsage(response.items)));
+  }
+
+  loadKeyUsage(
+    keyId: string,
+  ): Observable<BackendPaginatedResponse<BackendApiUsageLog>> {
+    return this.api.get<BackendPaginatedResponse<BackendApiUsageLog>>(
+      `/v1/developer/api-keys/${keyId}/usage/`,
+    );
   }
 
   tryEndpoint(path: string, apiKey: string): Observable<ApiTryItResult> {
@@ -210,5 +285,50 @@ export class DeveloperApiService {
       return error.message;
     }
     return 'Failed to load API keys.';
+  }
+
+  private aggregateUsage(logs: BackendApiUsageLog[]): Array<{
+    datasetId: string;
+    apiCalls: number;
+    downloads: number;
+    views: number;
+    lastAccessed: string;
+  }> {
+    const byDataset = new Map<
+      string,
+      {
+        datasetId: string;
+        apiCalls: number;
+        downloads: number;
+        views: number;
+        lastAccessed: string;
+      }
+    >();
+
+    for (const log of logs) {
+      const datasetId = log.dataset_id ?? 'unknown';
+      const current = byDataset.get(datasetId) ?? {
+        datasetId,
+        apiCalls: 0,
+        downloads: 0,
+        views: 0,
+        lastAccessed: log.created_at,
+      };
+
+      current.apiCalls += 1;
+      if (log.endpoint.includes('/download')) {
+        current.downloads += 1;
+      }
+      if (log.endpoint.includes('/datasets/') && log.method === 'GET') {
+        current.views += 1;
+      }
+      if (log.created_at > current.lastAccessed) {
+        current.lastAccessed = log.created_at;
+      }
+
+      byDataset.set(datasetId, current);
+    }
+
+    return [...byDataset.values()];
   }
 }

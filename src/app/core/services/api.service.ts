@@ -2,6 +2,7 @@ import {
   HttpClient,
   HttpErrorResponse,
   HttpParams,
+  HttpResponse,
 } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map, throwError } from 'rxjs';
@@ -28,6 +29,21 @@ export class ApiService {
 
   delete<T>(path: string): Observable<T> {
     return this.request('DELETE', path);
+  }
+
+  downloadBlob(path: string): Observable<HttpResponse<Blob>> {
+    const url = `${this.baseUrl}${path}`;
+    return this.http
+      .get(url, { responseType: 'blob', observe: 'response' })
+      .pipe(catchError((error) => throwError(() => this.toApiError(error))));
+  }
+
+  postMultipart<T>(path: string, body: FormData): Observable<T> {
+    const url = `${this.baseUrl}${path}`;
+    return this.http.post<unknown>(url, body).pipe(
+      map((response) => this.unwrapResponse<T>(response)),
+      catchError((error) => throwError(() => this.toApiError(error))),
+    );
   }
 
   private request<T>(

@@ -5,6 +5,7 @@ import {
 
 export const MOCK_TOPICS: DatasetTopic[] = [
   {
+    id: 'topic-population',
     slug: 'population',
     name: 'Population & demography',
     description:
@@ -12,6 +13,7 @@ export const MOCK_TOPICS: DatasetTopic[] = [
     datasetCount: 2,
   },
   {
+    id: 'topic-economy',
     slug: 'economy',
     name: 'Economy & labour',
     description:
@@ -19,18 +21,21 @@ export const MOCK_TOPICS: DatasetTopic[] = [
     datasetCount: 2,
   },
   {
+    id: 'topic-agriculture',
     slug: 'agriculture',
     name: 'Agriculture',
     description: 'Crop production, livestock, and food security statistics.',
     datasetCount: 1,
   },
   {
+    id: 'topic-health',
     slug: 'health',
     name: 'Health',
     description: 'Health facility data, disease surveillance, and outcomes.',
     datasetCount: 1,
   },
   {
+    id: 'topic-education',
     slug: 'education',
     name: 'Education',
     description: 'Enrolment, attainment, and school infrastructure indicators.',

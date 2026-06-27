@@ -1,0 +1,58 @@
+<section class="rounded-lg border border-nbs-border bg-white p-5 shadow-sm">
+  <h2 class="text-sm font-semibold text-slate-900">Download & export</h2>
+  <p class="mt-1 text-xs text-nbs-muted">
+    SRS 5.7 — CSV, Excel, JSON, SDMX, PDF
+  </p>
+  @if (liveApi) {
+  <p class="mt-2 text-xs text-nbs-muted">
+    Live downloads use the published primary file. Generated export formats
+    are unavailable until backend conversion endpoints exist.
+  </p>
+  }
+
+  <div class="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+    @if (
+    !showPrimaryFileButton() && visibleFormats().length === 0
+    ) {
+    <p class="text-sm text-nbs-muted">
+      No downloadable file is attached to this dataset yet.
+    </p>
+    }
+    @if (showPrimaryFileButton()) {
+    <button type="button"
+      class="rounded-md border border-slate-200 p-3 text-left transition-colors hover:border-nbs-primary hover:bg-nbs-primary/5 disabled:cursor-not-allowed disabled:opacity-50"
+      [disabled]="exporting()" (click)="downloadPrimaryFile()">
+      <span class="block text-sm font-medium text-slate-900">
+        Primary file
+      </span>
+      <span class="mt-0.5 block text-xs text-nbs-muted">
+        Download {{ dataset().format }} file
+      </span>
+    </button>
+    }
+    @for (format of visibleFormats(); track format.id) {
+    <button type="button"
+      class="rounded-md border border-slate-200 p-3 text-left transition-colors hover:border-nbs-primary hover:bg-nbs-primary/5 disabled:cursor-not-allowed disabled:opacity-50"
+      [disabled]="exporting() || !isFormatAvailable(format.id)" (click)="download(format.id)">
+      <span class="block text-sm font-medium text-slate-900">{{
+        format.label
+        }}</span>
+      <span class="mt-0.5 block text-xs text-nbs-muted">{{
+        formatDescription(format.id)
+        }}</span>
+    </button>
+    }
+  </div>
+
+  @if (exporting()) {
+  <p class="mt-3 text-xs text-nbs-muted">Preparing download…</p>
+  }
+  @if (errorMessage()) {
+  <p class="mt-3 text-xs text-nbs-danger" role="alert">
+    {{ errorMessage() }}
+  </p>
+  }
+  @if (successMessage()) {
+  <p class="mt-3 text-xs text-nbs-accent">{{ successMessage() }}</p>
+  }
+</section>

@@ -5,34 +5,7 @@ import { RouterLink } from '@angular/router';
   selector: 'app-footer',
   standalone: true,
   imports: [RouterLink],
-  template: `
-    <footer
-      class="shrink-0 border-t border-nbs-border bg-white px-4 py-6 lg:px-6"
-    >
-      <div
-        class="mx-auto flex max-w-7xl flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
-      >
-        <p class="text-xs text-nbs-muted">
-          © {{ year }} National Bureau of Statistics — United Republic of
-          Tanzania. All rights reserved.
-        </p>
-        <nav class="flex flex-wrap gap-4 text-xs" aria-label="Footer">
-          <a
-            routerLink="/developers"
-            class="text-slate-600 hover:text-nbs-primary"
-            >API</a
-          >
-          <a
-            routerLink="/datasets"
-            class="text-slate-600 hover:text-nbs-primary"
-            >Datasets</a
-          >
-          <span class="text-slate-400">About</span>
-          <span class="text-slate-400">Contact</span>
-        </nav>
-      </div>
-    </footer>
-  `,
+  templateUrl: './footer.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FooterComponent {

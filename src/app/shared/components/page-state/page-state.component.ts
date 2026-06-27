@@ -5,25 +5,7 @@ export type PageStateVariant = 'empty' | 'error' | 'loading';
 @Component({
   selector: 'app-page-state',
   standalone: true,
-  template: `
-    <div
-      class="flex min-h-[280px] flex-col items-center justify-center rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center"
-      [attr.role]="variant() === 'error' ? 'alert' : null"
-    >
-      @if (variant() === 'loading') {
-        <span
-          class="mb-3 inline-block size-8 animate-spin rounded-full border-2 border-nbs-primary border-t-transparent"
-          aria-hidden="true"
-        ></span>
-      }
-      <p class="text-sm font-medium text-slate-500">{{ label() }}</p>
-      <h2 class="mt-2 text-xl font-semibold text-slate-900">{{ title() }}</h2>
-      @if (message()) {
-        <p class="mt-2 max-w-md text-sm text-nbs-muted">{{ message() }}</p>
-      }
-      <ng-content />
-    </div>
-  `,
+  templateUrl: './page-state.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PageStateComponent {

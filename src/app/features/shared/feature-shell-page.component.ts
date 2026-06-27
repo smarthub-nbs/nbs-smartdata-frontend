@@ -5,21 +5,7 @@ import { PageStateComponent } from '@app/shared/components/page-state/page-state
   selector: 'app-feature-shell-page',
   standalone: true,
   imports: [PageStateComponent],
-  template: `
-    <div class="space-y-4">
-      <header>
-        <h1 class="text-2xl font-semibold text-slate-900">{{ title() }}</h1>
-        @if (subtitle()) {
-          <p class="mt-1 text-sm text-nbs-muted">{{ subtitle() }}</p>
-        }
-      </header>
-      <app-page-state
-        [title]="placeholderTitle()"
-        [label]="srsRef()"
-        [message]="placeholderMessage()"
-      />
-    </div>
-  `,
+  templateUrl: './feature-shell-page.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FeatureShellPageComponent {

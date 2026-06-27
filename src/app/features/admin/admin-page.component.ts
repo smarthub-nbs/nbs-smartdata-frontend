@@ -6,10 +6,19 @@ import {
   computed,
   inject,
   signal,
+  viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { finalize } from 'rxjs';
 import { DatasetUsageRow, AdminAnalyticsService } from '@app/features/admin';
+import { AdminDatasetRecord } from '@app/features/admin/models/admin-dataset.model';
+import { DatasetWorkflowPanelComponent } from '@app/features/admin/components/dataset-workflow-panel.component';
+import {
+  workflowStatusChipClasses,
+  workflowStatusLabel,
+} from '@app/features/admin/utils/admin-workflow-status.util';
+import { ApiError } from '@app/core/models/api-error.model';
 import {
   Dataset,
   DatasetMetadataUpdate,
@@ -25,6 +34,12 @@ import {
   TextInputComponent,
 } from '@shared/ui';
 
+interface PlatformMetricCard {
+  label: string;
+  value: string;
+  detail: string;
+}
+
 @Component({
   selector: 'app-admin-page',
   standalone: true,
@@ -36,193 +51,9 @@ import {
     SelectInputComponent,
     FormFieldComponent,
     DataTableComponent,
+    DatasetWorkflowPanelComponent,
   ],
-  template: `
-    <div class="space-y-6">
-      <header>
-        <h1 class="text-2xl font-semibold text-slate-900">Admin</h1>
-        <p class="mt-1 text-sm text-nbs-muted">
-          Usage analytics dashboard and metadata publishing workflow (SRS 5.9).
-        </p>
-      </header>
-
-      <section class="grid gap-4 sm:grid-cols-4">
-        <article
-          class="rounded-lg border border-nbs-border bg-white p-4 shadow-sm"
-        >
-          <p class="text-xs uppercase tracking-wide text-nbs-muted">
-            API calls
-          </p>
-          <p class="mt-2 text-2xl font-semibold text-slate-900">
-            {{ analytics.summary().totalApiCalls | number }}
-          </p>
-        </article>
-        <article
-          class="rounded-lg border border-nbs-border bg-white p-4 shadow-sm"
-        >
-          <p class="text-xs uppercase tracking-wide text-nbs-muted">
-            Downloads
-          </p>
-          <p class="mt-2 text-2xl font-semibold text-slate-900">
-            {{ analytics.summary().totalDownloads | number }}
-          </p>
-        </article>
-        <article
-          class="rounded-lg border border-nbs-border bg-white p-4 shadow-sm"
-        >
-          <p class="text-xs uppercase tracking-wide text-nbs-muted">
-            Dataset views
-          </p>
-          <p class="mt-2 text-2xl font-semibold text-slate-900">
-            {{ analytics.summary().totalViews | number }}
-          </p>
-        </article>
-        <article
-          class="rounded-lg border border-nbs-border bg-white p-4 shadow-sm"
-        >
-          <p class="text-xs uppercase tracking-wide text-nbs-muted">Datasets</p>
-          <p class="mt-2 text-2xl font-semibold text-slate-900">
-            {{ analytics.datasetCount() | number }}
-          </p>
-        </article>
-      </section>
-
-      <section
-        class="rounded-lg border border-nbs-border bg-white p-5 shadow-sm"
-      >
-        <h2 class="text-sm font-semibold text-slate-900">
-          Top datasets by API demand
-        </h2>
-        <div class="mt-4">
-          <app-data-table
-            [data]="analytics.topRows()"
-            [columns]="usageColumns"
-            [showPagination]="false"
-          />
-        </div>
-      </section>
-
-      <section
-        class="rounded-lg border border-nbs-border bg-white p-5 shadow-sm"
-      >
-        <div class="flex flex-wrap items-center justify-between gap-3">
-          <h2 class="text-sm font-semibold text-slate-900">
-            Metadata management
-          </h2>
-          <label class="w-full max-w-xl">
-            <span class="mb-1 block text-xs font-medium text-slate-600"
-              >Dataset</span
-            >
-            <select
-              class="h-10 w-full rounded-md border border-slate-300 px-3 text-sm text-slate-900 focus:border-nbs-primary focus:outline-none focus:ring-2 focus:ring-nbs-primary/30"
-              [value]="selectedDatasetId()"
-              (change)="onDatasetChange($event)"
-            >
-              @for (option of datasetOptions(); track option.value) {
-                <option [value]="option.value">{{ option.label }}</option>
-              }
-            </select>
-          </label>
-        </div>
-
-        @if (selectedDataset()) {
-          <form
-            class="mt-4 grid gap-4 md:grid-cols-2"
-            [formGroup]="form"
-            (ngSubmit)="saveMetadata()"
-          >
-            <app-text-input
-              formControlName="title"
-              label="Title"
-              [required]="true"
-              [error]="controlError('title')"
-            />
-            <app-select-input
-              formControlName="topicSlug"
-              label="Topic"
-              [required]="true"
-              [options]="topicOptions()"
-              [error]="controlError('topicSlug')"
-            />
-
-            <div class="md:col-span-2">
-              <app-form-field
-                label="Description"
-                [required]="true"
-                [error]="controlError('description')"
-              >
-                <textarea
-                  formControlName="description"
-                  rows="4"
-                  class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-nbs-primary focus:outline-none focus:ring-2 focus:ring-nbs-primary/30"
-                ></textarea>
-              </app-form-field>
-            </div>
-
-            <app-text-input
-              formControlName="publisher"
-              label="Publisher"
-              [required]="true"
-              [error]="controlError('publisher')"
-            />
-            <app-text-input
-              formControlName="license"
-              label="License"
-              [required]="true"
-              [error]="controlError('license')"
-            />
-
-            <app-select-input
-              formControlName="format"
-              label="Format"
-              [required]="true"
-              [options]="formatOptions"
-              [error]="controlError('format')"
-            />
-            <app-select-input
-              formControlName="frequency"
-              label="Frequency"
-              [required]="true"
-              [options]="frequencyOptions"
-              [error]="controlError('frequency')"
-            />
-
-            <app-text-input
-              formControlName="region"
-              label="Region"
-              [required]="true"
-              [error]="controlError('region')"
-            />
-            <app-text-input
-              formControlName="qualityScore"
-              type="number"
-              label="Quality score"
-              [required]="true"
-              [error]="controlError('qualityScore')"
-            />
-
-            <div class="md:col-span-2">
-              <app-text-input
-                formControlName="keywords"
-                label="Keywords (comma-separated)"
-                [required]="true"
-                [error]="controlError('keywords')"
-              />
-            </div>
-
-            <div class="md:col-span-2 flex items-center gap-3">
-              <app-button type="submit" variant="primary" size="sm">
-                Save metadata
-              </app-button>
-              @if (saveMessage()) {
-                <span class="text-xs text-nbs-accent">{{ saveMessage() }}</span>
-              }
-            </div>
-          </form>
-        }
-      </section>
-    </div>
-  `,
+  templateUrl: './admin-page.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AdminPageComponent {
@@ -230,12 +61,20 @@ export class AdminPageComponent {
   protected readonly datasetService = inject(DatasetService);
   private readonly fb = inject(FormBuilder);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly workflowPanel = viewChild(DatasetWorkflowPanelComponent);
 
-  protected readonly datasets = computed(() =>
-    this.datasetService.listDatasets(),
+  protected readonly workflowStatusLabel = workflowStatusLabel;
+  protected readonly workflowStatusChipClasses = workflowStatusChipClasses;
+
+  protected readonly selectedDatasetId = signal('');
+  protected readonly selectedWorkflowRecord = signal<AdminDatasetRecord | null>(
+    null,
   );
-  protected readonly selectedDatasetId = signal(this.datasets()[0]?.id ?? '');
   protected readonly saveMessage = signal('');
+  protected readonly saveError = signal(false);
+  protected readonly saving = signal(false);
+  protected readonly metadataLoading = signal(false);
+  protected readonly metadataLoadError = signal('');
 
   protected readonly usageColumns: DataTableColumn<DatasetUsageRow>[] = [
     { key: 'title', header: 'Dataset', sortable: true },
@@ -248,15 +87,9 @@ export class AdminPageComponent {
       header: 'Last accessed',
       sortable: true,
       align: 'right',
+      format: (row) => this.formatLastAccessed(row.lastAccessed),
     },
   ];
-
-  protected readonly datasetOptions = computed<SelectOption[]>(() =>
-    this.datasets().map((item) => ({
-      label: item.title,
-      value: item.id,
-    })),
-  );
 
   protected readonly topicOptions = computed<SelectOption[]>(() =>
     this.datasetService.topics().map((topic) => ({
@@ -264,13 +97,6 @@ export class AdminPageComponent {
       value: topic.slug,
     })),
   );
-
-  protected readonly formatOptions: SelectOption[] = [
-    { label: 'CSV', value: 'CSV' },
-    { label: 'XLSX', value: 'XLSX' },
-    { label: 'JSON', value: 'JSON' },
-    { label: 'SDMX', value: 'SDMX' },
-  ];
 
   protected readonly frequencyOptions: SelectOption[] = [
     { label: 'Annual', value: 'Annual' },
@@ -282,46 +108,124 @@ export class AdminPageComponent {
     title: ['', Validators.required],
     description: ['', Validators.required],
     topicSlug: ['', Validators.required],
-    format: ['', Validators.required],
     frequency: ['', Validators.required],
     region: ['', Validators.required],
-    publisher: ['', Validators.required],
     license: ['', Validators.required],
-    keywords: ['', Validators.required],
-    qualityScore: [
-      90,
-      [Validators.required, Validators.min(0), Validators.max(100)],
-    ],
   });
 
   protected readonly selectedDataset = computed<Dataset | undefined>(() =>
     this.datasetService.getById(this.selectedDatasetId()),
   );
 
-  constructor() {
-    this.loadForm(this.selectedDataset());
+  protected readonly metadataReadinessHint = computed(() => {
+    const record = this.selectedWorkflowRecord();
+    if (!record) {
+      return '';
+    }
+    if (record.hasMetadata) {
+      return 'Metadata requirements are met for workflow submission.';
+    }
+    return 'Complete discovery metadata below before submitting this dataset for review.';
+  });
 
+  protected readonly activeDatasetCount = computed(
+    () => this.analytics.rows().length,
+  );
+
+  protected readonly totalActivity = computed(() => {
+    const summary = this.analytics.summary();
+    return summary.totalApiCalls + summary.totalDownloads + summary.totalViews;
+  });
+
+  protected readonly topDemandDataset = computed(
+    () => this.analytics.topRows()[0] ?? null,
+  );
+
+  protected readonly platformCards = computed<PlatformMetricCard[]>(() => {
+    const summary = this.analytics.summary();
+    const datasetCount = this.analytics.datasetCount();
+    const activeCount = this.activeDatasetCount();
+    const topDataset = this.topDemandDataset();
+
+    return [
+      {
+        label: 'Total activity',
+        value: this.totalActivity().toLocaleString(),
+        detail: `${summary.totalApiCalls.toLocaleString()} API calls included`,
+      },
+      {
+        label: 'Active datasets',
+        value: `${activeCount}/${datasetCount}`,
+        detail:
+          datasetCount === 0
+            ? 'No catalog entries yet'
+            : `${this.percent(activeCount, datasetCount)} have recorded demand`,
+      },
+      {
+        label: 'Top demand',
+        value: (topDataset?.apiCalls ?? 0).toLocaleString(),
+        detail: topDataset?.title ?? 'No dataset activity yet',
+      },
+      {
+        label: 'Downloads',
+        value: summary.totalDownloads.toLocaleString(),
+        detail: `${summary.totalViews.toLocaleString()} dataset views recorded`,
+      },
+    ];
+  });
+
+  constructor() {
     this.form.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
         this.saveMessage.set('');
+        this.saveError.set(false);
       });
+  }
+
+  protected onWorkflowChanged(): void {
+    this.datasetService.refreshCatalog();
+    this.analytics.refresh();
+    const id = this.selectedDatasetId();
+    if (id) {
+      this.reloadMetadataForId(id);
+    }
+  }
+
+  protected onWorkflowRecordSelected(record: AdminDatasetRecord | null): void {
+    this.selectedWorkflowRecord.set(record);
+  }
+
+  protected onWorkflowDatasetSelected(id: string): void {
+    if (id === this.selectedDatasetId()) {
+      return;
+    }
+
+    if (this.form.dirty) {
+      const discard = globalThis.confirm(
+        'You have unsaved metadata changes. Switch datasets and discard them?',
+      );
+      if (!discard) {
+        this.workflowPanel()?.revertSelection(this.selectedDatasetId());
+        return;
+      }
+    }
+
+    this.onDatasetSelected(id);
   }
 
   protected onDatasetSelected(id: string): void {
     this.selectedDatasetId.set(id);
-    this.loadForm(this.selectedDataset());
     this.saveMessage.set('');
-  }
-
-  protected onDatasetChange(event: Event): void {
-    const id = (event.target as HTMLSelectElement).value;
-    this.onDatasetSelected(id);
+    this.saveError.set(false);
+    this.metadataLoadError.set('');
+    this.reloadMetadataForId(id);
   }
 
   protected saveMetadata(): void {
+    const dataset = this.selectedDataset();
     this.form.markAllAsTouched();
-    if (this.form.invalid || !this.selectedDatasetId()) {
+    if (this.form.invalid || !dataset) {
       return;
     }
 
@@ -330,20 +234,35 @@ export class AdminPageComponent {
       title: raw.title.trim(),
       description: raw.description.trim(),
       topicSlug: raw.topicSlug,
-      format: raw.format as DatasetMetadataUpdate['format'],
       frequency: raw.frequency as DatasetMetadataUpdate['frequency'],
       region: raw.region.trim(),
-      publisher: raw.publisher.trim(),
       license: raw.license.trim(),
-      keywords: raw.keywords
-        .split(',')
-        .map((k) => k.trim())
-        .filter(Boolean),
-      qualityScore: Number(raw.qualityScore),
+      format: dataset.format,
+      publisher: dataset.publisher,
+      keywords: dataset.keywords,
+      qualityScore: dataset.qualityScore,
     };
 
-    this.datasetService.updateMetadata(this.selectedDatasetId(), payload);
-    this.saveMessage.set('Metadata saved successfully.');
+    this.saving.set(true);
+    this.saveMessage.set('');
+    this.saveError.set(false);
+
+    this.datasetService
+      .updateMetadata(dataset.id, payload)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (updated) => {
+          this.saving.set(false);
+          this.saveError.set(false);
+          this.saveMessage.set('Metadata saved successfully.');
+          this.loadForm(updated);
+        },
+        error: (error: unknown) => {
+          this.saving.set(false);
+          this.saveError.set(true);
+          this.saveMessage.set(this.resolveErrorMessage(error));
+        },
+      });
   }
 
   protected controlError(controlName: keyof typeof this.form.controls): string {
@@ -354,10 +273,40 @@ export class AdminPageComponent {
     if (control.hasError('required')) {
       return 'This field is required.';
     }
-    if (control.hasError('min') || control.hasError('max')) {
-      return 'Value must be between 0 and 100.';
-    }
     return '';
+  }
+
+  protected percent(value: number, total: number): string {
+    if (total === 0) {
+      return '0%';
+    }
+    return `${Math.round((value / total) * 100)}%`;
+  }
+
+  private reloadMetadataForId(id: string): void {
+    const cached = this.datasetService.getById(id);
+    if (cached) {
+      this.metadataLoading.set(false);
+      this.loadForm(cached);
+      return;
+    }
+
+    this.metadataLoading.set(true);
+    this.datasetService
+      .loadDatasetById(id)
+      .pipe(
+        finalize(() => this.metadataLoading.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (dataset) => this.loadForm(dataset),
+        error: () => {
+          this.loadForm();
+          this.metadataLoadError.set(
+            'Could not load metadata for this dataset.',
+          );
+        },
+      });
   }
 
   private loadForm(dataset?: Dataset): void {
@@ -370,13 +319,32 @@ export class AdminPageComponent {
       title: dataset.title,
       description: dataset.description,
       topicSlug: dataset.topicSlug,
-      format: dataset.format,
       frequency: dataset.frequency,
       region: dataset.region,
-      publisher: dataset.publisher,
       license: dataset.license,
-      keywords: dataset.keywords.join(', '),
-      qualityScore: dataset.qualityScore,
     });
+    this.form.markAsPristine();
+  }
+
+  private formatLastAccessed(value: string): string {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return value;
+    }
+    return new Intl.DateTimeFormat(undefined, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    }).format(date);
+  }
+
+  private resolveErrorMessage(error: unknown): string {
+    if (error instanceof ApiError) {
+      return error.message;
+    }
+    if (error instanceof Error) {
+      return error.message;
+    }
+    return 'Failed to save metadata.';
   }
 }
