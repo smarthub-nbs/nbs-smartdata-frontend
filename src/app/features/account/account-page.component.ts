@@ -7,6 +7,7 @@ import {
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { UserRole } from '@app/core/models/user.model';
 import { AccountService } from '@app/features/account/services/account.service';
 import {
   ButtonComponent,
@@ -22,6 +23,20 @@ interface SavedDatasetRow {
   title: string;
   topic: string;
   savedAt: string;
+}
+
+type StatIcon = 'dataset' | 'query' | 'role';
+
+interface HubStat {
+  icon: StatIcon;
+  label: string;
+  value: string;
+}
+
+interface HubQuickAction {
+  label: string;
+  route: string;
+  roles?: UserRole[];
 }
 
 @Component({
@@ -41,6 +56,18 @@ export class AccountPageComponent {
   protected readonly accountService = inject(AccountService);
   private readonly router = inject(Router);
 
+  private readonly quickActionDefs: HubQuickAction[] = [
+    { label: 'Search datasets', route: '/search' },
+    { label: 'Browse catalog', route: '/datasets' },
+    { label: 'Explore dashboards', route: '/explore' },
+    {
+      label: 'Developer portal',
+      route: '/developers',
+      roles: ['developer', 'admin'],
+    },
+    { label: 'Admin console', route: '/admin', roles: ['publisher', 'admin'] },
+  ];
+
   protected readonly account = this.accountService.account;
   protected readonly savedQueries = computed(
     () => this.account()?.savedQueries ?? [],
@@ -53,6 +80,35 @@ export class AccountPageComponent {
       savedAt: item.savedAt,
     })),
   );
+
+  protected readonly stats = computed<HubStat[]>(() => [
+    {
+      icon: 'dataset',
+      label: 'Saved datasets',
+      value: String(this.accountService.savedDatasetCount()),
+    },
+    {
+      icon: 'query',
+      label: 'Saved queries',
+      value: String(this.accountService.savedQueryCount()),
+    },
+    { icon: 'role', label: 'Account role', value: this.roleLabel() },
+  ]);
+
+  protected readonly quickActions = computed(() => {
+    const role = this.account()?.role;
+    if (!role) {
+      return [];
+    }
+    return this.quickActionDefs.filter(
+      (action) => !action.roles || action.roles.includes(role),
+    );
+  });
+
+  protected readonly greeting = computed(() => {
+    const name = this.account()?.name?.trim();
+    return name ? `Welcome back, ${name.split(' ')[0]}` : 'Welcome back';
+  });
 
   protected readonly datasetColumns: DataTableColumn<SavedDatasetRow>[] = [
     { key: 'title', header: 'Title', sortable: true },
@@ -100,6 +156,10 @@ export class AccountPageComponent {
     const next = (event.target as HTMLInputElement).checked;
     this.emailNotifications.set(next);
     this.accountService.updatePreferences({ emailNotifications: next });
+  }
+
+  protected goTo(path: string): void {
+    void this.router.navigate([path]);
   }
 
   protected openDataset(row: SavedDatasetRow): void {

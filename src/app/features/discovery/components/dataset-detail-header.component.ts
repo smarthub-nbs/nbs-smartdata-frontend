@@ -22,5 +22,8 @@ import { ButtonComponent } from '@shared/ui';
 export class DatasetDetailHeaderComponent {
   readonly dataset = input.required<Dataset>();
   readonly indexingStatus = input<DatasetIndexingStatus | null>(null);
+  readonly saved = input(false);
+  readonly canSave = input(true);
   readonly explore = output<void>();
+  readonly saveToggle = output<void>();
 }

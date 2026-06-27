@@ -39,7 +39,20 @@
     }
   </div>
 
-  <div class="mt-6">
+  <div class="mt-6 flex flex-wrap gap-2">
+    @if (canSave()) {
+    <app-button [variant]="saved() ? 'primary' : 'outline'" [attr.aria-pressed]="saved()"
+      [attr.aria-label]="saved() ? 'Remove from saved datasets' : 'Save dataset'" (clicked)="saveToggle.emit()">
+      <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        @if (saved()) {
+        <path d="M6 4.5h12v16l-6-4.5L6 20.5v-16z" fill="currentColor" stroke="none" />
+        } @else {
+        <path d="M6 4.5h12v16l-6-4.5L6 20.5v-16z" stroke-linejoin="round" />
+        }
+      </svg>
+      {{ saved() ? 'Saved' : 'Save' }}
+    </app-button>
+    }
     <app-button variant="outline" (clicked)="explore.emit()">
       Explore data
     </app-button>

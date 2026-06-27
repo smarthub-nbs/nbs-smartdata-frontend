@@ -1,34 +1,18 @@
 <div class="space-y-6">
   <header>
-    <div class="flex items-center gap-2">
-      <h1 class="text-2xl font-semibold text-slate-900">Smart search</h1>
-      <span
-        class="rounded-full bg-nbs-accent/10 px-2.5 py-0.5 text-xs font-medium text-nbs-accent"
-      >
-        AI
-      </span>
-    </div>
+    <h1 class="text-2xl font-semibold text-slate-900">Search datasets</h1>
     <p class="mt-1 text-sm text-nbs-muted">
-      Ask in plain language — the system interprets topics, regions, and time
-      periods to find relevant national statistics.
+      Search by topic, region, year, or keyword to find relevant national
+      statistics.
     </p>
   </header>
 
-  <form
-    class="rounded-lg border border-nbs-border bg-white p-4 shadow-sm"
-    (ngSubmit)="runSearch()"
-  >
+  <form class="rounded-lg border border-nbs-border bg-white p-4 shadow-sm" (ngSubmit)="runSearch()">
     <label class="block">
-      <span class="mb-1 block text-xs font-medium text-slate-600"
-        >Natural language query</span
-      >
-      <textarea
-        rows="2"
+      <span class="mb-1 block text-xs font-medium text-slate-600">Search query</span>
+      <textarea rows="2"
         class="w-full resize-none rounded-md border border-slate-300 px-4 py-3 text-sm focus:border-nbs-primary focus:outline-none focus:ring-2 focus:ring-nbs-primary/30"
-        placeholder="e.g. population growth in Dodoma from 2010 to 2022"
-        [(ngModel)]="query"
-        name="query"
-      ></textarea>
+        placeholder="e.g. inflation rate, population census, GDP growth" [(ngModel)]="query" name="query"></textarea>
     </label>
     <div class="mt-3 flex flex-wrap items-center gap-2">
       <app-button [type]="'submit'" variant="primary" [loading]="loading()">
@@ -36,109 +20,86 @@
       </app-button>
       <span class="text-xs text-nbs-muted">Try an example:</span>
       @for (example of examples; track example.query) {
-        <button
-          type="button"
-          class="rounded-full border border-slate-200 bg-nbs-surface px-3 py-1 text-xs font-medium text-slate-700 hover:border-nbs-primary hover:text-nbs-primary"
-          (click)="useExample(example.query)"
-        >
-          {{ example.label }}
-        </button>
+      <button type="button"
+        class="rounded-full border border-slate-200 bg-nbs-surface px-3 py-1 text-xs font-medium text-slate-700 hover:border-nbs-primary hover:text-nbs-primary"
+        (click)="useExample(example.query)">
+        {{ example.label }}
+      </button>
       }
     </div>
   </form>
 
   @if (loading()) {
-    <app-page-state
-      variant="loading"
-      title="Analysing your query"
-      label="Smart search"
-      message="Matching topics, regions, and indicators…"
-    />
+  <app-page-state variant="loading" title="Searching datasets" label="Search"
+    message="Matching topics, regions, and keywords…" />
   } @else if (searchError()) {
-    <app-page-state
-      variant="error"
-      title="Search unavailable"
-      label="Error"
-      [message]="searchError()!"
-    >
-      <div class="mt-4">
-        <app-button variant="primary" size="sm" (clicked)="runSearch()">
-          Try again
-        </app-button>
-      </div>
-    </app-page-state>
-  } @else if (hasSearched() && response()) {
-    <section
-      class="rounded-lg border border-nbs-primary/20 bg-nbs-primary/5 p-4"
-      aria-live="polite"
-    >
-      <p class="text-xs font-semibold uppercase tracking-wide text-nbs-primary">
-        Query interpretation
-      </p>
-      <p class="mt-1 text-sm text-slate-800">
-        {{ response()!.interpretation }}
-      </p>
-    </section>
-
-    <div class="grid gap-6 lg:grid-cols-3">
-      <div class="space-y-4 lg:col-span-2">
-        @if (response()!.results.length === 0) {
-          <app-page-state
-            title="No datasets found"
-            label="No results"
-            [message]="
-              'Try broadening your query or use one of the example searches above.'
-            "
-          />
-        } @else {
-          <p class="text-sm text-slate-600">
-            {{ response()!.results.length }} ranked result(s)
-          </p>
-          <div class="space-y-4">
-            @for (result of response()!.results; track result.dataset.id) {
-              <app-search-result-card [result]="result" />
-            }
-          </div>
-        }
-      </div>
-
-      <aside class="space-y-4">
-        @if (response()!.suggestedIndicators.length > 0) {
-          <section
-            class="rounded-lg border border-nbs-border bg-white p-5 shadow-sm"
-          >
-            <h2 class="text-sm font-semibold text-slate-900">
-              Suggested indicators
-            </h2>
-            <ul class="mt-3 space-y-2">
-              @for (
-                indicator of response()!.suggestedIndicators;
-                track indicator
-              ) {
-                <li
-                  class="rounded-md bg-nbs-surface px-3 py-2 text-sm text-slate-700"
-                >
-                  {{ indicator }}
-                </li>
-              }
-            </ul>
-          </section>
-        }
-
-        @if (topResultId()) {
-          <app-recommended-datasets
-            [sourceDatasetId]="topResultId()!"
-            title="You may also like"
-            subtitle="Related datasets (SRS 5.6)"
-          />
-        }
-      </aside>
+  <app-page-state variant="error" title="Search unavailable" label="Error" [message]="searchError()!">
+    <div class="mt-4">
+      <app-button variant="primary" size="sm" (clicked)="runSearch()">
+        Try again
+      </app-button>
     </div>
+  </app-page-state>
+  } @else if (hasSearched() && response()) {
+  <section class="rounded-lg border border-nbs-primary/20 bg-nbs-primary/5 p-4" aria-live="polite">
+    <p class="text-xs font-semibold uppercase tracking-wide text-nbs-primary">
+      Query interpretation
+    </p>
+    <p class="mt-1 text-sm text-slate-800">
+      {{ response()!.interpretation }}
+    </p>
+  </section>
+
+  <div class="grid gap-6 lg:grid-cols-3">
+    <div class="space-y-4 lg:col-span-2">
+      @if (response()!.results.length === 0) {
+      <app-page-state title="No datasets found" label="No results"
+        message="Try broadening your query or browse the full catalog.">
+        <a routerLink="/datasets" class="mt-4 inline-block">
+          <app-button variant="primary" size="sm">
+            Browse all datasets
+          </app-button>
+        </a>
+      </app-page-state>
+      } @else {
+      <p class="text-sm text-slate-600">
+        {{ response()!.results.length }} ranked result(s)
+      </p>
+      <div class="space-y-4">
+        @for (result of response()!.results; track result.dataset.id) {
+        <app-search-result-card [result]="result" />
+        }
+      </div>
+      }
+    </div>
+
+    <aside class="space-y-4">
+      @if (response()!.suggestedIndicators.length > 0) {
+      <section class="rounded-lg border border-nbs-border bg-white p-5 shadow-sm">
+        <h2 class="text-sm font-semibold text-slate-900">
+          Suggested indicators
+        </h2>
+        <ul class="mt-3 space-y-2">
+          @for (
+          indicator of response()!.suggestedIndicators;
+          track indicator
+          ) {
+          <li class="rounded-md bg-nbs-surface px-3 py-2 text-sm text-slate-700">
+            {{ indicator }}
+          </li>
+          }
+        </ul>
+      </section>
+      }
+
+      @if (topResultId()) {
+      <app-recommended-datasets [sourceDatasetId]="topResultId()!" title="You may also like"
+        subtitle="Related datasets" />
+      }
+    </aside>
+  </div>
   } @else if (!hasSearched()) {
-    <app-page-state
-      title="Ask a question about Tanzanian statistics"
-      label="SRS 5.1 & 5.6"
-      message='Example: "population growth in Dodoma from 2010–2022" or "monthly inflation trends".'
-    />
+  <app-page-state title="Search official statistics" label="Search"
+    message='Try "inflation rate", "population census", or "GDP growth".' />
   }
 </div>

@@ -1,161 +1,221 @@
 @if (!account()) {
-  <section
-    class="rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center"
-  >
-    <h1 class="text-xl font-semibold text-slate-900">My hub</h1>
-    <p class="mt-2 text-sm text-nbs-muted">
-      Sign in to access your saved datasets and queries.
-    </p>
-  </section>
+<section class="mx-auto max-w-md rounded-2xl border border-nbs-border bg-white p-8 text-center shadow-nbs-card">
+  <span class="mx-auto flex size-12 items-center justify-center rounded-xl bg-nbs-primary-soft text-nbs-primary">
+    <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+      <rect x="4" y="10" width="16" height="11" rx="2" />
+      <path d="M8 10V7a4 4 0 0 1 8 0v3" stroke-linecap="round" />
+    </svg>
+  </span>
+  <h1 class="mt-4 text-xl font-semibold text-slate-900">My hub</h1>
+  <p class="mt-2 text-sm text-nbs-muted">
+    Sign in to save datasets, store queries, and pick up where you left off.
+  </p>
+  <div class="mt-5">
+    <app-button variant="primary" size="md" (clicked)="goTo('/login')">
+      Sign in
+    </app-button>
+  </div>
+</section>
 } @else {
-  <div class="space-y-6">
-    <header>
-      <h1 class="text-2xl font-semibold text-slate-900">My hub</h1>
+<div class="space-y-8">
+  <header class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold text-slate-900">{{ greeting() }}</h1>
       <p class="mt-1 text-sm text-nbs-muted">
-        Manage profile, preferences, and your saved content (SRS 5.8).
+        Your saved datasets, queries, and shortcuts in one place.
       </p>
-      <p
-        class="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900"
-      >
-        Saved datasets, queries, and preferences are stored locally. Backend
-        persistence is not available yet.
-      </p>
-    </header>
+    </div>
+    <span
+      class="inline-flex w-fit items-center gap-2 rounded-full bg-nbs-primary-soft px-3 py-1 text-xs font-semibold text-nbs-primary">
+      <span class="size-1.5 rounded-full bg-nbs-primary" aria-hidden="true"></span>
+      {{ roleLabel() }}
+    </span>
+  </header>
 
-    <div class="grid gap-4 sm:grid-cols-3">
-      <article class="rounded-lg border border-nbs-border bg-white p-4 shadow-sm">
+  <section class="grid gap-4 sm:grid-cols-3">
+    @for (stat of stats(); track stat.label) {
+    <article class="flex items-center gap-4 rounded-xl border border-nbs-border bg-white p-5 shadow-nbs-card">
+      <span class="flex size-11 shrink-0 items-center justify-center rounded-lg bg-nbs-primary-soft text-nbs-primary">
+        @switch (stat.icon) {
+        @case ('dataset') {
+        <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <ellipse cx="12" cy="6" rx="8" ry="3" />
+          <path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3" stroke-linecap="round" />
+        </svg>
+        }
+        @case ('query') {
+        <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <circle cx="11" cy="11" r="7" />
+          <path d="m21 21-4.3-4.3" stroke-linecap="round" />
+        </svg>
+        }
+        @case ('role') {
+        <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <circle cx="12" cy="8" r="4" />
+          <path d="M5 20a7 7 0 0 1 14 0" stroke-linecap="round" />
+        </svg>
+        }
+        }
+      </span>
+      <div class="min-w-0">
         <p class="text-xs font-medium uppercase tracking-wide text-nbs-muted">
-          Saved datasets
+          {{ stat.label }}
         </p>
-        <p class="mt-2 text-2xl font-semibold text-slate-900">
-          {{ accountService.savedDatasetCount() }}
+        <p class="mt-1 truncate text-2xl font-semibold tabular-nums text-slate-900">
+          {{ stat.value }}
         </p>
-      </article>
-      <article class="rounded-lg border border-nbs-border bg-white p-4 shadow-sm">
-        <p class="text-xs font-medium uppercase tracking-wide text-nbs-muted">
-          Saved queries
-        </p>
-        <p class="mt-2 text-2xl font-semibold text-slate-900">
-          {{ accountService.savedQueryCount() }}
-        </p>
-      </article>
-      <article class="rounded-lg border border-nbs-border bg-white p-4 shadow-sm">
-        <p class="text-xs font-medium uppercase tracking-wide text-nbs-muted">
-          Role
-        </p>
-        <p class="mt-2 text-2xl font-semibold text-slate-900">
-          {{ roleLabel() }}
-        </p>
-      </article>
+      </div>
+    </article>
+    }
+  </section>
+
+  <section class="space-y-3">
+    <h2 class="text-xs font-semibold uppercase tracking-wide text-nbs-muted">
+      Quick actions
+    </h2>
+    <div class="flex flex-wrap gap-2.5">
+      @for (action of quickActions(); track action.route) {
+      <button type="button"
+        class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-nbs-border bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-nbs-card transition-colors hover:border-nbs-primary/40 hover:bg-nbs-primary-soft hover:text-nbs-primary"
+        (click)="goTo(action.route)">
+        {{ action.label }}
+        <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M5 12h14m-6-6 6 6-6 6" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </button>
+      }
+    </div>
+  </section>
+
+  <section class="rounded-xl border border-nbs-border bg-white p-5 shadow-nbs-card sm:p-6">
+    <div class="mb-4 flex items-center justify-between gap-2">
+      <h2 class="text-base font-semibold text-slate-900">Saved datasets</h2>
+      @if (savedDatasets().length > 0) {
+      <span class="text-xs text-nbs-muted">Click a row to open</span>
+      }
     </div>
 
-    <section class="rounded-lg border border-nbs-border bg-white p-5 shadow-sm">
-      <h2 class="text-sm font-semibold text-slate-900">Profile</h2>
-      <form class="mt-4 grid gap-4 md:grid-cols-2" (ngSubmit)="saveProfile()">
-        <app-text-input
-          label="Full name"
-          name="name"
-          [required]="true"
-          placeholder="Your full name"
-          [(ngModel)]="profileName"
-        />
-        <app-text-input
-          label="Email"
-          type="email"
-          name="email"
-          [required]="true"
-          placeholder="you@nbs.go.tz"
-          [(ngModel)]="profileEmail"
-        />
-        <div class="md:col-span-2">
-          <app-button type="submit" variant="primary" size="sm">
-            Save profile
+    @if (savedDatasets().length === 0) {
+    <div class="flex flex-col items-center rounded-xl bg-nbs-surface px-6 py-10 text-center">
+      <span class="flex size-12 items-center justify-center rounded-xl bg-white text-nbs-primary shadow-nbs-card">
+        <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <ellipse cx="12" cy="6" rx="8" ry="3" />
+          <path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3" stroke-linecap="round" />
+        </svg>
+      </span>
+      <p class="mt-4 text-sm font-semibold text-slate-900">
+        No saved datasets yet
+      </p>
+      <p class="mt-1 max-w-sm text-sm text-nbs-muted">
+        Browse the catalog and save datasets to return to them quickly.
+      </p>
+      <div class="mt-5 flex flex-wrap justify-center gap-2.5">
+        <app-button variant="primary" size="sm" (clicked)="goTo('/datasets')">
+          Browse catalog
+        </app-button>
+        <app-button variant="outline" size="sm" (clicked)="goTo('/search')">
+          Search datasets
+        </app-button>
+      </div>
+    </div>
+    } @else {
+    <app-data-table [data]="savedDatasets()" [columns]="datasetColumns" [showPagination]="false" [rowClickable]="true"
+      trackByKey="datasetId" (rowClicked)="openDataset($event)" />
+    }
+  </section>
+
+  <section class="rounded-xl border border-nbs-border bg-white p-5 shadow-nbs-card sm:p-6">
+    <h2 class="text-base font-semibold text-slate-900">Saved queries</h2>
+
+    @if (savedQueries().length === 0) {
+    <div class="mt-4 flex flex-col items-center rounded-xl bg-nbs-surface px-6 py-10 text-center">
+      <span class="flex size-12 items-center justify-center rounded-xl bg-white text-nbs-primary shadow-nbs-card">
+        <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <circle cx="11" cy="11" r="7" />
+          <path d="m21 21-4.3-4.3" stroke-linecap="round" />
+        </svg>
+      </span>
+      <p class="mt-4 text-sm font-semibold text-slate-900">
+        No saved queries yet
+      </p>
+      <p class="mt-1 max-w-sm text-sm text-nbs-muted">
+        Run a search and save the queries you use often.
+      </p>
+      <div class="mt-5">
+        <app-button variant="primary" size="sm" (clicked)="goTo('/search')">
+          Open search
+        </app-button>
+      </div>
+    </div>
+    } @else {
+    <ul class="mt-4 space-y-2.5">
+      @for (item of savedQueries(); track item.id) {
+      <li
+        class="flex flex-col gap-3 rounded-xl border border-nbs-border bg-white p-4 transition-colors hover:bg-nbs-surface sm:flex-row sm:items-center sm:justify-between">
+        <div class="min-w-0">
+          <p class="text-sm font-semibold text-slate-900">
+            {{ item.label }}
+          </p>
+          <p class="mt-0.5 truncate text-xs text-nbs-muted">
+            {{ item.query }}
+          </p>
+        </div>
+        <div class="flex shrink-0 items-center gap-2">
+          <app-button variant="outline" size="sm" (clicked)="runQuery(item.query)">
+            Run
+          </app-button>
+          <app-button variant="ghost" size="sm" (clicked)="removeQuery(item.id)">
+            Remove
           </app-button>
         </div>
-      </form>
-    </section>
-
-    <section class="rounded-lg border border-nbs-border bg-white p-5 shadow-sm">
-      <h2 class="text-sm font-semibold text-slate-900">Preferences</h2>
-      <div class="mt-4 grid gap-4 md:grid-cols-2">
-        <app-select-input
-          label="Language"
-          placeholder="Select language"
-          [options]="languageOptions"
-          [(ngModel)]="language"
-          (ngModelChange)="onLanguageChange($event)"
-        />
-        <app-select-input
-          label="Theme"
-          placeholder="Select theme"
-          [options]="themeOptions"
-          [(ngModel)]="theme"
-          (ngModelChange)="onThemeChange($event)"
-        />
-      </div>
-
-      <label class="mt-4 flex items-center gap-2 text-sm text-slate-700">
-        <input
-          type="checkbox"
-          class="size-4 rounded border-slate-300"
-          [checked]="emailNotifications()"
-          (change)="onEmailNotificationChange($event)"
-        />
-        Email me when saved datasets are updated
-      </label>
-    </section>
-
-    <section class="rounded-lg border border-nbs-border bg-white p-5 shadow-sm">
-      <div class="mb-3 flex items-center justify-between gap-2">
-        <h2 class="text-sm font-semibold text-slate-900">Saved datasets</h2>
-        <span class="text-xs text-nbs-muted">Click a row to open dataset</span>
-      </div>
-      <app-data-table
-        [data]="savedDatasets()"
-        [columns]="datasetColumns"
-        [showPagination]="false"
-        [rowClickable]="true"
-        trackByKey="datasetId"
-        (rowClicked)="openDataset($event)"
-      />
-    </section>
-
-    <section class="rounded-lg border border-nbs-border bg-white p-5 shadow-sm">
-      <h2 class="text-sm font-semibold text-slate-900">Saved queries</h2>
-      @if (savedQueries().length === 0) {
-        <p class="mt-3 text-sm text-nbs-muted">No saved queries yet.</p>
-      } @else {
-        <ul class="mt-3 space-y-2">
-          @for (item of savedQueries(); track item.id) {
-            <li
-              class="flex flex-col gap-2 rounded-md border border-slate-100 p-3 sm:flex-row sm:items-center sm:justify-between"
-            >
-              <div>
-                <p class="text-sm font-medium text-slate-900">
-                  {{ item.label }}
-                </p>
-                <p class="text-xs text-nbs-muted">{{ item.query }}</p>
-              </div>
-              <div class="flex items-center gap-2">
-                <app-button
-                  variant="outline"
-                  size="sm"
-                  (clicked)="runQuery(item.query)"
-                >
-                  Run
-                </app-button>
-                <app-button
-                  variant="ghost"
-                  size="sm"
-                  (clicked)="removeQuery(item.id)"
-                >
-                  Remove
-                </app-button>
-              </div>
-            </li>
-          }
-        </ul>
+      </li>
       }
-    </section>
-  </div>
+    </ul>
+    }
+  </section>
+
+  <section class="space-y-4 border-t border-nbs-border pt-8">
+    <div>
+      <h2 class="text-base font-semibold text-slate-900">Account settings</h2>
+      <p class="mt-1 text-sm text-nbs-muted">
+        Profile and preferences. Saved content is stored locally until backend
+        persistence is available.
+      </p>
+    </div>
+
+    <div class="grid gap-5 lg:grid-cols-2">
+      <div class="rounded-xl border border-nbs-border bg-white p-5 shadow-nbs-card sm:p-6">
+        <h3 class="text-sm font-semibold text-slate-900">Profile</h3>
+        <form class="mt-4 grid gap-4" (ngSubmit)="saveProfile()">
+          <app-text-input label="Full name" name="name" [required]="true" placeholder="Your full name"
+            [(ngModel)]="profileName" />
+          <app-text-input label="Email" type="email" name="email" [required]="true" placeholder="you@nbs.go.tz"
+            [(ngModel)]="profileEmail" />
+          <div>
+            <app-button type="submit" variant="primary" size="sm">
+              Save profile
+            </app-button>
+          </div>
+        </form>
+      </div>
+
+      <div class="rounded-xl border border-nbs-border bg-white p-5 shadow-nbs-card sm:p-6">
+        <h3 class="text-sm font-semibold text-slate-900">Preferences</h3>
+        <div class="mt-4 grid gap-4">
+          <app-select-input label="Language" placeholder="Select language" [options]="languageOptions"
+            [(ngModel)]="language" (ngModelChange)="onLanguageChange($event)" />
+          <app-select-input label="Theme" placeholder="Select theme" [options]="themeOptions" [(ngModel)]="theme"
+            (ngModelChange)="onThemeChange($event)" />
+        </div>
+
+        <label class="mt-4 flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+          <input type="checkbox"
+            class="size-4 cursor-pointer rounded border-slate-300 text-nbs-primary focus:ring-nbs-primary"
+            [checked]="emailNotifications()" (change)="onEmailNotificationChange($event)" />
+          Email me when saved datasets are updated
+        </label>
+      </div>
+    </div>
+  </section>
+</div>
 }

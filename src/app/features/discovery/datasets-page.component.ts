@@ -6,6 +6,8 @@ import {
   signal,
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
+import { AuthService } from '@app/core/services/auth.service';
+import { AccountService } from '@app/features/account/services/account.service';
 import { DatasetCardComponent } from '@app/features/discovery/components/dataset-card.component';
 import { DatasetFilterBarComponent } from '@app/features/discovery/components/dataset-filter-bar.component';
 import { Dataset, DatasetService } from '@app/features/discovery';
@@ -34,6 +36,8 @@ type CatalogView = 'cards' | 'table';
 })
 export class DatasetsPageComponent {
   protected readonly datasetService = inject(DatasetService);
+  protected readonly accountService = inject(AccountService);
+  protected readonly auth = inject(AuthService);
   private readonly router = inject(Router);
 
   protected readonly catalogErrorMessage = computed(() => {
@@ -67,5 +71,16 @@ export class DatasetsPageComponent {
 
   protected openDataset(dataset: Dataset): void {
     void this.router.navigate(['/datasets', dataset.id]);
+  }
+
+  protected toggleSaveDataset(dataset: Dataset): void {
+    if (!this.auth.isAuthenticated()) {
+      void this.router.navigate(['/login'], {
+        queryParams: { returnUrl: '/datasets' },
+      });
+      return;
+    }
+
+    this.accountService.toggleSavedDataset(dataset);
   }
 }
