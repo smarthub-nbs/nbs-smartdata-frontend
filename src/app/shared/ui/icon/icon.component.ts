@@ -13,7 +13,11 @@ export type IconName =
   | 'file'
   | 'inbox'
   | 'layers'
-  | 'sliders';
+  | 'sliders'
+  | 'search'
+  | 'shield'
+  | 'bar-chart'
+  | 'clock';
 
 @Component({
   selector: 'app-icon',
@@ -87,6 +91,20 @@ export type IconName =
           <path
             d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"
           />
+        }
+        @case ('search') {
+          <circle cx="11" cy="11" r="7" />
+          <path d="m21 21-4.3-4.3" />
+        }
+        @case ('shield') {
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+        }
+        @case ('bar-chart') {
+          <path d="M3 3v18h18M8 17V9M13 17V5M18 17v-6" />
+        }
+        @case ('clock') {
+          <circle cx="12" cy="12" r="10" />
+          <path d="M12 6v6l4 2" />
         }
       }
     </svg>

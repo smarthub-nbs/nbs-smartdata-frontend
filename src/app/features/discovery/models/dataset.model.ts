@@ -23,12 +23,6 @@ export interface DatasetUpdateRecord {
   note: string;
 }
 
-export interface DatasetAuditEntry {
-  action: string;
-  actor: string;
-  createdAt: string;
-}
-
 export interface DatasetIndexingStatus {
   status: string;
   indexedAt: string;

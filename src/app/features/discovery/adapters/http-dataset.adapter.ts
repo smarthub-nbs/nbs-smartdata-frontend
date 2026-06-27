@@ -204,7 +204,7 @@ export class HttpDatasetAdapter implements DatasetAdapter {
   }
 
   private toDataset(dataset: BackendDataset): Dataset {
-    const metadata = dataset.metadata?.[0];
+    const metadata = this.resolveMetadata(dataset.metadata);
     const topic = dataset.category;
 
     return {
@@ -213,21 +213,61 @@ export class HttpDatasetAdapter implements DatasetAdapter {
       primaryFileId: this.resolvePrimaryFileId(dataset),
       status: this.resolveStatus(dataset.status),
       year: metadata?.year ?? null,
-      title: metadata?.title ?? dataset.slug,
-      description: metadata?.description ?? 'No description available.',
+      title: this.resolveDisplayTitle(metadata, dataset.slug),
+      description: this.resolveDisplayDescription(metadata),
       topicSlug: topic?.slug ?? 'uncategorized',
       topicName: topic?.name ?? 'Uncategorized',
       format: this.resolveFormat(dataset),
       frequency: this.resolveFrequency(metadata?.frequency),
-      region: metadata?.region ?? 'National',
+      region: metadata?.region?.trim() || 'National',
       keywords: this.resolveKeywords(dataset, topic?.slug),
-      publisher: metadata?.publisher_name ?? 'NBS',
+      publisher: metadata?.publisher_name?.trim() || 'NBS',
       updatedAt: dataset.published_at ?? new Date().toISOString(),
       qualityScore: 80,
       recordCount: 0,
-      license: metadata?.license ?? 'Open Government Licence - Tanzania',
+      license:
+        metadata?.license?.trim() || 'Open Government Licence - Tanzania',
       updateHistory: [],
     };
+  }
+
+  /** Prefer the newest metadata record that actually has discovery fields populated. */
+  private resolveMetadata(
+    records: BackendDatasetMetadata[] | undefined,
+  ): BackendDatasetMetadata | undefined {
+    if (!records?.length) {
+      return undefined;
+    }
+
+    const withContent = records.filter(
+      (record) => record.title?.trim() || record.description?.trim(),
+    );
+    const pool = withContent.length > 0 ? withContent : records;
+    return pool.at(-1);
+  }
+
+  private resolveDisplayTitle(
+    metadata: BackendDatasetMetadata | undefined,
+    slug: string,
+  ): string {
+    const title = metadata?.title?.trim();
+    if (title) {
+      return title;
+    }
+
+    const fromSlug = slug
+      .split(/[-_]+/)
+      .filter(Boolean)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' ');
+
+    return fromSlug || 'Untitled dataset';
+  }
+
+  private resolveDisplayDescription(
+    metadata: BackendDatasetMetadata | undefined,
+  ): string {
+    return metadata?.description?.trim() || 'No description available.';
   }
 
   private resolveStatus(status?: string): DatasetWorkflowStatus | undefined {

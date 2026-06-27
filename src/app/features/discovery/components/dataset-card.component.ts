@@ -8,11 +8,12 @@ import { DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Dataset } from '@app/features/discovery/models/dataset.model';
 import { QualityBadgeComponent } from '@app/features/discovery/components/quality-badge.component';
+import { IconComponent } from '@shared/ui';
 
 @Component({
   selector: 'app-dataset-card',
   standalone: true,
-  imports: [RouterLink, DatePipe, QualityBadgeComponent],
+  imports: [RouterLink, DatePipe, QualityBadgeComponent, IconComponent],
   templateUrl: './dataset-card.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

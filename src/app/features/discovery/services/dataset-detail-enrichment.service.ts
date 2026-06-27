@@ -2,7 +2,6 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, forkJoin, map, of, switchMap } from 'rxjs';
 import { AuthService } from '@app/core/services/auth.service';
 import {
-  DatasetAuditEntry,
   DatasetIndexingStatus,
   DatasetUpdateRecord,
 } from '@app/features/discovery/models/dataset.model';
@@ -11,7 +10,6 @@ import { DatasetService } from '@app/features/discovery/services/dataset.service
 
 export interface DatasetEnrichmentState {
   history: DatasetUpdateRecord[];
-  audit: DatasetAuditEntry[];
   indexing: DatasetIndexingStatus | null;
 }
 
@@ -29,11 +27,9 @@ export class DatasetDetailEnrichmentService {
     }
 
     const cached = this.datasetService.getById(datasetId);
-    const dataset$ = cached
-      ? of(cached)
-      : this.datasetService
-          .loadDatasetById(datasetId)
-          .pipe(catchError(() => of(null)));
+    const dataset$ = this.datasetService
+      .loadDatasetById(datasetId)
+      .pipe(catchError(() => (cached ? of(cached) : of(null))));
 
     return dataset$.pipe(
       switchMap((dataset) => {
@@ -50,17 +46,11 @@ export class DatasetDetailEnrichmentService {
     datasetId: string,
   ): Observable<DatasetEnrichmentState> {
     const isAuthenticated = this.auth.isAuthenticated();
-    const isAdmin = this.auth.isAdmin();
 
     return forkJoin({
       history: isAuthenticated
         ? this.enrichment
             .getUpdateHistory(datasetId)
-            .pipe(catchError(() => of([])))
-        : of([]),
-      audit: isAdmin
-        ? this.enrichment
-            .getAuditTrail(datasetId)
             .pipe(catchError(() => of([])))
         : of([]),
       indexing: isAuthenticated
@@ -69,9 +59,8 @@ export class DatasetDetailEnrichmentService {
             .pipe(catchError(() => of(null)))
         : of(null),
     }).pipe(
-      map(({ history, audit, indexing }) => ({
+      map(({ history, indexing }) => ({
         history,
-        audit,
         indexing,
       })),
     );

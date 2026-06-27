@@ -3,15 +3,17 @@
     <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
       <div class="space-y-3 sm:col-span-2 lg:col-span-1">
         <a routerLink="/" class="flex items-center gap-2">
-          <span class="flex size-8 items-center justify-center rounded-md bg-nbs-primary text-sm font-bold text-white"
-            aria-hidden="true">N</span>
+          <span class="flex size-9 items-center justify-center rounded-md bg-white p-1 ring-1 ring-nbs-border"
+            aria-hidden="true">
+            <img src="/Ngao.png" alt="" class="size-full object-contain" />
+          </span>
           <span>
             <span class="block text-sm font-semibold leading-tight text-slate-900">NBS</span>
             <span class="block text-xs leading-tight text-nbs-muted">SmartData Hub</span>
           </span>
         </a>
         <p class="max-w-xs text-xs leading-5 text-nbs-muted">
-          Official open data from Tanzania's National Bureau of Statistics.
+          Open data, free to use.
         </p>
       </div>
 
@@ -37,13 +39,11 @@
       }
     </div>
 
-    <div
-      class="mt-6 flex flex-col gap-3 border-t border-nbs-border pt-5 text-xs text-nbs-muted sm:flex-row sm:items-center sm:justify-between">
+    <div class="mt-6 border-t border-nbs-border pt-5 text-xs text-nbs-muted">
       <p>
         © {{ year }} National Bureau of Statistics — United Republic of
         Tanzania.
       </p>
-      <p>Open data, free to use.</p>
     </div>
   </div>
 </footer>

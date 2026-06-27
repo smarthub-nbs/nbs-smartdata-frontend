@@ -141,6 +141,8 @@
     (deleteDataset)="deleteDataset.emit($event)" />
   }
 
+  <app-dataset-activity-log [datasetId]="record.id" />
+
   @if (message()) {
   <output class="block rounded-md px-3 py-2 text-sm" [class.bg-emerald-50]="!messageError()"
     [class.text-emerald-900]="!messageError()" [class.bg-red-50]="messageError()" [class.text-red-900]="messageError()"

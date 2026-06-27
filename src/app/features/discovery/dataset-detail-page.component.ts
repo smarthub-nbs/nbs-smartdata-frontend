@@ -5,12 +5,11 @@ import {
   inject,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { map } from 'rxjs';
 import { DatasetMetadataPanelComponent } from '@app/features/discovery/components/dataset-metadata-panel.component';
 import { DatasetFilePreviewComponent } from '@app/features/discovery/components/dataset-file-preview.component';
 import { DatasetUpdateHistoryComponent } from '@app/features/discovery/components/dataset-update-history.component';
-import { DatasetAuditTrailComponent } from '@app/features/discovery/components/dataset-audit-trail.component';
 import { DatasetDetailHeaderComponent } from '@app/features/discovery/components/dataset-detail-header.component';
 import { DatasetDetailFallbackComponent } from '@app/features/discovery/components/dataset-detail-fallback.component';
 import { AuthService } from '@app/core/services/auth.service';
@@ -27,13 +26,11 @@ import { DatasetDetailFacadeService } from '@app/features/discovery/services/dat
   standalone: true,
   providers: [DatasetDetailFacadeService],
   imports: [
-    RouterLink,
     DatasetDetailHeaderComponent,
     DatasetDetailFallbackComponent,
     DatasetMetadataPanelComponent,
     DatasetFilePreviewComponent,
     DatasetUpdateHistoryComponent,
-    DatasetAuditTrailComponent,
     RecommendedDatasetsComponent,
     DatasetDownloadPanelComponent,
     PageStateComponent,
@@ -69,19 +66,34 @@ export class DatasetDetailPageComponent {
 
   protected readonly detailLoading = computed(() => {
     const id = this.datasetId();
-    if (!id || this.dataset()) {
+    if (!id) {
       return false;
     }
-    return this.datasetService.detailLoadState().status === 'loading';
+
+    const state = this.datasetService.detailLoadState();
+    if (state.status === 'loading') {
+      return true;
+    }
+    if (state.status === 'success' && state.data.id === id) {
+      return false;
+    }
+    if (state.status === 'error') {
+      return false;
+    }
+
+    return true;
   });
 
   protected readonly detailError = computed(() => {
     const id = this.datasetId();
-    if (!id || this.dataset()) {
+    if (!id) {
       return null;
     }
     const state = this.datasetService.detailLoadState();
-    return state.status === 'error' ? state.message : null;
+    if (state.status === 'error' && !this.dataset()) {
+      return state.message;
+    }
+    return null;
   });
 
   constructor() {

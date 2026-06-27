@@ -28,10 +28,7 @@ describe('DatasetDetailEnrichmentService', () => {
   let service: DatasetDetailEnrichmentService;
   let auth: jasmine.SpyObj<Pick<AuthService, 'isAuthenticated' | 'isAdmin'>>;
   let enrichment: jasmine.SpyObj<
-    Pick<
-      DatasetEnrichmentService,
-      'getUpdateHistory' | 'getAuditTrail' | 'getIndexingStatus'
-    >
+    Pick<DatasetEnrichmentService, 'getUpdateHistory' | 'getIndexingStatus'>
   >;
 
   beforeEach(() => {
@@ -47,20 +44,10 @@ describe('DatasetDetailEnrichmentService', () => {
 
     enrichment = jasmine.createSpyObj('DatasetEnrichmentService', [
       'getUpdateHistory',
-      'getAuditTrail',
       'getIndexingStatus',
     ]);
     enrichment.getUpdateHistory.and.returnValue(
       of([{ date: '2026-01-01', note: 'published' }]),
-    );
-    enrichment.getAuditTrail.and.returnValue(
-      of([
-        {
-          action: 'published',
-          actor: 'admin@nbs.gov',
-          createdAt: '2026-01-01',
-        },
-      ]),
     );
     enrichment.getIndexingStatus.and.returnValue(
       of({ status: 'indexed', indexedAt: '2026-01-01', details: 'ok' }),
@@ -82,30 +69,21 @@ describe('DatasetDetailEnrichmentService', () => {
     service.loadForDatasetId(dataset.id).subscribe((state) => {
       expect(state).toEqual({
         history: [],
-        audit: [],
         indexing: null,
       });
       expect(enrichment.getUpdateHistory).not.toHaveBeenCalled();
-      expect(enrichment.getAuditTrail).not.toHaveBeenCalled();
       expect(enrichment.getIndexingStatus).not.toHaveBeenCalled();
       done();
     });
   });
 
-  it('loads history, indexing, and audit for admins', (done) => {
+  it('loads history and indexing for authenticated users', (done) => {
     auth.isAuthenticated.and.returnValue(true);
     auth.isAdmin.and.returnValue(true);
 
     service.loadForDatasetId(dataset.id).subscribe((state) => {
       expect(state?.history).toEqual([
         { date: '2026-01-01', note: 'published' },
-      ]);
-      expect(state?.audit).toEqual([
-        {
-          action: 'published',
-          actor: 'admin@nbs.gov',
-          createdAt: '2026-01-01',
-        },
       ]);
       expect(state?.indexing).toEqual({
         status: 'indexed',
