@@ -1,5 +1,4 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { Observable } from 'rxjs';
 import {
   DatasetUsageMetrics,
   DatasetUsageRow,
@@ -44,14 +43,21 @@ export class AdminAnalyticsService {
     () => this.datasetService.listDatasets().length,
   );
 
+  private hasLoaded = false;
+
   readonly analyticsLoading = this.loading.asReadonly();
   readonly analyticsError = this.loadError.asReadonly();
 
-  constructor() {
+  /** Loads usage metrics once; safe to call repeatedly (e.g. on first reveal). */
+  ensureLoaded(): void {
+    if (this.hasLoaded) {
+      return;
+    }
     this.refresh();
   }
 
   refresh(): void {
+    this.hasLoaded = true;
     this.loading.set(true);
     this.loadError.set(null);
     this.developerApi.loadUsageLogs().subscribe({

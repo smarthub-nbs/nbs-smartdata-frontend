@@ -3,8 +3,57 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
     @apply bg-white font-sans text-slate-900 antialiased;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer utilities {
+  @keyframes nbs-enter {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes nbs-fade {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  // Gentle entrance for swapped content (ease-out, ~240ms).
+  .nbs-enter {
+    animation: nbs-enter 240ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .nbs-fade {
+    animation: nbs-fade 200ms ease-out both;
   }
 }
 

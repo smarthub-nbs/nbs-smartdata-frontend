@@ -1,0 +1,81 @@
+<div class="space-y-4">
+  <fieldset class="flex flex-wrap gap-2">
+    <legend class="sr-only">Filter by status</legend>
+    @for (chip of filterChips; track chip.key) {
+    <button type="button" [class]="filterChipClasses(chip.key)" (click)="filterChange.emit(chip.key)">
+      {{ chip.label }} {{ chipCount(chip.key) }}
+    </button>
+    }
+  </fieldset>
+
+  <div class="space-y-2">
+    <div class="flex items-center justify-between gap-2">
+      <p class="text-xs font-medium uppercase tracking-wide text-nbs-muted">
+        Datasets
+      </p>
+      <span class="text-xs text-nbs-muted">{{ pagination().totalItems | number }} total</span>
+    </div>
+
+    <label class="block">
+      <span class="sr-only">Search datasets</span>
+      <input type="search" placeholder="Search by title…"
+        class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-nbs-primary focus:outline-none focus:ring-2 focus:ring-nbs-primary/30"
+        [value]="searchTerm()" (input)="onSearch($event)" />
+    </label>
+
+    @if (loading()) {
+    <div class="space-y-2" aria-live="polite" aria-busy="true">
+      <span class="sr-only">Loading datasets…</span>
+      @for (row of skeletonRows; track $index) {
+      <div class="h-16 animate-pulse rounded-md border border-slate-100 bg-slate-50"></div>
+      }
+    </div>
+    } @else if (items().length === 0) {
+    <div
+      class="flex flex-col items-center gap-2 rounded-md border border-dashed border-slate-300 bg-nbs-surface px-4 py-8 text-center">
+      <app-icon name="inbox" [size]="28" class="text-slate-300" />
+      @if (hasActiveSearch()) {
+      <p class="text-sm text-nbs-muted">No datasets match your search.</p>
+      } @else {
+      <p class="text-sm text-nbs-muted">No datasets in this status.</p>
+      }
+    </div>
+    } @else {
+    @for (item of items(); track item.id) {
+    <button type="button" [class]="queueItemClasses(item.id)" (click)="selectDataset.emit(item.id)">
+      <div class="flex items-start justify-between gap-2">
+        <div class="min-w-0">
+          <p class="truncate text-sm font-medium text-slate-900">
+            {{ item.title }}
+          </p>
+          <p class="mt-0.5 text-xs text-nbs-muted">
+            {{ readinessCount(item) }}/3 requirements complete
+          </p>
+        </div>
+        <span [class]="statusChipClasses(item.status)">
+          {{ statusLabel(item.status) }}
+        </span>
+      </div>
+    </button>
+    }
+
+    @if (pagination().hasPrevious || pagination().hasNext) {
+    <div class="flex items-center justify-between gap-2 pt-1">
+      <span class="text-xs text-nbs-muted">{{ pageRangeLabel() }}</span>
+      <div class="flex items-center gap-1">
+        <button type="button"
+          class="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+          [disabled]="!pagination().hasPrevious" (click)="previousPage.emit()">
+          Previous
+        </button>
+        <button type="button"
+          class="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+          [disabled]="!pagination().hasNext" (click)="nextPage.emit()">
+          Next
+        </button>
+      </div>
+    </div>
+    }
+    }
+  </div>
+</div>
