@@ -107,8 +107,16 @@ export class DeveloperApiService {
     this.tryPath.set(path);
   }
 
+  clearSelectedTryPath(): void {
+    this.tryPath.set(null);
+  }
+
   setLastIssuedKey(key: string): void {
     this.issuedKey.set(key);
+  }
+
+  clearLastIssuedKey(): void {
+    this.issuedKey.set(null);
   }
 
   loadKeys(): Observable<ApiKeyRecord[]> {

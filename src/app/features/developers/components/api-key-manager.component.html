@@ -40,9 +40,14 @@
 
   @if (revealedKey()) {
   <div class="mt-4 rounded-md border border-nbs-accent/30 bg-nbs-accent/5 p-3" role="alert">
-    <p class="text-xs font-medium text-nbs-accent">
-      Copy your key now — it will not be shown again:
-    </p>
+    <div class="flex items-start justify-between gap-2">
+      <p class="text-xs font-medium text-nbs-accent">
+        Copy your key now — it will not be shown again:
+      </p>
+      <app-button variant="ghost" size="sm" (clicked)="dismissRevealedKey()">
+        Dismiss
+      </app-button>
+    </div>
     <div class="mt-2 flex items-center gap-2">
       <code class="min-w-0 flex-1 break-all font-mono text-sm text-slate-800">
         @if (keyVisible()) {
@@ -85,7 +90,7 @@
     <app-page-state title="No active API keys" label="Empty" message="Create a key above to access the gateway." />
   </div>
   } @else {
-  <ul class="mt-4 divide-y divide-slate-100">
+  <ul class="mt-4 max-h-[min(24rem,50vh)] divide-y divide-slate-100 overflow-y-auto">
     @for (key of api.activeKeys(); track key.id) {
     <li class="py-3">
       <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -115,12 +120,20 @@
           <app-button variant="ghost" size="sm" (clicked)="cancelRevoke()">
             Cancel
           </app-button>
+          } @else if (confirmRegenerateId() === key.id) {
+          <span class="text-xs text-amber-800">Regenerate invalidates the current key.</span>
+          <app-button variant="primary" size="sm" [loading]="regeneratingId() === key.id"
+            (clicked)="confirmRegenerate(key.id)">
+            Confirm
+          </app-button>
+          <app-button variant="ghost" size="sm" (clicked)="cancelRegenerate()">
+            Cancel
+          </app-button>
           } @else {
           <app-button variant="outline" size="sm" (clicked)="toggleUsage(key.id)">
             {{ expandedKeyId() === key.id ? 'Hide usage' : 'Usage' }}
           </app-button>
-          <app-button variant="outline" size="sm" [loading]="regeneratingId() === key.id"
-            (clicked)="regenerate(key.id)">
+          <app-button variant="outline" size="sm" (clicked)="requestRegenerate(key.id)">
             Regenerate
           </app-button>
           <app-button variant="danger" size="sm" [loading]="revokingId() === key.id" (clicked)="requestRevoke(key.id)">

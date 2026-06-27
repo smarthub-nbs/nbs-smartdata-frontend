@@ -7,7 +7,11 @@
   </div>
 
   @if (loading()) {
-  <p class="mt-2 text-xs text-nbs-muted">Loading usage…</p>
+  <div class="mt-2 flex items-center gap-2 text-xs text-nbs-muted">
+    <span class="inline-block size-3.5 animate-spin rounded-full border-2 border-nbs-primary border-t-transparent"
+      aria-hidden="true"></span>
+    Loading usage…
+  </div>
   } @else if (errorMessage()) {
   <p class="mt-2 text-xs text-nbs-danger" role="alert">{{ errorMessage() }}</p>
   } @else if (logs().length === 0) {
@@ -27,15 +31,15 @@
         </tr>
       </thead>
       <tbody class="divide-y divide-slate-200/80">
-        @for (log of logs(); track log.id) {
+        @for (log of visibleLogs(); track log.id) {
         <tr>
-          <td class="py-1.5 pr-3 whitespace-nowrap text-slate-600">
-            {{ log.created_at | slice: 0 : 16 }}
+          <td class="whitespace-nowrap py-1.5 pr-3 text-slate-600">
+            {{ log.created_at | date: 'medium' }}
           </td>
           <td class="py-1.5 pr-3 font-mono text-slate-800">
             {{ log.method }}
           </td>
-          <td class="py-1.5 pr-3 font-mono text-slate-700">
+          <td class="max-w-[10rem] truncate py-1.5 pr-3 font-mono text-slate-700" [title]="log.endpoint">
             {{ log.endpoint }}
           </td>
           <td class="py-1.5 pr-3">
@@ -57,5 +61,13 @@
       </tbody>
     </table>
   </div>
+
+  @if (hasMore()) {
+  <div class="mt-2">
+    <app-button variant="ghost" size="sm" (clicked)="showMore()">
+      Show {{ remainingCount() }} more
+    </app-button>
+  </div>
+  }
   }
 </div>

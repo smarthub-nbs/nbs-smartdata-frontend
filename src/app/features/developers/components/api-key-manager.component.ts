@@ -46,6 +46,7 @@ export class ApiKeyManagerComponent implements OnInit {
   protected readonly errorMessage = signal('');
   protected readonly expandedKeyId = signal<string | null>(null);
   protected readonly confirmRevokeId = signal<string | null>(null);
+  protected readonly confirmRegenerateId = signal<string | null>(null);
 
   ngOnInit(): void {
     if (this.auth.canManageApiKeys()) {
@@ -85,8 +86,7 @@ export class ApiKeyManagerComponent implements OnInit {
   protected regenerate(id: string): void {
     this.regeneratingId.set(id);
     this.errorMessage.set('');
-    this.revealedKey.set('');
-    this.keyVisible.set(false);
+    this.clearRevealedKey();
 
     this.api
       .regenerateKey(id)
@@ -94,23 +94,39 @@ export class ApiKeyManagerComponent implements OnInit {
       .subscribe({
         next: ({ plainKey }) => {
           this.regeneratingId.set('');
+          this.confirmRegenerateId.set(null);
           this.revealedKey.set(plainKey);
           this.keyVisible.set(true);
           this.api.setLastIssuedKey(plainKey);
         },
         error: (err: unknown) => {
           this.regeneratingId.set('');
+          this.confirmRegenerateId.set(null);
           this.errorMessage.set(this.resolveErrorMessage(err));
         },
       });
   }
 
   protected requestRevoke(id: string): void {
+    this.confirmRegenerateId.set(null);
     this.confirmRevokeId.set(id);
   }
 
   protected cancelRevoke(): void {
     this.confirmRevokeId.set(null);
+  }
+
+  protected requestRegenerate(id: string): void {
+    this.confirmRevokeId.set(null);
+    this.confirmRegenerateId.set(id);
+  }
+
+  protected cancelRegenerate(): void {
+    this.confirmRegenerateId.set(null);
+  }
+
+  protected confirmRegenerate(id: string): void {
+    this.regenerate(id);
   }
 
   protected confirmRevoke(id: string): void {
@@ -119,10 +135,10 @@ export class ApiKeyManagerComponent implements OnInit {
   }
 
   protected revoke(id: string): void {
+    this.confirmRevokeId.set(null);
+    this.clearRevealedKey();
     this.revokingId.set(id);
     this.errorMessage.set('');
-    this.revealedKey.set('');
-    this.keyVisible.set(false);
 
     this.api
       .revokeKey(id)
@@ -159,8 +175,17 @@ export class ApiKeyManagerComponent implements OnInit {
     return `${key.slice(0, 4)}${'•'.repeat(Math.min(key.length - 8, 20))}${key.slice(-4)}`;
   }
 
+  protected dismissRevealedKey(): void {
+    this.clearRevealedKey();
+  }
+
   protected retryLoadKeys(): void {
     this.loadKeys();
+  }
+
+  private clearRevealedKey(): void {
+    this.revealedKey.set('');
+    this.keyVisible.set(false);
   }
 
   private loadKeys(): void {

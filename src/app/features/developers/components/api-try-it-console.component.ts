@@ -12,6 +12,11 @@ import { FormsModule } from '@angular/forms';
 import { DatasetService } from '@app/features/discovery';
 import { ApiTryItResult } from '@app/features/developers/models/developer-api.model';
 import { DeveloperApiService } from '@app/features/developers/services/developer-api.service';
+import {
+  filterEndpointGroups,
+  groupEndpoints,
+  methodBadgeClasses,
+} from '@app/features/developers/utils/endpoint-groups.util';
 import { ButtonComponent, CopyButtonComponent } from '@shared/ui';
 
 @Component({
@@ -26,17 +31,34 @@ export class ApiTryItConsoleComponent {
   private readonly datasetService = inject(DatasetService);
   private readonly destroyRef = inject(DestroyRef);
 
-  protected selectedPath =
-    this.api.endpoints[0]?.path ?? '/v1/gateway/datasets/';
-  protected apiKey = '';
-  protected fileId = '';
+  protected readonly selectedPath = signal(
+    this.api.endpoints[0]?.path ?? '/v1/gateway/datasets/',
+  );
+  protected readonly apiKey = signal('');
+  protected readonly fileId = signal('');
+  protected readonly endpointFilter = signal('');
   protected readonly loading = signal(false);
   protected readonly result = signal<ApiTryItResult | null>(null);
   protected readonly errorMessage = signal('');
   protected readonly headersExpanded = signal(false);
+  protected readonly methodBadgeClasses = methodBadgeClasses;
+
+  protected readonly filteredGroups = computed(() =>
+    filterEndpointGroups(
+      groupEndpoints(this.api.endpoints),
+      this.endpointFilter(),
+    ),
+  );
+
+  protected readonly selectedEndpoint = computed(
+    () =>
+      this.api.endpoints.find(
+        (endpoint) => endpoint.path === this.selectedPath(),
+      ) ?? null,
+  );
 
   protected readonly needsFileId = computed(() =>
-    this.selectedPath.includes('{file_id}'),
+    this.selectedPath().includes('{file_id}'),
   );
 
   protected readonly fileIdHint = computed(() => {
@@ -50,16 +72,35 @@ export class ApiTryItConsoleComponent {
     effect(() => {
       const path = this.api.selectedTryPath();
       if (path) {
-        this.selectedPath = path;
+        this.selectedPath.set(path);
+        this.api.clearSelectedTryPath();
       }
     });
 
     effect(() => {
       const key = this.api.lastIssuedKey();
       if (key) {
-        this.apiKey = key;
+        this.apiKey.set(key);
       }
     });
+  }
+
+  protected onEndpointFilterInput(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.endpointFilter.set(value);
+  }
+
+  protected selectEndpoint(path: string): void {
+    this.selectedPath.set(path);
+  }
+
+  protected endpointRowClasses(path: string): string {
+    const base =
+      'flex w-full items-start gap-2 px-3 py-2 text-left transition-colors hover:bg-nbs-surface';
+    if (this.selectedPath() === path) {
+      return `${base} bg-nbs-primary/5`;
+    }
+    return base;
   }
 
   protected run(): void {
@@ -80,12 +121,13 @@ export class ApiTryItConsoleComponent {
     }
 
     this.api
-      .tryEndpoint(path, this.apiKey)
+      .tryEndpoint(path, this.apiKey())
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (res) => {
           this.loading.set(false);
           this.result.set(res);
+          this.api.clearLastIssuedKey();
         },
         error: (err: Error) => {
           this.loading.set(false);
@@ -112,16 +154,16 @@ export class ApiTryItConsoleComponent {
 
   private resolvePath(): string {
     if (!this.needsFileId()) {
-      return this.selectedPath;
+      return this.selectedPath();
     }
 
-    const fileId = this.fileId.trim() || this.fileIdHint();
+    const fileId = this.fileId().trim() || this.fileIdHint();
     if (!fileId) {
       throw new Error(
         'File ID required. Open a published dataset detail page to find a file UUID.',
       );
     }
 
-    return this.selectedPath.replace('{file_id}', fileId);
+    return this.selectedPath().replace('{file_id}', fileId);
   }
 }
