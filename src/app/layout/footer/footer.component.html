@@ -1,27 +1,49 @@
-    <footer
-      class="shrink-0 border-t border-nbs-border bg-white px-4 py-6 lg:px-6"
-    >
-      <div
-        class="mx-auto flex max-w-7xl flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
-      >
-        <p class="text-xs text-nbs-muted">
-          © {{ year }} National Bureau of Statistics — United Republic of
-          Tanzania. All rights reserved.
+<footer class="shrink-0 border-t border-nbs-border bg-white">
+  <div class="mx-auto max-w-7xl 2xl:max-w-screen-2xl px-4 py-8 lg:px-6">
+    <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <div class="space-y-3 sm:col-span-2 lg:col-span-1">
+        <a routerLink="/" class="flex items-center gap-2">
+          <span class="flex size-8 items-center justify-center rounded-md bg-nbs-primary text-sm font-bold text-white"
+            aria-hidden="true">N</span>
+          <span>
+            <span class="block text-sm font-semibold leading-tight text-slate-900">NBS</span>
+            <span class="block text-xs leading-tight text-nbs-muted">SmartData Hub</span>
+          </span>
+        </a>
+        <p class="max-w-xs text-xs leading-5 text-nbs-muted">
+          Official open data from Tanzania's National Bureau of Statistics.
         </p>
-        <nav class="flex flex-wrap gap-4 text-xs" aria-label="Footer">
-          <a
-            routerLink="/developers"
-            class="text-slate-600 hover:text-nbs-primary"
-            >API</a
-          >
-          <a
-            routerLink="/datasets"
-            class="text-slate-600 hover:text-nbs-primary"
-            >Datasets</a
-          >
-          <span class="text-slate-400">About</span>
-          <span class="text-slate-400">Contact</span>
-        </nav>
       </div>
-    </footer>
-  
+
+      @for (group of linkGroups; track group.title) {
+      <nav [attr.aria-label]="group.title">
+        <h2 class="text-xs font-semibold uppercase tracking-wide text-slate-900">
+          {{ group.title }}
+        </h2>
+        <ul class="mt-3 space-y-2">
+          @for (link of group.links; track link.label) {
+          <li>
+            @if (link.route) {
+            <a [routerLink]="link.route" class="text-sm text-slate-600 transition-colors hover:text-nbs-primary">
+              {{ link.label }}
+            </a>
+            } @else {
+            <span class="text-sm text-slate-400">{{ link.label }}</span>
+            }
+          </li>
+          }
+        </ul>
+      </nav>
+      }
+    </div>
+
+    <div
+      class="mt-6 flex flex-col gap-3 border-t border-nbs-border pt-5 text-xs text-nbs-muted sm:flex-row sm:items-center sm:justify-between">
+      <p>
+        © {{ year }} National Bureau of Statistics — United Republic of
+        Tanzania.
+      </p>
+      <p>Open data, free to use.</p>
+    </div>
+  </div>
+</footer>

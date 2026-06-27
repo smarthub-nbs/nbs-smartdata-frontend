@@ -11,6 +11,8 @@ import { copyToClipboard } from '@app/shared/utils/clipboard.util';
 export type CopyButtonSize = 'sm' | 'md';
 export type CopyButtonTone = 'default' | 'inverse';
 
+type CopyState = 'idle' | 'copied' | 'failed';
+
 const SIZE_CLASSES: Record<CopyButtonSize, string> = {
   sm: 'size-7',
   md: 'size-8',
@@ -32,7 +34,7 @@ const ICON_CLASSES: Record<CopyButtonSize, string> = {
       [attr.title]="ariaLabel()"
       (click)="copy()"
     >
-      @if (copied()) {
+      @if (state() === 'copied') {
         <svg
           [class]="iconClasses()"
           viewBox="0 0 24 24"
@@ -45,6 +47,21 @@ const ICON_CLASSES: Record<CopyButtonSize, string> = {
             stroke-linecap="round"
             stroke-linejoin="round"
             d="M5 13l4 4L19 7"
+          />
+        </svg>
+      } @else if (state() === 'failed') {
+        <svg
+          [class]="iconClasses()"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          aria-hidden="true"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M6 18L18 6M6 6l12 12"
           />
         </svg>
       } @else {
@@ -70,7 +87,7 @@ export class CopyButtonComponent {
   readonly size = input<CopyButtonSize>('sm');
   readonly tone = input<CopyButtonTone>('default');
 
-  protected readonly copied = signal(false);
+  protected readonly state = signal<CopyState>('idle');
 
   private readonly destroyRef = inject(DestroyRef);
   private resetTimer: ReturnType<typeof setTimeout> | null = null;
@@ -84,21 +101,31 @@ export class CopyButtonComponent {
   }
 
   protected ariaLabel(): string {
-    return this.copied() ? 'Copied' : this.label();
+    if (this.state() === 'copied') {
+      return 'Copied';
+    }
+    if (this.state() === 'failed') {
+      return 'Copy failed';
+    }
+    return this.label();
   }
 
   protected buttonClasses(): string {
     const size = SIZE_CLASSES[this.size()];
     let state: string;
 
-    if (this.tone() === 'inverse') {
-      state = this.copied()
-        ? 'text-emerald-300 hover:bg-white/10'
-        : 'text-slate-300 hover:bg-white/10 hover:text-white';
+    if (this.state() === 'failed') {
+      state = 'text-nbs-danger hover:bg-red-50';
+    } else if (this.tone() === 'inverse') {
+      state =
+        this.state() === 'copied'
+          ? 'text-emerald-300 hover:bg-white/10'
+          : 'text-slate-300 hover:bg-white/10 hover:text-white';
     } else {
-      state = this.copied()
-        ? 'text-nbs-accent hover:bg-nbs-accent/10'
-        : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700';
+      state =
+        this.state() === 'copied'
+          ? 'text-nbs-accent hover:bg-nbs-accent/10'
+          : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700';
     }
 
     return `inline-flex shrink-0 items-center justify-center rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/30 ${size} ${state}`;
@@ -110,16 +137,16 @@ export class CopyButtonComponent {
 
   protected async copy(): Promise<void> {
     const ok = await copyToClipboard(this.value());
-    if (!ok) {
-      return;
-    }
+    this.setState(ok ? 'copied' : 'failed');
+  }
 
-    this.copied.set(true);
+  private setState(next: CopyState): void {
+    this.state.set(next);
     if (this.resetTimer !== null) {
       clearTimeout(this.resetTimer);
     }
     this.resetTimer = setTimeout(() => {
-      this.copied.set(false);
+      this.state.set('idle');
       this.resetTimer = null;
     }, 1500);
   }

@@ -1,22 +1,26 @@
-import { SlicePipe } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   DestroyRef,
-  OnInit,
   inject,
   input,
+  OnInit,
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ApiError } from '@app/core/models/api-error.model';
 import { BackendApiUsageLog } from '@app/features/developers/models/developer-api.model';
 import { DeveloperApiService } from '@app/features/developers/services/developer-api.service';
+import { ButtonComponent } from '@shared/ui';
+
+const INITIAL_DISPLAY_LIMIT = 10;
 
 @Component({
   selector: 'app-api-key-usage-list',
   standalone: true,
-  imports: [SlicePipe],
+  imports: [DatePipe, ButtonComponent],
   templateUrl: './api-key-usage-list.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -29,13 +33,31 @@ export class ApiKeyUsageListComponent implements OnInit {
   protected readonly logs = signal<BackendApiUsageLog[]>([]);
   protected readonly loading = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
+  protected readonly displayLimit = signal(INITIAL_DISPLAY_LIMIT);
+
+  protected readonly visibleLogs = computed(() =>
+    this.logs().slice(0, this.displayLimit()),
+  );
+
+  protected readonly hasMore = computed(
+    () => this.logs().length > this.displayLimit(),
+  );
+
+  protected readonly remainingCount = computed(
+    () => this.logs().length - this.displayLimit(),
+  );
 
   ngOnInit(): void {
     this.load();
   }
 
   protected reload(): void {
+    this.displayLimit.set(INITIAL_DISPLAY_LIMIT);
     this.load();
+  }
+
+  protected showMore(): void {
+    this.displayLimit.update((limit) => limit + INITIAL_DISPLAY_LIMIT);
   }
 
   private load(): void {

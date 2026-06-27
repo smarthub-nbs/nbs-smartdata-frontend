@@ -5,7 +5,7 @@ export const HEADER_NAV_ITEMS: HeaderNavItem[] = [
   { label: 'Datasets', route: '/datasets' },
   { label: 'Explore', route: '/explore' },
   { label: 'Search', route: '/search' },
-  { label: 'Developers', route: '/developers', roles: ['developer', 'admin'] },
+  { label: 'Developers', route: '/developers' },
   {
     label: 'My hub',
     route: '/account',

@@ -6,7 +6,7 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
 import { ApiError } from '@app/core/models/api-error.model';
@@ -23,6 +23,7 @@ import { ButtonComponent } from '@shared/ui';
   standalone: true,
   imports: [
     FormsModule,
+    RouterLink,
     ButtonComponent,
     SearchResultCardComponent,
     RecommendedDatasetsComponent,

@@ -13,6 +13,8 @@ import { DatasetUpdateHistoryComponent } from '@app/features/discovery/component
 import { DatasetAuditTrailComponent } from '@app/features/discovery/components/dataset-audit-trail.component';
 import { DatasetDetailHeaderComponent } from '@app/features/discovery/components/dataset-detail-header.component';
 import { DatasetDetailFallbackComponent } from '@app/features/discovery/components/dataset-detail-fallback.component';
+import { AuthService } from '@app/core/services/auth.service';
+import { AccountService } from '@app/features/account/services/account.service';
 import { DatasetService } from '@app/features/discovery';
 import { DatasetDownloadPanelComponent } from '@app/features/developers';
 import { RecommendedDatasetsComponent } from '@app/features/search';
@@ -43,6 +45,8 @@ export class DatasetDetailPageComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly datasetService = inject(DatasetService);
+  private readonly accountService = inject(AccountService);
+  protected readonly auth = inject(AuthService);
   protected readonly facade = inject(DatasetDetailFacadeService);
 
   private readonly datasetId = toSignal(
@@ -53,6 +57,14 @@ export class DatasetDetailPageComponent {
   protected readonly dataset = computed(() => {
     const id = this.datasetId();
     return id ? this.datasetService.getById(id) : undefined;
+  });
+
+  protected readonly isDatasetSaved = computed(() => {
+    const id = this.datasetId();
+    if (!id) {
+      return false;
+    }
+    return this.accountService.savedDatasetIds().has(id);
   });
 
   protected readonly detailLoading = computed(() => {
@@ -85,6 +97,22 @@ export class DatasetDetailPageComponent {
     void this.router.navigate(['/explore'], {
       queryParams: { indicator },
     });
+  }
+
+  protected toggleSaveDataset(): void {
+    const dataset = this.dataset();
+    if (!dataset) {
+      return;
+    }
+
+    if (!this.auth.isAuthenticated()) {
+      void this.router.navigate(['/login'], {
+        queryParams: { returnUrl: `/datasets/${dataset.id}` },
+      });
+      return;
+    }
+
+    this.accountService.toggleSavedDataset(dataset);
   }
 
   protected updateRecordCount(totalRows: number | null): void {
