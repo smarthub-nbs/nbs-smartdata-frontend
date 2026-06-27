@@ -2,37 +2,25 @@ import { DecimalPipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
-  DestroyRef,
+  ElementRef,
   computed,
+  effect,
   inject,
   signal,
   viewChild,
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { finalize } from 'rxjs';
+import { ActivatedRoute, Params, Router } from '@angular/router';
+import { AuthService } from '@app/core/services/auth.service';
 import { DatasetUsageRow, AdminAnalyticsService } from '@app/features/admin';
-import { AdminDatasetRecord } from '@app/features/admin/models/admin-dataset.model';
 import { DatasetWorkflowPanelComponent } from '@app/features/admin/components/dataset-workflow-panel.component';
+import { TaxonomyManagerComponent } from '@app/features/admin/components/taxonomy-manager.component';
 import {
-  workflowStatusChipClasses,
-  workflowStatusLabel,
-} from '@app/features/admin/utils/admin-workflow-status.util';
-import { ApiError } from '@app/core/models/api-error.model';
-import {
-  Dataset,
-  DatasetMetadataUpdate,
-  DatasetService,
-} from '@app/features/discovery';
-import {
-  ButtonComponent,
-  DataTableColumn,
-  DataTableComponent,
-  FormFieldComponent,
-  SelectInputComponent,
-  SelectOption,
-  TextInputComponent,
-} from '@shared/ui';
+  DatasetWorkflowStatus,
+  StatusFilter,
+} from '@app/features/admin/models/admin-dataset.model';
+import { AdminWorkspaceFacade } from '@app/features/admin/services/admin-workspace.facade';
+import { DatasetService } from '@app/features/discovery';
+import { DataTableColumn, DataTableComponent, IconComponent } from '@shared/ui';
 
 interface PlatformMetricCard {
   label: string;
@@ -40,41 +28,59 @@ interface PlatformMetricCard {
   detail: string;
 }
 
+type AttentionTone = 'slate' | 'amber' | 'sky' | 'red';
+
+interface AttentionItem {
+  label: string;
+  count: number;
+  hint: string;
+  status: StatusFilter;
+  tone: AttentionTone;
+}
+
+const ATTENTION_BAR_CLASSES: Record<AttentionTone, string> = {
+  slate: 'bg-slate-400',
+  amber: 'bg-nbs-highlight',
+  sky: 'bg-nbs-primary',
+  red: 'bg-nbs-danger',
+};
+
+const VALID_STATUSES = new Set<DatasetWorkflowStatus>([
+  'draft',
+  'in_review',
+  'approved',
+  'rejected',
+  'published',
+]);
+
 @Component({
   selector: 'app-admin-page',
   standalone: true,
   imports: [
     DecimalPipe,
-    ReactiveFormsModule,
-    ButtonComponent,
-    TextInputComponent,
-    SelectInputComponent,
-    FormFieldComponent,
     DataTableComponent,
     DatasetWorkflowPanelComponent,
+    TaxonomyManagerComponent,
+    IconComponent,
   ],
   templateUrl: './admin-page.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [AdminWorkspaceFacade],
 })
 export class AdminPageComponent {
+  protected readonly facade = inject(AdminWorkspaceFacade);
   protected readonly analytics = inject(AdminAnalyticsService);
-  protected readonly datasetService = inject(DatasetService);
-  private readonly fb = inject(FormBuilder);
-  private readonly destroyRef = inject(DestroyRef);
-  private readonly workflowPanel = viewChild(DatasetWorkflowPanelComponent);
+  private readonly auth = inject(AuthService);
+  private readonly datasetService = inject(DatasetService);
 
-  protected readonly workflowStatusLabel = workflowStatusLabel;
-  protected readonly workflowStatusChipClasses = workflowStatusChipClasses;
+  protected readonly canManageTaxonomy = this.auth.canReviewDatasets;
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
-  protected readonly selectedDatasetId = signal('');
-  protected readonly selectedWorkflowRecord = signal<AdminDatasetRecord | null>(
-    null,
-  );
-  protected readonly saveMessage = signal('');
-  protected readonly saveError = signal(false);
-  protected readonly saving = signal(false);
-  protected readonly metadataLoading = signal(false);
-  protected readonly metadataLoadError = signal('');
+  private readonly workflowSection =
+    viewChild<ElementRef<HTMLElement>>('workflowSection');
+
+  protected readonly activityExpanded = signal(false);
 
   protected readonly usageColumns: DataTableColumn<DatasetUsageRow>[] = [
     { key: 'title', header: 'Dataset', sortable: true },
@@ -91,239 +97,155 @@ export class AdminPageComponent {
     },
   ];
 
-  protected readonly topicOptions = computed<SelectOption[]>(() =>
-    this.datasetService.topics().map((topic) => ({
-      label: topic.name,
-      value: topic.slug,
-    })),
-  );
-
-  protected readonly frequencyOptions: SelectOption[] = [
-    { label: 'Annual', value: 'Annual' },
-    { label: 'Quarterly', value: 'Quarterly' },
-    { label: 'Monthly', value: 'Monthly' },
-  ];
-
-  protected readonly form = this.fb.nonNullable.group({
-    title: ['', Validators.required],
-    description: ['', Validators.required],
-    topicSlug: ['', Validators.required],
-    frequency: ['', Validators.required],
-    region: ['', Validators.required],
-    license: ['', Validators.required],
+  protected readonly attentionItems = computed<AttentionItem[]>(() => {
+    const counts = this.facade.statusCounts();
+    const items: AttentionItem[] = [
+      {
+        label: 'Drafts to complete',
+        count: counts.draft,
+        hint: 'Need metadata, file, or tag before review',
+        status: 'draft',
+        tone: 'slate',
+      },
+      {
+        label: 'Awaiting review',
+        count: counts.in_review,
+        hint: 'Submitted and waiting for admin decision',
+        status: 'in_review',
+        tone: 'amber',
+      },
+      {
+        label: 'Ready to publish',
+        count: counts.approved,
+        hint: 'Approved and waiting for publication',
+        status: 'approved',
+        tone: 'sky',
+      },
+      {
+        label: 'Rejected — needs fixes',
+        count: counts.rejected,
+        hint: 'Update requirements and resubmit',
+        status: 'rejected',
+        tone: 'red',
+      },
+    ];
+    return items.filter((item) => item.count > 0);
   });
 
-  protected readonly selectedDataset = computed<Dataset | undefined>(() =>
-    this.datasetService.getById(this.selectedDatasetId()),
-  );
+  protected attentionBarClass(tone: AttentionTone): string {
+    return ATTENTION_BAR_CLASSES[tone];
+  }
 
-  protected readonly metadataReadinessHint = computed(() => {
-    const record = this.selectedWorkflowRecord();
-    if (!record) {
-      return '';
-    }
-    if (record.hasMetadata) {
-      return 'Metadata requirements are met for workflow submission.';
-    }
-    return 'Complete discovery metadata below before submitting this dataset for review.';
-  });
+  protected isActiveAttention(status: StatusFilter): boolean {
+    return this.facade.statusFilter() === status;
+  }
 
-  protected readonly activeDatasetCount = computed(
-    () => this.analytics.rows().length,
-  );
-
-  protected readonly totalActivity = computed(() => {
+  protected readonly platformCards = computed<PlatformMetricCard[]>(() => {
     const summary = this.analytics.summary();
-    return summary.totalApiCalls + summary.totalDownloads + summary.totalViews;
+    const datasetCount = this.analytics.datasetCount();
+    const activeCount = this.analytics.rows().length;
+    const topDataset = this.analytics.topRows()[0] ?? null;
+
+    return [
+      {
+        label: 'API calls',
+        value: summary.totalApiCalls.toLocaleString(),
+        detail: 'Developer API demand',
+      },
+      {
+        label: 'Downloads',
+        value: summary.totalDownloads.toLocaleString(),
+        detail: 'Dataset file downloads',
+      },
+      {
+        label: 'Views',
+        value: summary.totalViews.toLocaleString(),
+        detail: 'Discovery page views',
+      },
+      {
+        label: 'Active datasets',
+        value: `${activeCount}/${datasetCount}`,
+        detail: topDataset
+          ? `Top demand: ${topDataset.title}`
+          : 'No recorded activity yet',
+      },
+    ];
   });
 
   protected readonly topDemandDataset = computed(
     () => this.analytics.topRows()[0] ?? null,
   );
 
-  protected readonly platformCards = computed<PlatformMetricCard[]>(() => {
-    const summary = this.analytics.summary();
-    const datasetCount = this.analytics.datasetCount();
-    const activeCount = this.activeDatasetCount();
-    const topDataset = this.topDemandDataset();
-
-    return [
-      {
-        label: 'Total activity',
-        value: this.totalActivity().toLocaleString(),
-        detail: `${summary.totalApiCalls.toLocaleString()} API calls included`,
-      },
-      {
-        label: 'Active datasets',
-        value: `${activeCount}/${datasetCount}`,
-        detail:
-          datasetCount === 0
-            ? 'No catalog entries yet'
-            : `${this.percent(activeCount, datasetCount)} have recorded demand`,
-      },
-      {
-        label: 'Top demand',
-        value: (topDataset?.apiCalls ?? 0).toLocaleString(),
-        detail: topDataset?.title ?? 'No dataset activity yet',
-      },
-      {
-        label: 'Downloads',
-        value: summary.totalDownloads.toLocaleString(),
-        detail: `${summary.totalViews.toLocaleString()} dataset views recorded`,
-      },
-    ];
-  });
-
   constructor() {
-    this.form.valueChanges
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => {
-        this.saveMessage.set('');
-        this.saveError.set(false);
-      });
-  }
+    const params = this.route.snapshot.queryParamMap;
+    this.facade.init({
+      status: this.toStatusFilter(params.get('status')),
+      q: params.get('q') ?? undefined,
+      page: this.toPage(params.get('page')),
+      datasetId: params.get('dataset') ?? undefined,
+    });
 
-  protected onWorkflowChanged(): void {
-    this.datasetService.refreshCatalog();
-    this.analytics.refresh();
-    const id = this.selectedDatasetId();
-    if (id) {
-      this.reloadMetadataForId(id);
-    }
-  }
-
-  protected onWorkflowRecordSelected(record: AdminDatasetRecord | null): void {
-    this.selectedWorkflowRecord.set(record);
-  }
-
-  protected onWorkflowDatasetSelected(id: string): void {
-    if (id === this.selectedDatasetId()) {
-      return;
-    }
-
-    if (this.form.dirty) {
-      const discard = globalThis.confirm(
-        'You have unsaved metadata changes. Switch datasets and discard them?',
-      );
-      if (!discard) {
-        this.workflowPanel()?.revertSelection(this.selectedDatasetId());
-        return;
+    let lastMutation = this.facade.mutations();
+    effect(() => {
+      const mutation = this.facade.mutations();
+      if (mutation !== lastMutation) {
+        lastMutation = mutation;
+        this.datasetService.refreshCatalog();
+        if (this.activityExpanded()) {
+          this.analytics.refresh();
+        }
       }
-    }
+    });
 
-    this.onDatasetSelected(id);
+    effect(() => this.syncUrl());
   }
 
-  protected onDatasetSelected(id: string): void {
-    this.selectedDatasetId.set(id);
-    this.saveMessage.set('');
-    this.saveError.set(false);
-    this.metadataLoadError.set('');
-    this.reloadMetadataForId(id);
+  protected onAttentionSelect(status: StatusFilter): void {
+    this.facade.setStatusFilter(status);
+    this.workflowSection()?.nativeElement.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    });
   }
 
-  protected saveMetadata(): void {
-    const dataset = this.selectedDataset();
-    this.form.markAllAsTouched();
-    if (this.form.invalid || !dataset) {
-      return;
+  protected toggleActivityExpanded(): void {
+    this.activityExpanded.update((open) => !open);
+    if (this.activityExpanded()) {
+      this.analytics.ensureLoaded();
     }
+  }
 
-    const raw = this.form.getRawValue();
-    const payload: DatasetMetadataUpdate = {
-      title: raw.title.trim(),
-      description: raw.description.trim(),
-      topicSlug: raw.topicSlug,
-      frequency: raw.frequency as DatasetMetadataUpdate['frequency'],
-      region: raw.region.trim(),
-      license: raw.license.trim(),
-      format: dataset.format,
-      publisher: dataset.publisher,
-      keywords: dataset.keywords,
-      qualityScore: dataset.qualityScore,
+  private syncUrl(): void {
+    const status = this.facade.statusFilter();
+    const search = this.facade.searchTerm().trim();
+    const page = this.facade.currentPage();
+    const dataset = this.facade.selectedId();
+
+    const queryParams: Params = {
+      status: status === 'all' ? null : status,
+      q: search || null,
+      page: page > 1 ? page : null,
+      dataset: dataset || null,
     };
 
-    this.saving.set(true);
-    this.saveMessage.set('');
-    this.saveError.set(false);
-
-    this.datasetService
-      .updateMetadata(dataset.id, payload)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (updated) => {
-          this.saving.set(false);
-          this.saveError.set(false);
-          this.saveMessage.set('Metadata saved successfully.');
-          this.loadForm(updated);
-        },
-        error: (error: unknown) => {
-          this.saving.set(false);
-          this.saveError.set(true);
-          this.saveMessage.set(this.resolveErrorMessage(error));
-        },
-      });
-  }
-
-  protected controlError(controlName: keyof typeof this.form.controls): string {
-    const control = this.form.controls[controlName];
-    if (!control.touched) {
-      return '';
-    }
-    if (control.hasError('required')) {
-      return 'This field is required.';
-    }
-    return '';
-  }
-
-  protected percent(value: number, total: number): string {
-    if (total === 0) {
-      return '0%';
-    }
-    return `${Math.round((value / total) * 100)}%`;
-  }
-
-  private reloadMetadataForId(id: string): void {
-    const cached = this.datasetService.getById(id);
-    if (cached) {
-      this.metadataLoading.set(false);
-      this.loadForm(cached);
-      return;
-    }
-
-    this.metadataLoading.set(true);
-    this.datasetService
-      .loadDatasetById(id)
-      .pipe(
-        finalize(() => this.metadataLoading.set(false)),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe({
-        next: (dataset) => this.loadForm(dataset),
-        error: () => {
-          this.loadForm();
-          this.metadataLoadError.set(
-            'Could not load metadata for this dataset.',
-          );
-        },
-      });
-  }
-
-  private loadForm(dataset?: Dataset): void {
-    if (!dataset) {
-      this.form.reset();
-      return;
-    }
-
-    this.form.setValue({
-      title: dataset.title,
-      description: dataset.description,
-      topicSlug: dataset.topicSlug,
-      frequency: dataset.frequency,
-      region: dataset.region,
-      license: dataset.license,
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams,
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
     });
-    this.form.markAsPristine();
+  }
+
+  private toStatusFilter(value: string | null): StatusFilter | undefined {
+    if (value && VALID_STATUSES.has(value as DatasetWorkflowStatus)) {
+      return value as StatusFilter;
+    }
+    return undefined;
+  }
+
+  private toPage(value: string | null): number | undefined {
+    const page = Number(value);
+    return Number.isInteger(page) && page > 0 ? page : undefined;
   }
 
   private formatLastAccessed(value: string): string {
@@ -336,15 +258,5 @@ export class AdminPageComponent {
       day: 'numeric',
       year: 'numeric',
     }).format(date);
-  }
-
-  private resolveErrorMessage(error: unknown): string {
-    if (error instanceof ApiError) {
-      return error.message;
-    }
-    if (error instanceof Error) {
-      return error.message;
-    }
-    return 'Failed to save metadata.';
   }
 }

@@ -1,0 +1,136 @@
+<div class="border-t border-nbs-border pt-4">
+  <button type="button"
+    class="flex w-full items-center justify-between gap-2 text-left transition-colors hover:text-nbs-primary"
+    [attr.aria-expanded]="expanded()" (click)="toggle()">
+    <span class="flex items-start gap-2.5">
+      <app-icon name="layers" [size]="16" class="mt-0.5 text-nbs-muted" />
+      <span>
+        <span class="block text-sm font-semibold text-slate-900">Manage resources</span>
+        <span class="mt-0.5 block text-xs text-nbs-muted">
+          Files, tags, versions, and dataset deletion.
+        </span>
+      </span>
+    </span>
+    <app-icon name="chevron-down" [size]="16" class="text-nbs-muted transition-transform motion-safe:duration-200"
+      [class.rotate-180]="expanded()" />
+  </button>
+
+  @if (expanded()) {
+  <div class="mt-4 space-y-5">
+    @if (error()) {
+    <p class="text-sm text-nbs-danger" role="alert">{{ error() }}</p>
+    }
+
+    @if (loading()) {
+    <p class="text-sm text-nbs-muted" aria-live="polite">Loading resources…</p>
+    } @else {
+    <section class="space-y-2">
+      <h5 class="text-xs font-semibold uppercase tracking-wide text-nbs-muted">
+        Files ({{ resources().files.length }})
+      </h5>
+      @if (resources().files.length === 0) {
+      <p class="text-xs text-nbs-muted">No files uploaded.</p>
+      } @else {
+      <ul class="divide-y divide-slate-100 rounded-md border border-slate-200">
+        @for (file of resources().files; track file.id) {
+        <li class="flex items-center justify-between gap-3 px-3 py-2">
+          <div class="min-w-0">
+            <p class="truncate text-sm text-slate-900">
+              {{ file.filename }}
+              @if (file.isPrimary) {
+              <span class="ml-1 rounded-full bg-sky-100 px-1.5 py-0.5 text-[10px] font-medium text-sky-800">
+                Primary
+              </span>
+              }
+            </p>
+            <p class="text-xs text-nbs-muted">
+              {{ file.fileFormat | uppercase }} · {{ formatSize(file.fileSize) }}
+              @if (file.validationStatus) {
+              · {{ file.validationStatus }}
+              }
+            </p>
+          </div>
+          <app-button variant="outline" size="sm" [loading]="actionId() === file.id" (clicked)="deleteFile(file.id)">
+            <span class="flex items-center gap-1.5">
+              <app-icon name="trash" [size]="14" />
+              Delete
+            </span>
+          </app-button>
+        </li>
+        }
+      </ul>
+      }
+    </section>
+
+    <section class="space-y-2">
+      <h5 class="text-xs font-semibold uppercase tracking-wide text-nbs-muted">
+        Tags ({{ resources().tagLinks.length }})
+      </h5>
+      @if (resources().tagLinks.length === 0) {
+      <p class="text-xs text-nbs-muted">No tags linked.</p>
+      } @else {
+      <ul class="flex flex-wrap gap-2">
+        @for (link of resources().tagLinks; track link.linkId) {
+        <li
+          class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white py-0.5 pl-3 pr-1 text-xs text-slate-700">
+          {{ link.tagName }}
+          <button type="button"
+            class="inline-flex h-5 w-5 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
+            [disabled]="actionId() === link.linkId" aria-label="Unlink tag" (click)="unlinkTag(link)">
+            <app-icon name="x" [size]="13" />
+          </button>
+        </li>
+        }
+      </ul>
+      }
+    </section>
+
+    <section class="space-y-2">
+      <h5 class="text-xs font-semibold uppercase tracking-wide text-nbs-muted">
+        Versions ({{ resources().versions.length }})
+      </h5>
+      @if (resources().versions.length === 0) {
+      <p class="text-xs text-nbs-muted">No versions recorded.</p>
+      } @else {
+      <ul class="space-y-1">
+        @for (version of resources().versions; track version.id) {
+        <li class="rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700">
+          <span class="font-medium text-slate-900">v{{ version.versionNumber }}</span>
+          @if (version.changelog) {
+          <span class="text-nbs-muted"> — {{ version.changelog }}</span>
+          }
+        </li>
+        }
+      </ul>
+      }
+    </section>
+
+    <section class="rounded-md border border-red-200 bg-red-50 p-3">
+      <h5 class="text-xs font-semibold uppercase tracking-wide text-red-900">
+        Danger zone
+      </h5>
+      <p class="mt-1 text-xs text-red-800">
+        Deleting removes this dataset from the workspace. This cannot be undone here.
+      </p>
+      @if (confirmingDelete()) {
+      <div class="mt-3 flex flex-wrap gap-2">
+        <app-button variant="danger" size="sm" (clicked)="confirmDeleteDataset()">
+          Yes, delete dataset
+        </app-button>
+        <app-button variant="outline" size="sm" (clicked)="cancelDeleteDataset()">
+          Cancel
+        </app-button>
+      </div>
+      } @else {
+      <app-button class="mt-3 inline-block" variant="danger" size="sm" (clicked)="requestDeleteDataset()">
+        <span class="flex items-center gap-1.5">
+          <app-icon name="trash" [size]="14" />
+          Delete dataset
+        </span>
+      </app-button>
+      }
+    </section>
+    }
+  </div>
+  }
+</div>

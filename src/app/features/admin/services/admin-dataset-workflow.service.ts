@@ -3,12 +3,26 @@ import { Observable, forkJoin, map, of, switchMap } from 'rxjs';
 import { ApiService } from '@app/core/services/api.service';
 import {
   AdminDatasetDraft,
+  AdminDatasetFile,
+  AdminDatasetMetadata,
+  AdminDatasetMetadataForm,
+  AdminDatasetQueueParams,
+  AdminDatasetQueueResponse,
+  AdminDatasetQueueSummary,
   AdminDatasetRecord,
+  AdminDatasetResources,
+  AdminDatasetTagLink,
+  AdminDatasetVersion,
   BackendAdminCategory,
   BackendAdminDataset,
+  BackendAdminQueueResponse,
   BackendAdminTag,
   BackendAuditLog,
+  BackendDatasetFile,
+  BackendDatasetTagLink,
+  BackendDatasetVersion,
   BackendStatusHistory,
+  DatasetFrequencyValue,
 } from '@app/features/admin/models/admin-dataset.model';
 
 @Injectable({ providedIn: 'root' })
@@ -23,13 +37,34 @@ export class AdminDatasetWorkflowService {
     return this.api.get<BackendAdminTag[]>('/v1/dataset/tags/');
   }
 
-  listAdminDatasets(): Observable<AdminDatasetRecord[]> {
+  listAdminQueue(
+    params: AdminDatasetQueueParams,
+  ): Observable<AdminDatasetQueueResponse> {
+    return this.api
+      .get<BackendAdminQueueResponse>(
+        '/v1/dataset/admin-queue/',
+        this.toQueueParams(params),
+      )
+      .pipe(map((response) => this.toQueueResponse(response)));
+  }
+
+  getAdminQueueSummary(): Observable<AdminDatasetQueueSummary> {
+    return this.api.get<AdminDatasetQueueSummary>(
+      '/v1/dataset/admin-queue/summary/',
+    );
+  }
+
+  /**
+   * Owner-scoped queue for publishers who lack admin-queue permissions. The
+   * backend dataset list already restricts results to the caller's own
+   * datasets (plus published), so this powers a client-paginated queue.
+   */
+  listOwnedQueue(): Observable<AdminDatasetRecord[]> {
     return this.api.get<BackendAdminDataset[]>('/v1/dataset/').pipe(
       switchMap((summaries) => {
         if (summaries.length === 0) {
-          return of([]);
+          return of<AdminDatasetRecord[]>([]);
         }
-
         return forkJoin(
           summaries.map((item) =>
             this.api
@@ -45,6 +80,120 @@ export class AdminDatasetWorkflowService {
     return this.api
       .get<BackendAdminDataset>(`/v1/dataset/${id}/`)
       .pipe(map((dataset) => this.toAdminRecord(dataset)));
+  }
+
+  getMetadata(id: string): Observable<AdminDatasetMetadata> {
+    return this.api
+      .get<BackendAdminDataset>(`/v1/dataset/${id}/`)
+      .pipe(map((dataset) => this.toAdminMetadata(dataset)));
+  }
+
+  saveMetadata(
+    datasetId: string,
+    metadataId: string | null,
+    form: AdminDatasetMetadataForm,
+  ): Observable<AdminDatasetMetadata> {
+    const payload = {
+      title: form.title.trim(),
+      description: form.description.trim(),
+      license: form.license.trim(),
+      frequency: form.frequency,
+      region: form.region.trim(),
+      year: form.year,
+    };
+
+    const resolvedId$ = metadataId
+      ? of(metadataId)
+      : this.getMetadata(datasetId).pipe(map((current) => current.metadataId));
+
+    return resolvedId$.pipe(
+      switchMap((id) =>
+        id
+          ? this.api.patch(`/v1/dataset/metadata/${id}/`, payload)
+          : this.api.post('/v1/dataset/metadata/', {
+              ...payload,
+              dataset_id: datasetId,
+            }),
+      ),
+      switchMap(() => this.getMetadata(datasetId)),
+    );
+  }
+
+  linkTagByName(datasetId: string, tagName: string): Observable<void> {
+    return this.ensureTagLink(datasetId, tagName);
+  }
+
+  /**
+   * Loads versions, files, and tag links for a single dataset. The backend list
+   * endpoints are not dataset-filtered server-side, so results are scoped here.
+   */
+  listResources(datasetId: string): Observable<AdminDatasetResources> {
+    return forkJoin({
+      versions: this.api.get<BackendDatasetVersion[]>('/v1/dataset/versions/'),
+      files: this.api.get<BackendDatasetFile[]>('/v1/dataset/files/'),
+      tagLinks: this.api.get<BackendDatasetTagLink[]>('/v1/dataset/tag-links/'),
+    }).pipe(
+      map(({ versions, files, tagLinks }) => ({
+        versions: versions
+          .filter((version) => version.dataset?.id === datasetId)
+          .map((version) => this.toVersion(version)),
+        files: files
+          .filter((file) => file.dataset_version?.dataset?.id === datasetId)
+          .map((file) => this.toFile(file)),
+        tagLinks: tagLinks
+          .filter((link) => link.dataset?.id === datasetId)
+          .map((link) => this.toTagLink(link)),
+      })),
+    );
+  }
+
+  deleteDataset(datasetId: string): Observable<void> {
+    return this.api
+      .delete(`/v1/dataset/${datasetId}/`)
+      .pipe(map(() => undefined));
+  }
+
+  deleteFile(fileId: string): Observable<void> {
+    return this.api
+      .delete(`/v1/dataset/files/${fileId}/`)
+      .pipe(map(() => undefined));
+  }
+
+  unlinkTag(linkId: string): Observable<void> {
+    return this.api
+      .delete(`/v1/dataset/tag-links/${linkId}/`)
+      .pipe(map(() => undefined));
+  }
+
+  createCategory(name: string): Observable<BackendAdminCategory> {
+    return this.api.post<BackendAdminCategory>('/v1/dataset/categories/', {
+      name: name.trim(),
+    });
+  }
+
+  updateCategory(id: string, name: string): Observable<BackendAdminCategory> {
+    return this.api.patch<BackendAdminCategory>(
+      `/v1/dataset/categories/${id}/`,
+      { name: name.trim() },
+    );
+  }
+
+  deleteCategory(id: string): Observable<void> {
+    return this.api
+      .delete(`/v1/dataset/categories/${id}/`)
+      .pipe(map(() => undefined));
+  }
+
+  updateTag(id: string, name: string): Observable<BackendAdminTag> {
+    return this.api.patch<BackendAdminTag>(`/v1/dataset/tags/${id}/`, {
+      name: name.trim(),
+    });
+  }
+
+  deleteTag(id: string): Observable<void> {
+    return this.api
+      .delete(`/v1/dataset/tags/${id}/`)
+      .pipe(map(() => undefined));
   }
 
   createDraftWithMetadata(draft: AdminDatasetDraft): Observable<string> {
@@ -171,6 +320,58 @@ export class AdminDatasetWorkflowService {
     );
   }
 
+  private toQueueParams(
+    params: AdminDatasetQueueParams,
+  ): Record<string, string> {
+    const query: Record<string, string> = {};
+    const search = params.q?.trim();
+
+    if (search) {
+      query['q'] = search;
+    }
+    if (params.status) {
+      query['status'] = params.status;
+    }
+    if (params.page) {
+      query['page'] = String(params.page);
+    }
+    if (params.pageSize) {
+      query['page_size'] = String(params.pageSize);
+    }
+
+    return query;
+  }
+
+  private toQueueResponse(
+    response: BackendAdminQueueResponse,
+  ): AdminDatasetQueueResponse {
+    return {
+      items: response.items.map((item) => ({
+        id: item.id,
+        slug: item.slug,
+        status: item.status,
+        visibility: item.visibility,
+        categorySlug: item.category_slug,
+        categoryName: item.category_name,
+        title: item.title ?? item.slug,
+        hasMetadata: item.has_metadata,
+        hasFile: item.has_file,
+        hasTag: item.has_tag,
+        primaryFileId: item.primary_file_id,
+      })),
+      pagination: {
+        page: response.pagination.page,
+        pageSize: response.pagination.page_size,
+        totalPages: response.pagination.total_pages,
+        totalItems: response.pagination.total_items,
+        hasNext: response.pagination.has_next,
+        hasPrevious: response.pagination.has_previous,
+        next: response.pagination.next,
+        previous: response.pagination.previous,
+      },
+    };
+  }
+
   private toAdminRecord(dataset: BackendAdminDataset): AdminDatasetRecord {
     const files =
       dataset.versions?.flatMap((version) => version.files ?? []) ?? [];
@@ -189,5 +390,60 @@ export class AdminDatasetWorkflowService {
       hasTag: (dataset.tags?.length ?? 0) > 0,
       primaryFileId: primary?.id ?? null,
     };
+  }
+
+  private toAdminMetadata(dataset: BackendAdminDataset): AdminDatasetMetadata {
+    const metadata = dataset.metadata?.[0];
+    return {
+      metadataId: metadata?.id ?? null,
+      title: metadata?.title ?? '',
+      description: metadata?.description ?? '',
+      license: metadata?.license ?? 'Open Government Licence - Tanzania',
+      frequency: this.toFrequencyValue(metadata?.frequency),
+      region: metadata?.region ?? 'National',
+      year: metadata?.year ?? null,
+      publisher: metadata?.publisher_name ?? 'NBS',
+    };
+  }
+
+  private toVersion(version: BackendDatasetVersion): AdminDatasetVersion {
+    return {
+      id: version.id,
+      versionNumber: version.version_number,
+      changelog: version.changelog,
+    };
+  }
+
+  private toFile(file: BackendDatasetFile): AdminDatasetFile {
+    return {
+      id: file.id,
+      filename: file.filename,
+      fileFormat: file.file_format,
+      fileSize: file.file_size,
+      isPrimary: file.is_primary,
+      validationStatus: file.validation_status,
+    };
+  }
+
+  private toTagLink(link: BackendDatasetTagLink): AdminDatasetTagLink {
+    return {
+      linkId: link.id,
+      tagId: link.tag.id,
+      tagName: link.tag.name,
+      tagSlug: link.tag.slug,
+    };
+  }
+
+  private toFrequencyValue(
+    frequency: string | undefined,
+  ): DatasetFrequencyValue {
+    switch ((frequency ?? '').toLowerCase()) {
+      case 'quarterly':
+        return 'quarterly';
+      case 'monthly':
+        return 'monthly';
+      default:
+        return 'annual';
+    }
   }
 }
