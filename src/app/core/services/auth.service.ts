@@ -1,5 +1,12 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Injectable, computed, inject, signal } from '@angular/core';
+import {
+  DestroyRef,
+  Injectable,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { Observable, catchError, map, of, switchMap, tap } from 'rxjs';
 import { ApiError } from '@app/core/models/api-error.model';
@@ -60,6 +67,7 @@ export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly api = inject(ApiService);
   private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly currentUser = signal<UserProfile | null>(this.readUser());
   private readonly accessToken = signal<string | null>(
     localStorage.getItem(ACCESS_TOKEN_KEY),
@@ -125,9 +133,10 @@ export class AuthService {
 
   register(request: RegisterRequest): Observable<AuthError | null> {
     return this.http
-      .post<
-        ApiEnvelope<RegisterResponse>
-      >(`${environment.apiBaseUrl}/v1/auth/register/`, request)
+      .post<ApiEnvelope<RegisterResponse>>(
+        `${environment.apiBaseUrl}/v1/auth/register/`,
+        request,
+      )
       .pipe(
         tap((response) => this.saveTokens(response.data)),
         switchMap(() => this.fetchCurrentUser()),
@@ -145,6 +154,7 @@ export class AuthService {
     if (refresh) {
       this.http
         .post(`${environment.apiBaseUrl}/v1/auth/logout/`, { refresh })
+        .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({ error: () => undefined });
     }
     this.clearSession();
@@ -162,9 +172,10 @@ export class AuthService {
     }
 
     this.refreshInFlight = this.http
-      .post<
-        ApiEnvelope<RefreshResponse>
-      >(`${environment.apiBaseUrl}/v1/auth/refresh/`, { refresh })
+      .post<ApiEnvelope<RefreshResponse>>(
+        `${environment.apiBaseUrl}/v1/auth/refresh/`,
+        { refresh },
+      )
       .pipe(
         map((response) => {
           this.accessToken.set(response.data.access);
@@ -352,9 +363,9 @@ export class AuthService {
 
   private fetchCurrentUser(): Observable<UserProfile> {
     return this.http
-      .get<
-        ApiEnvelope<CurrentUserResponse>
-      >(`${environment.apiBaseUrl}/v1/auth/me/`)
+      .get<ApiEnvelope<CurrentUserResponse>>(
+        `${environment.apiBaseUrl}/v1/auth/me/`,
+      )
       .pipe(
         map((response) => this.toUserProfile(response.data)),
         tap((user) => this.saveUser(user)),

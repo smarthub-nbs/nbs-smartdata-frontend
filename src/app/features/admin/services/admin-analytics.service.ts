@@ -1,4 +1,11 @@
-import { Injectable, computed, inject, signal } from '@angular/core';
+import {
+  DestroyRef,
+  Injectable,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   DatasetUsageMetrics,
   DatasetUsageRow,
@@ -11,6 +18,7 @@ import { DeveloperApiService } from '@app/features/developers/services/developer
 export class AdminAnalyticsService {
   private readonly datasetService = inject(DatasetService);
   private readonly developerApi = inject(DeveloperApiService);
+  private readonly destroyRef = inject(DestroyRef);
 
   private readonly usageMetrics = signal<DatasetUsageMetrics[]>([]);
   private readonly loading = signal(false);
@@ -60,17 +68,20 @@ export class AdminAnalyticsService {
     this.hasLoaded = true;
     this.loading.set(true);
     this.loadError.set(null);
-    this.developerApi.loadUsageLogs().subscribe({
-      next: (metrics) => {
-        this.usageMetrics.set(metrics);
-        this.loading.set(false);
-      },
-      error: (error: Error) => {
-        this.usageMetrics.set([]);
-        this.loading.set(false);
-        this.loadError.set(error.message);
-      },
-    });
+    this.developerApi
+      .loadUsageLogs()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (metrics) => {
+          this.usageMetrics.set(metrics);
+          this.loading.set(false);
+        },
+        error: (error: Error) => {
+          this.usageMetrics.set([]);
+          this.loading.set(false);
+          this.loadError.set(error.message);
+        },
+      });
   }
 
   private toUsageRow(metrics: DatasetUsageMetrics): DatasetUsageRow {

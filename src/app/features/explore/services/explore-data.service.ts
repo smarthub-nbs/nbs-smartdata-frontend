@@ -1,4 +1,5 @@
-import { Injectable, inject, signal } from '@angular/core';
+import { DestroyRef, Injectable, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ApiError } from '@app/core/models/api-error.model';
 import { INDICATOR_ADAPTER } from '@app/features/explore/adapters/indicator.adapter';
 import {
@@ -15,6 +16,7 @@ import {
 @Injectable({ providedIn: 'root' })
 export class ExploreDataService {
   private readonly adapter = inject(INDICATOR_ADAPTER);
+  private readonly destroyRef = inject(DestroyRef);
 
   private readonly indicators = signal<ExploreIndicator[]>([]);
   private readonly catalogState =
@@ -54,19 +56,22 @@ export class ExploreDataService {
   private loadIndicators(): void {
     this.catalogState.set(loadingState());
 
-    this.adapter.list().subscribe({
-      next: (items) => {
-        this.indicators.set(items);
-        this.catalogState.set(successState(items));
-      },
-      error: (error: unknown) => {
-        this.catalogState.set(
-          errorState(
-            this.resolveErrorMessage(error, 'Failed to load indicators.'),
-          ),
-        );
-      },
-    });
+    this.adapter
+      .list()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (items) => {
+          this.indicators.set(items);
+          this.catalogState.set(successState(items));
+        },
+        error: (error: unknown) => {
+          this.catalogState.set(
+            errorState(
+              this.resolveErrorMessage(error, 'Failed to load indicators.'),
+            ),
+          );
+        },
+      });
   }
 
   private resolveErrorMessage(error: unknown, fallback: string): string {
