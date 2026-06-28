@@ -1,19 +1,37 @@
-<div class="rounded-xl border border-nbs-border bg-white p-5 shadow-nbs-card sm:p-6">
-  <h3 class="text-sm font-semibold text-slate-900">Security</h3>
-  <p class="mt-1 text-sm text-nbs-muted">
-    Update your password and manage email verification.
-  </p>
+<div class="p-5 sm:p-6">
+  <div class="flex items-start justify-between gap-3">
+    <div class="flex items-start gap-3">
+      <span class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-nbs-primary-soft text-nbs-primary">
+        <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M12 3 5 6v5c0 4.4 3 8.5 7 10 4-1.5 7-5.6 7-10V6l-7-3Z" stroke-linecap="round"
+            stroke-linejoin="round" />
+        </svg>
+      </span>
+      <div>
+        <h3 class="text-sm font-semibold text-slate-900">Security</h3>
+        <p class="mt-0.5 text-xs text-nbs-muted">Manage your password and email verification.</p>
+      </div>
+    </div>
+    @if (isVerified()) {
+    <span
+      class="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-800">
+      <span class="size-1.5 rounded-full bg-emerald-500" aria-hidden="true"></span>
+      Email verified
+    </span>
+    }
+  </div>
 
   @if (!isVerified()) {
-  <div class="mt-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-3" role="status">
-    <p class="text-sm text-amber-900">
-      Your email is not verified yet. Verify it to secure your account.
+  <div class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
+    <p class="text-sm font-medium text-amber-900">Verify your email</p>
+    <p class="mt-1 text-xs text-amber-800">
+      We will send a link to {{ user()?.email }}.
     </p>
     @if (verificationMessage()) {
-    <p class="mt-2 text-sm" [class.text-nbs-danger]="verificationError()"
+    <output class="mt-2 block text-sm" [class.text-nbs-danger]="verificationError()"
       [class.text-emerald-800]="!verificationError()">
       {{ verificationMessage() }}
-    </p>
+    </output>
     }
     <div class="mt-3">
       <app-button variant="outline" size="sm" [loading]="verificationLoading()" (clicked)="requestVerification()">
@@ -21,39 +39,37 @@
       </app-button>
     </div>
   </div>
-  } @else {
-  <p
-    class="mt-4 inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-800">
-    <span class="size-1.5 rounded-full bg-emerald-500" aria-hidden="true"></span>
-    Email verified
-  </p>
   }
 
-  <form class="mt-6 grid gap-4 border-t border-nbs-border pt-6" (ngSubmit)="changePassword()">
-    <h4 class="text-sm font-medium text-slate-900">Change password</h4>
+  <form class="mt-5 grid gap-4" (ngSubmit)="changePassword()">
+    <p class="text-xs text-nbs-muted">
+      Use at least 8 characters. You stay signed in after updating.
+    </p>
 
     <app-text-input label="Current password" type="password" [required]="true"
       [error]="passwordFieldError('currentPassword')" [ngModel]="currentPassword()"
-      (ngModelChange)="currentPassword.set($event)" name="currentPassword" />
+      (ngModelChange)="onPasswordFieldChange('currentPassword', $event)" name="currentPassword" />
 
-    <div class="grid gap-4 sm:grid-cols-2">
-      <app-text-input label="New password" type="password" placeholder="Minimum 8 characters" [required]="true"
-        [error]="passwordFieldError('newPassword')" [ngModel]="newPassword()" (ngModelChange)="newPassword.set($event)"
-        name="newPassword" />
-      <app-text-input label="Confirm new password" type="password" [required]="true"
-        [error]="passwordFieldError('confirmPassword')" [ngModel]="confirmPassword()"
-        (ngModelChange)="confirmPassword.set($event)" name="confirmPassword" />
-    </div>
+    <app-text-input label="New password" type="password" placeholder="Minimum 8 characters" [required]="true"
+      [error]="passwordFieldError('newPassword')" [ngModel]="newPassword()"
+      (ngModelChange)="onPasswordFieldChange('newPassword', $event)" name="newPassword" />
+
+    <app-text-input label="Confirm new password" type="password" [required]="true"
+      [error]="passwordFieldError('confirmPassword')" [ngModel]="confirmPassword()"
+      (ngModelChange)="onPasswordFieldChange('confirmPassword', $event)" name="confirmPassword" />
 
     @if (passwordMessage()) {
-    <p class="text-sm" role="alert" [class.text-nbs-danger]="passwordError()"
-      [class.text-emerald-800]="!passwordError()">
+    <output class="block rounded-md border px-3 py-2 text-sm" [class.border-red-200]="passwordError()"
+      [class.bg-red-50]="passwordError()" [class.text-nbs-danger]="passwordError()"
+      [class.border-emerald-200]="!passwordError()" [class.bg-emerald-50]="!passwordError()"
+      [class.text-emerald-900]="!passwordError()">
       {{ passwordMessage() }}
-    </p>
+    </output>
     }
 
     <div>
-      <app-button type="submit" variant="primary" size="sm" [loading]="passwordLoading()">
+      <app-button type="submit" variant="primary" size="sm" [loading]="passwordLoading()"
+        [disabled]="!passwordFormDirty()">
         Update password
       </app-button>
     </div>

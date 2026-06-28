@@ -41,7 +41,21 @@ export class ApiTryItConsoleComponent {
   protected readonly result = signal<ApiTryItResult | null>(null);
   protected readonly errorMessage = signal('');
   protected readonly headersExpanded = signal(false);
+  protected readonly apiKeyVisible = signal(false);
   protected readonly methodBadgeClasses = methodBadgeClasses;
+
+  protected readonly canSend = computed(() => this.apiKey().trim().length > 0);
+
+  protected readonly requestUrl = computed(() => {
+    const path = this.selectedPath();
+    const resolved = this.needsFileId()
+      ? path.replace(
+          '{file_id}',
+          this.fileId().trim() || this.fileIdHint() || '{file_id}',
+        )
+      : path;
+    return `${this.api.baseUrl}${resolved}`;
+  });
 
   protected readonly filteredGroups = computed(() =>
     filterEndpointGroups(
@@ -150,6 +164,20 @@ export class ApiTryItConsoleComponent {
 
   protected toggleHeaders(): void {
     this.headersExpanded.update((expanded) => !expanded);
+  }
+
+  protected toggleApiKeyVisibility(): void {
+    this.apiKeyVisible.update((visible) => !visible);
+  }
+
+  protected scrollToKeys(): void {
+    const prefersReducedMotion = globalThis.matchMedia(
+      '(prefers-reduced-motion: reduce)',
+    ).matches;
+    document.getElementById('api-keys')?.scrollIntoView({
+      behavior: prefersReducedMotion ? 'auto' : 'smooth',
+      block: 'start',
+    });
   }
 
   private resolvePath(): string {

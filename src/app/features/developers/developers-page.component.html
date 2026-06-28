@@ -7,7 +7,23 @@
     </p>
   </header>
 
-  <section class="rounded-lg border border-nbs-border bg-white p-5 shadow-sm">
+  <nav aria-label="Developer sections"
+    class="sticky top-2 z-20 -mx-1 flex flex-wrap gap-1 rounded-xl border border-nbs-border bg-white/90 p-1 shadow-sm backdrop-blur-sm">
+    @for (section of sections; track section.id) {
+    <button type="button"
+      class="cursor-pointer rounded-lg px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/40"
+      [class.bg-nbs-primary-soft]="activeSection() === section.id"
+      [class.text-nbs-primary]="activeSection() === section.id" [class.text-nbs-muted]="activeSection() !== section.id"
+      [class.hover:bg-nbs-surface]="activeSection() !== section.id"
+      [class.hover:text-slate-900]="activeSection() !== section.id" [attr.aria-current]="
+        activeSection() === section.id ? 'true' : null
+      " (click)="scrollToSection(section.id)">
+      {{ section.label }}
+    </button>
+    }
+  </nav>
+
+  <section id="quick-start" class="scroll-mt-20 rounded-lg border border-nbs-border bg-white p-5 shadow-sm">
     <div class="flex items-center gap-2">
       <svg class="size-5 text-nbs-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
         aria-hidden="true">
@@ -16,10 +32,44 @@
       <h2 class="text-base font-semibold text-slate-900">Quick start</h2>
     </div>
     <p class="mt-1 text-sm text-nbs-muted">
-      Authenticate with an API key in the
-      <code class="rounded bg-nbs-surface px-1 py-0.5 font-mono text-xs">X-API-Key</code>
-      header, then call any gateway endpoint.
+      Three steps to your first request. No setup beyond an API key.
     </p>
+
+    <ol class="mt-4 grid gap-3 sm:grid-cols-3">
+      <li>
+        <button type="button" (click)="scrollToSection('api-keys')"
+          class="group flex h-full w-full cursor-pointer flex-col items-start gap-2 rounded-lg border border-nbs-border bg-nbs-surface/60 p-4 text-left transition-all duration-200 hover:border-nbs-primary/35 hover:bg-white hover:shadow-nbs-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/40">
+          <span
+            class="flex size-7 items-center justify-center rounded-full bg-nbs-primary-soft text-sm font-semibold text-nbs-primary">
+            1
+          </span>
+          <span class="text-sm font-semibold text-slate-900">Create an API key</span>
+          <span class="text-xs text-nbs-muted">Sign in, then generate a key to authenticate.</span>
+        </button>
+      </li>
+      <li>
+        <button type="button" (click)="scrollToSection('api-reference')"
+          class="group flex h-full w-full cursor-pointer flex-col items-start gap-2 rounded-lg border border-nbs-border bg-nbs-surface/60 p-4 text-left transition-all duration-200 hover:border-nbs-primary/35 hover:bg-white hover:shadow-nbs-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/40">
+          <span
+            class="flex size-7 items-center justify-center rounded-full bg-nbs-primary-soft text-sm font-semibold text-nbs-primary">
+            2
+          </span>
+          <span class="text-sm font-semibold text-slate-900">Browse endpoints</span>
+          <span class="text-xs text-nbs-muted">Find the data you need in the API reference.</span>
+        </button>
+      </li>
+      <li>
+        <button type="button" (click)="scrollToSection('try-it-console')"
+          class="group flex h-full w-full cursor-pointer flex-col items-start gap-2 rounded-lg border border-nbs-border bg-nbs-surface/60 p-4 text-left transition-all duration-200 hover:border-nbs-primary/35 hover:bg-white hover:shadow-nbs-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/40">
+          <span
+            class="flex size-7 items-center justify-center rounded-full bg-nbs-primary-soft text-sm font-semibold text-nbs-primary">
+            3
+          </span>
+          <span class="text-sm font-semibold text-slate-900">Send a test request</span>
+          <span class="text-xs text-nbs-muted">Run it live in the sandbox console.</span>
+        </button>
+      </li>
+    </ol>
 
     <div class="mt-4 space-y-3">
       <div>
@@ -40,16 +90,24 @@
           }}</code>
           <app-copy-button [value]="quickStartCurl()" label="Copy curl example" tone="inverse" />
         </div>
+        <p class="mt-1.5 text-xs text-nbs-muted">
+          Pass your key in the
+          <code class="rounded bg-nbs-surface px-1 py-0.5 font-mono">X-API-Key</code>
+          header on every request.
+        </p>
       </div>
     </div>
   </section>
 
-  <div class="grid gap-6 lg:grid-cols-2">
-    <app-api-docs-panel />
+  <div id="api-keys" class="scroll-mt-20">
     <app-api-key-manager />
   </div>
 
-  <div id="try-it-console" class="scroll-mt-6">
+  <div id="api-reference" class="scroll-mt-20">
+    <app-api-docs-panel />
+  </div>
+
+  <div id="try-it-console" class="scroll-mt-20">
     <app-api-try-it-console />
   </div>
 </div>

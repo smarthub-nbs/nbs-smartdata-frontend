@@ -67,6 +67,9 @@
           {{ endpoint.path }}
         </p>
         <p class="mt-1 text-xs text-nbs-muted">{{ endpoint.summary }}</p>
+        <p class="mt-2 break-all font-mono text-[11px] text-slate-500">
+          {{ requestUrl() }}
+        </p>
       </div>
       }
     </fieldset>
@@ -86,12 +89,29 @@
 
     <label class="block">
       <span class="mb-1 block text-xs font-medium text-slate-600">API key</span>
-      <input type="password"
-        class="h-10 w-full rounded-md border border-slate-300 px-3 font-mono text-sm focus:border-nbs-primary focus:outline-none focus:ring-2 focus:ring-nbs-primary/30"
-        placeholder="nbs_..." [ngModel]="apiKey()" (ngModelChange)="apiKey.set($event)" name="apiKey" />
+      <div class="flex items-center gap-2">
+        <input [type]="apiKeyVisible() ? 'text' : 'password'"
+          class="h-10 min-w-0 flex-1 rounded-md border border-slate-300 px-3 font-mono text-sm focus:border-nbs-primary focus:outline-none focus:ring-2 focus:ring-nbs-primary/30"
+          placeholder="nbs_..." [ngModel]="apiKey()" (ngModelChange)="apiKey.set($event)" name="apiKey"
+          autocomplete="off" />
+        <button type="button"
+          class="h-10 shrink-0 cursor-pointer rounded-md border border-slate-300 px-3 text-xs font-medium text-slate-600 transition-colors hover:bg-nbs-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/30"
+          [attr.aria-pressed]="apiKeyVisible()" (click)="toggleApiKeyVisibility()">
+          {{ apiKeyVisible() ? 'Hide' : 'Show' }}
+        </button>
+      </div>
+      @if (!canSend()) {
+      <p class="mt-1.5 text-xs text-nbs-muted">
+        Paste a key, or
+        <button type="button"
+          class="cursor-pointer font-medium text-nbs-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/30"
+          (click)="scrollToKeys()">
+          create one above</button>.
+      </p>
+      }
     </label>
 
-    <app-button type="submit" variant="primary" size="sm" [loading]="loading()">
+    <app-button type="submit" variant="primary" size="sm" [loading]="loading()" [disabled]="!canSend()">
       Send request
     </app-button>
   </form>
