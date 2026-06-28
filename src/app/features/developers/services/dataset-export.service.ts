@@ -72,7 +72,7 @@ export class DatasetExportService {
     const tableRows = rows
       .map(
         (r) =>
-          `<tr><td>${r.region}</td><td>${r.year}</td><td>${r.value}</td></tr>`,
+          `<tr><td>${this.escapeHtml(r.region)}</td><td>${r.year}</td><td>${r.value}</td></tr>`,
       )
       .join('');
     const html = `
@@ -109,40 +109,76 @@ export class DatasetExportService {
       throw new Error('Pop-up blocked. Allow pop-ups to print the PDF report.');
     }
 
-    const rows = this.buildSampleRows(dataset)
-      .map(
-        (r) =>
-          `<tr><td>${r.region}</td><td>${r.year}</td><td>${r.value}</td></tr>`,
-      )
-      .join('');
+    printWindow.opener = null;
 
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>${dataset.title} — NBS SmartData Hub</title>
-          <style>
-            body { font-family: system-ui, sans-serif; padding: 2rem; color: #111; }
-            h1 { font-size: 1.25rem; }
-            table { border-collapse: collapse; width: 100%; margin-top: 1rem; }
-            th, td { border: 1px solid #ccc; padding: 0.5rem; text-align: left; }
-            th { background: #f1f5f9; }
-          </style>
-        </head>
-        <body>
-          <h1>${dataset.title}</h1>
-          <p>${dataset.description}</p>
-          <p><strong>Publisher:</strong> ${dataset.publisher}</p>
-          <p><strong>License:</strong> ${dataset.license}</p>
-          <table>
-            <thead><tr><th>Region</th><th>Year</th><th>Value</th></tr></thead>
-            <tbody>${rows}</tbody>
-          </table>
-          <script>window.onload = () => { window.print(); }</script>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
+    const doc = printWindow.document;
+    doc.title = `${dataset.title} - NBS SmartData Hub`;
+
+    const style = doc.createElement('style');
+    style.textContent = [
+      'body { font-family: system-ui, sans-serif; padding: 2rem; color: #111; }',
+      'h1 { font-size: 1.25rem; }',
+      'table { border-collapse: collapse; width: 100%; margin-top: 1rem; }',
+      'th, td { border: 1px solid #ccc; padding: 0.5rem; text-align: left; }',
+      'th { background: #f1f5f9; }',
+    ].join('\n');
+    doc.head.appendChild(style);
+
+    const heading = doc.createElement('h1');
+    heading.textContent = dataset.title;
+    doc.body.appendChild(heading);
+
+    const description = doc.createElement('p');
+    description.textContent = dataset.description;
+    doc.body.appendChild(description);
+
+    doc.body.appendChild(
+      this.buildPrintMeta(doc, 'Publisher', dataset.publisher),
+    );
+    doc.body.appendChild(this.buildPrintMeta(doc, 'License', dataset.license));
+    doc.body.appendChild(
+      this.buildPrintTable(doc, this.buildSampleRows(dataset)),
+    );
+
+    printWindow.setTimeout(() => printWindow.print(), 0);
+  }
+
+  private buildPrintMeta(
+    doc: Document,
+    label: string,
+    value: string,
+  ): HTMLParagraphElement {
+    const paragraph = doc.createElement('p');
+    const strong = doc.createElement('strong');
+    strong.textContent = `${label}:`;
+    paragraph.append(strong, ` ${value}`);
+    return paragraph;
+  }
+
+  private buildPrintTable(doc: Document, rows: SampleRow[]): HTMLTableElement {
+    const table = doc.createElement('table');
+    const thead = doc.createElement('thead');
+    const headerRow = doc.createElement('tr');
+    for (const heading of ['Region', 'Year', 'Value']) {
+      const th = doc.createElement('th');
+      th.textContent = heading;
+      headerRow.appendChild(th);
+    }
+    thead.appendChild(headerRow);
+
+    const tbody = doc.createElement('tbody');
+    for (const row of rows) {
+      const tr = doc.createElement('tr');
+      for (const value of [row.region, row.year, row.value]) {
+        const td = doc.createElement('td');
+        td.textContent = String(value);
+        tr.appendChild(td);
+      }
+      tbody.appendChild(tr);
+    }
+
+    table.append(thead, tbody);
+    return table;
   }
 
   private buildSampleRows(dataset: Dataset): SampleRow[] {
@@ -163,9 +199,13 @@ export class DatasetExportService {
 
   private escapeXml(value: string): string {
     return value
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;');
+  }
+
+  private escapeHtml(value: string): string {
+    return this.escapeXml(value).replaceAll("'", '&#39;');
   }
 }

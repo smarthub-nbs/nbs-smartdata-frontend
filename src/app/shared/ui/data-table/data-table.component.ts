@@ -10,13 +10,15 @@ import {
   DataTableColumn,
   DataTableSortState,
 } from '@shared/ui/models/data-table-column.model';
+import { IconComponent, type IconName } from '@shared/ui/icon/icon.component';
 
 @Component({
   selector: 'app-data-table',
   standalone: true,
+  imports: [IconComponent],
   template: `
     <div
-      class="w-full overflow-hidden rounded-lg border border-nbs-border bg-white shadow-sm"
+      class="w-full overflow-hidden rounded-xl border border-nbs-border bg-white shadow-nbs-card"
     >
       <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-slate-200">
@@ -26,18 +28,21 @@ import {
                 <th
                   [class]="headerCellClasses(column)"
                   [style.width]="column.width ?? null"
+                  [attr.aria-sort]="ariaSort(column.key)"
                   scope="col"
                 >
                   @if (column.sortable) {
                     <button
                       type="button"
-                      class="inline-flex items-center gap-1 font-semibold text-slate-700 hover:text-nbs-primary"
+                      class="inline-flex cursor-pointer items-center gap-1 rounded font-semibold text-slate-700 transition-colors hover:text-nbs-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/40"
                       (click)="toggleSort(column.key)"
                     >
                       {{ column.header }}
-                      <span class="text-xs text-slate-400" aria-hidden="true">
-                        {{ sortIndicator(column.key) }}
-                      </span>
+                      <app-icon
+                        [name]="sortIcon(column.key)"
+                        [size]="14"
+                        class="text-slate-400"
+                      />
                     </button>
                   } @else {
                     <span class="font-semibold text-slate-700">{{
@@ -50,16 +55,25 @@ import {
           </thead>
           <tbody class="divide-y divide-slate-100 bg-white">
             @if (loading()) {
+              @for (row of skeletonRows(); track row) {
+                <tr aria-hidden="true">
+                  @for (column of columns(); track column.key) {
+                    <td class="px-4 py-3">
+                      <span
+                        [class]="skeletonBarClass(column.align ?? 'left')"
+                      ></span>
+                    </td>
+                  }
+                </tr>
+              }
               <tr>
                 <td
                   [attr.colspan]="columns().length"
-                  class="px-4 py-12 text-center text-sm text-nbs-muted"
+                  class="sr-only"
+                  role="status"
+                  aria-live="polite"
                 >
-                  <span
-                    class="mr-2 inline-block size-4 animate-spin rounded-full border-2 border-nbs-primary border-t-transparent"
-                    aria-hidden="true"
-                  ></span>
-                  Loading…
+                  Loading table data
                 </td>
               </tr>
             } @else if (paginatedRows().length === 0) {
@@ -100,7 +114,7 @@ import {
           <div class="flex items-center gap-2">
             <button
               type="button"
-              class="rounded-md border border-slate-300 px-3 py-1.5 hover:bg-slate-50 disabled:opacity-50"
+              class="cursor-pointer rounded-md border border-slate-300 px-3 py-1.5 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/40 disabled:cursor-not-allowed disabled:opacity-50"
               [disabled]="currentPage() === 1"
               (click)="goToPage(currentPage() - 1)"
             >
@@ -111,7 +125,7 @@ import {
             </span>
             <button
               type="button"
-              class="rounded-md border border-slate-300 px-3 py-1.5 hover:bg-slate-50 disabled:opacity-50"
+              class="cursor-pointer rounded-md border border-slate-300 px-3 py-1.5 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/40 disabled:cursor-not-allowed disabled:opacity-50"
               [disabled]="currentPage() === totalPages()"
               (click)="goToPage(currentPage() + 1)"
             >
@@ -139,6 +153,10 @@ export class DataTableComponent<T extends object> {
 
   protected readonly sortState = signal<DataTableSortState | null>(null);
   protected readonly currentPage = signal(1);
+
+  protected readonly skeletonRows = computed(() =>
+    Array.from({ length: Math.min(this.pageSize(), 5) }, (_, index) => index),
+  );
 
   protected readonly sortedRows = computed(() => {
     const rows = [...this.data()];
@@ -192,22 +210,34 @@ export class DataTableComponent<T extends object> {
       return column.format(row);
     }
     const value = (row as Record<string, unknown>)[column.key];
-    return value == null ? '' : String(value);
+    return this.stringifyTableValue(value);
   }
 
-  protected sortIndicator(key: string): string {
+  protected sortIcon(key: string): IconName {
     const sort = this.sortState();
-    if (!sort || sort.key !== key) {
-      return '↕';
+    if (sort?.key !== key) {
+      return 'sort-neutral';
     }
-    return sort.direction === 'asc' ? '↑' : '↓';
+    return sort.direction === 'asc' ? 'sort-asc' : 'sort-desc';
+  }
+
+  protected ariaSort(key: string): 'ascending' | 'descending' | 'none' | null {
+    const column = this.columns().find((item) => item.key === key);
+    if (!column?.sortable) {
+      return null;
+    }
+    const sort = this.sortState();
+    if (sort?.key !== key) {
+      return 'none';
+    }
+    return sort.direction === 'asc' ? 'ascending' : 'descending';
   }
 
   protected toggleSort(key: string): void {
     const current = this.sortState();
     let next: DataTableSortState | null;
 
-    if (!current || current.key !== key) {
+    if (current?.key !== key) {
       next = { key, direction: 'asc' };
     } else if (current.direction === 'asc') {
       next = { key, direction: 'desc' };
@@ -228,7 +258,7 @@ export class DataTableComponent<T extends object> {
   protected trackRow(index: number, row: T): string | number {
     const key = this.trackByKey();
     if (key && row[key] != null) {
-      return String(row[key]);
+      return this.stringifyTableValue(row[key]);
     }
     return index;
   }
@@ -237,6 +267,31 @@ export class DataTableComponent<T extends object> {
     if (this.rowClickable()) {
       this.rowClicked.emit(row);
     }
+  }
+
+  protected skeletonBarClass(align: 'left' | 'center' | 'right'): string {
+    if (align === 'right') {
+      return 'ml-auto block h-4 w-1/2 animate-pulse rounded bg-slate-200';
+    }
+    return 'block h-4 w-3/4 animate-pulse rounded bg-slate-200';
+  }
+
+  private stringifyTableValue(value: unknown): string {
+    if (value == null) {
+      return '';
+    }
+    if (
+      typeof value === 'string' ||
+      typeof value === 'number' ||
+      typeof value === 'boolean' ||
+      typeof value === 'bigint'
+    ) {
+      return String(value);
+    }
+    if (value instanceof Date) {
+      return value.toISOString();
+    }
+    return '';
   }
 
   private alignClass(align: 'left' | 'center' | 'right'): string {

@@ -87,7 +87,7 @@ export class DatasetQueueListComponent {
       return 'rounded-full border border-nbs-primary bg-nbs-primary/10 px-3 py-1 text-xs font-medium text-nbs-primary';
     }
     if (empty) {
-      return 'rounded-full border border-slate-100 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-400';
+      return 'rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600';
     }
     return 'rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600 hover:border-nbs-primary hover:text-nbs-primary';
   }

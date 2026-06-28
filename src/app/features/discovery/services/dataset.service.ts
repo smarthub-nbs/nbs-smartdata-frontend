@@ -1,4 +1,11 @@
-import { Injectable, computed, inject, signal } from '@angular/core';
+import {
+  DestroyRef,
+  Injectable,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   Subject,
   debounceTime,
@@ -26,6 +33,7 @@ import {
 @Injectable({ providedIn: 'root' })
 export class DatasetService {
   private readonly adapter = inject(DATASET_ADAPTER);
+  private readonly destroyRef = inject(DestroyRef);
 
   private readonly datasets = signal<Dataset[]>([]);
   private readonly facetDatasets = signal<Dataset[]>([]);
@@ -62,7 +70,11 @@ export class DatasetService {
     this.loadCatalog();
 
     this.queryReload$
-      .pipe(debounceTime(300), distinctUntilChanged())
+      .pipe(
+        debounceTime(300),
+        distinctUntilChanged(),
+        takeUntilDestroyed(this.destroyRef),
+      )
       .subscribe(() => this.loadCatalog());
   }
 
@@ -208,32 +220,37 @@ export class DatasetService {
     forkJoin({
       datasets: this.adapter.list(),
       topics: this.adapter.listTopics(),
-    }).subscribe({
-      next: ({ datasets, topics }) => {
-        this.facetDatasets.set(datasets);
-        this.topicsState.set(this.enrichTopicCounts(topics, datasets));
-      },
-    });
+    })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: ({ datasets, topics }) => {
+          this.facetDatasets.set(datasets);
+          this.topicsState.set(this.enrichTopicCounts(topics, datasets));
+        },
+      });
   }
 
   private loadCatalog(): void {
     this.catalogState.set(loadingState());
     const filters = this.filters();
 
-    this.adapter.list(filters).subscribe({
-      next: (datasets) => {
-        this.datasets.set(datasets);
-        this.catalogState.set(successState(datasets));
-        this.catalogStale.set(false);
-      },
-      error: (error: unknown) => {
-        this.catalogState.set(
-          errorState(
-            this.resolveErrorMessage(error, 'Failed to load datasets.'),
-          ),
-        );
-      },
-    });
+    this.adapter
+      .list(filters)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (datasets) => {
+          this.datasets.set(datasets);
+          this.catalogState.set(successState(datasets));
+          this.catalogStale.set(false);
+        },
+        error: (error: unknown) => {
+          this.catalogState.set(
+            errorState(
+              this.resolveErrorMessage(error, 'Failed to load datasets.'),
+            ),
+          );
+        },
+      });
   }
 
   private enrichTopicCounts(

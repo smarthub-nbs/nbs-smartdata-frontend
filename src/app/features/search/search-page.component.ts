@@ -16,7 +16,7 @@ import { SearchResultCardComponent } from '@app/features/search/components/searc
 import { SmartSearchResponse } from '@app/features/search/models/smart-search.model';
 import { SmartSearchService } from '@app/features/search/services/smart-search.service';
 import { PageStateComponent } from '@app/shared/components/page-state/page-state.component';
-import { ButtonComponent } from '@shared/ui';
+import { ButtonComponent, SearchBarComponent } from '@shared/ui';
 
 @Component({
   selector: 'app-search-page',
@@ -25,6 +25,7 @@ import { ButtonComponent } from '@shared/ui';
     FormsModule,
     RouterLink,
     ButtonComponent,
+    SearchBarComponent,
     SearchResultCardComponent,
     RecommendedDatasetsComponent,
     PageStateComponent,
@@ -65,9 +66,13 @@ export class SearchPageComponent {
   }
 
   protected runSearch(): void {
-    const q = this.query.trim();
+    this.onSearchSubmit(this.query.trim());
+  }
+
+  protected onSearchSubmit(query: string): void {
+    this.query = query;
     void this.router.navigate(['/search'], {
-      queryParams: q ? { q } : {},
+      queryParams: query ? { q: query } : {},
     });
   }
 

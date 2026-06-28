@@ -59,11 +59,6 @@ export class AdminDatasetWorkflowService {
     );
   }
 
-  /**
-   * Owner-scoped queue for publishers who lack admin-queue permissions. The
-   * backend dataset list already restricts results to the caller's own
-   * datasets (plus published), so this powers a client-paginated queue.
-   */
   listOwnedQueue(): Observable<AdminDatasetRecord[]> {
     return this.api.get<BackendAdminDataset[]>('/v1/dataset/').pipe(
       switchMap((summaries) => {
@@ -128,9 +123,6 @@ export class AdminDatasetWorkflowService {
     return this.ensureTagLink(datasetId, tagName);
   }
 
-  /**
-   * Loads versions, files, and tag links for a single dataset.
-   */
   listResources(datasetId: string): Observable<AdminDatasetResources> {
     const params = { dataset: datasetId };
     return forkJoin({

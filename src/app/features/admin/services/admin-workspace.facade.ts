@@ -48,12 +48,6 @@ const ACTION_SUCCESS_MESSAGES: Record<string, string> = {
   publish: 'Dataset published. It is now visible in Discovery.',
 };
 
-/**
- * Single owner of admin workspace state: queue paging/filtering, summary
- * counts, selection, and workflow mutations. Reviewers (admins) read the
- * server queue endpoints; publishers fall back to an owner-scoped list that is
- * filtered and paginated client-side.
- */
 @Injectable()
 export class AdminWorkspaceFacade {
   private readonly workflow = inject(AdminDatasetWorkflowService);
@@ -98,7 +92,6 @@ export class AdminWorkspaceFacade {
   readonly message = this._message.asReadonly();
   readonly messageError = this._messageError.asReadonly();
   readonly publishedId = this._publishedId.asReadonly();
-  /** Increments after each successful mutation so the page can refresh downstream caches. */
   readonly mutations = this._mutations.asReadonly();
 
   readonly selectedId = computed(() => this._selectedRecord()?.id ?? '');
@@ -293,7 +286,6 @@ export class AdminWorkspaceFacade {
       });
   }
 
-  /** Reloads queue + selected detail after an external resource mutation. */
   refreshDataset(id: string): void {
     this.refreshAfterMutation({ datasetId: id });
   }
@@ -360,7 +352,6 @@ export class AdminWorkspaceFacade {
     });
   }
 
-  /** Called by the metadata editor after a successful save (no status change). */
   onMetadataSaved(datasetId: string): void {
     this.refreshAfterMutation({ datasetId });
   }

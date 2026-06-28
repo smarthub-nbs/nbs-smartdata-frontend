@@ -1,6 +1,6 @@
-<section class="rounded-md border border-slate-200 bg-white">
+<section class="border-t border-nbs-border pt-4">
   <button type="button"
-    class="flex w-full cursor-pointer items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-slate-50"
+    class="flex w-full cursor-pointer items-center justify-between gap-3 text-left transition-colors hover:text-nbs-primary"
     [attr.aria-expanded]="expanded()" (click)="toggle()">
     <span class="flex items-center gap-2">
       <app-icon name="clock" [size]="16" class="text-nbs-primary" />
@@ -16,7 +16,7 @@
   </button>
 
   @if (expanded()) {
-  <div class="border-t border-slate-100 px-4 py-3">
+  <div class="mt-4">
     @if (loading()) {
     <p class="text-sm text-nbs-muted">Loading activity…</p>
     } @else if (error()) {

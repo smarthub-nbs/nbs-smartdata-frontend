@@ -32,7 +32,10 @@ const SIZE_CLASSES: Record<ModalSize, string> = {
   template: `
     <div
       class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-900/50 p-4 backdrop-blur-sm motion-safe:animate-overlay-in sm:items-center"
+      tabindex="-1"
       (click)="onBackdropClick()"
+      (keydown.enter)="onBackdropKeydown($event)"
+      (keydown.space)="onBackdropKeydown($event)"
     >
       <div
         #panel
@@ -42,6 +45,7 @@ const SIZE_CLASSES: Record<ModalSize, string> = {
         tabindex="-1"
         [class]="panelClasses()"
         (click)="$event.stopPropagation()"
+        (keydown)="$event.stopPropagation()"
       >
         <div
           class="flex shrink-0 items-start justify-between gap-3 border-b border-nbs-border px-5 py-4"
@@ -108,7 +112,7 @@ export class ModalComponent {
 
   protected readonly panelClasses = computed(
     () =>
-      `relative my-4 flex max-h-[calc(100vh-2rem)] w-full flex-col ${SIZE_CLASSES[this.size()]} rounded-xl border border-nbs-border bg-white shadow-nbs-hover outline-none motion-safe:animate-modal-in`,
+      `relative my-4 flex max-h-[calc(100vh-2rem)] w-full flex-col ${SIZE_CLASSES[this.size()]} rounded-xl bg-white shadow-lg outline-none motion-safe:animate-modal-in`,
   );
 
   constructor() {
@@ -127,6 +131,15 @@ export class ModalComponent {
     if (this.closeOnBackdrop()) {
       this.requestClose();
     }
+  }
+
+  protected onBackdropKeydown(event: Event): void {
+    if (!(event instanceof KeyboardEvent)) {
+      return;
+    }
+
+    event.preventDefault();
+    this.onBackdropClick();
   }
 
   protected requestClose(): void {

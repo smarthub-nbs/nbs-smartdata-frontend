@@ -1,10 +1,8 @@
 @if (!account()) {
-<section class="mx-auto max-w-md rounded-2xl border border-nbs-border bg-white p-8 text-center shadow-nbs-card">
+<section
+  class="nbs-enter mx-auto max-w-md rounded-2xl border border-nbs-border bg-white p-8 text-center shadow-nbs-card">
   <span class="mx-auto flex size-12 items-center justify-center rounded-xl bg-nbs-primary-soft text-nbs-primary">
-    <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-      <rect x="4" y="10" width="16" height="11" rx="2" />
-      <path d="M8 10V7a4 4 0 0 1 8 0v3" stroke-linecap="round" />
-    </svg>
+    <app-icon name="lock" [size]="24" />
   </span>
   <h1 class="mt-4 text-xl font-semibold text-slate-900">My hub</h1>
   <p class="mt-2 text-sm text-nbs-muted">
@@ -17,7 +15,7 @@
   </div>
 </section>
 } @else {
-<div class="space-y-6">
+<div class="nbs-enter space-y-6">
   <section class="rounded-2xl border border-nbs-border bg-white p-5 shadow-nbs-card sm:p-6">
     <div class="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
       <div class="flex items-center gap-4">
@@ -63,7 +61,7 @@
       <dl class="grid gap-3 sm:w-auto" [class.grid-cols-2]="stats().length === 2"
         [class.grid-cols-3]="stats().length === 3">
         @for (stat of stats(); track stat.label) {
-        <div class="rounded-xl border border-nbs-border bg-nbs-surface px-4 py-3 text-center sm:px-6">
+        <div class="rounded-xl bg-nbs-surface px-4 py-3 text-center sm:px-6">
           <dt class="text-[11px] font-medium uppercase tracking-wide text-nbs-muted">
             {{ stat.label }}
           </dt>
@@ -193,8 +191,7 @@
         </div>
 
         @if (savedQueries().length === 0) {
-        <div
-          class="mt-4 flex flex-col items-center rounded-xl border border-dashed border-nbs-border bg-nbs-surface/70 px-6 py-8 text-center">
+        <div class="mt-4 flex flex-col items-center rounded-xl bg-nbs-surface px-6 py-8 text-center">
           <span class="flex size-12 items-center justify-center rounded-xl bg-white text-nbs-primary shadow-nbs-card">
             <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
               aria-hidden="true">

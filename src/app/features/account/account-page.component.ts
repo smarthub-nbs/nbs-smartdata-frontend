@@ -15,6 +15,7 @@ import { AccountSecurityComponent } from '@app/features/account/components/accou
 import { AccountService } from '@app/features/account/services/account.service';
 import {
   ButtonComponent,
+  IconComponent,
   SelectInputComponent,
   SelectOption,
   TextInputComponent,
@@ -52,6 +53,7 @@ type HubSection = 'saved' | 'settings';
   imports: [
     FormsModule,
     ButtonComponent,
+    IconComponent,
     TextInputComponent,
     SelectInputComponent,
     AccountSecurityComponent,

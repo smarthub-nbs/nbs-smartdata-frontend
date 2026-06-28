@@ -17,6 +17,7 @@ import { ExploreChartType } from '@app/features/explore/models/explore.model';
 import { ExploreDataService } from '@app/features/explore';
 import { downloadCanvasAsPng } from '@app/features/explore/utils/chart-export.util';
 import { PageStateComponent } from '@app/shared/components/page-state/page-state.component';
+import { environment } from '@env/environment';
 import { ButtonComponent } from '@shared/ui';
 
 @Component({
@@ -34,6 +35,9 @@ import { ButtonComponent } from '@shared/ui';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ExplorePageComponent {
+  protected readonly showMockNotice =
+    !environment.production && environment.useMockExploreApi;
+
   protected readonly exploreData = inject(ExploreDataService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);

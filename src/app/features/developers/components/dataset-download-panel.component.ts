@@ -1,11 +1,13 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   computed,
   inject,
   input,
   signal,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Dataset } from '@app/features/discovery';
 import { DatasetDownloadService } from '@app/features/discovery/services/dataset-download.service';
 import { finalize } from 'rxjs';
@@ -26,6 +28,7 @@ import { environment } from '@env/environment';
 export class DatasetDownloadPanelComponent {
   private readonly exportService = inject(DatasetExportService);
   private readonly downloadService = inject(DatasetDownloadService);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly dataset = input.required<Dataset>();
 
@@ -118,13 +121,18 @@ export class DatasetDownloadPanelComponent {
     this.errorMessage.set('');
     this.successMessage.set('');
 
-    request$.pipe(finalize(() => this.exporting.set(false))).subscribe({
-      next: () => {
-        this.successMessage.set(success);
-      },
-      error: (err: Error) => {
-        this.errorMessage.set(err.message || 'Export failed.');
-      },
-    });
+    request$
+      .pipe(
+        finalize(() => this.exporting.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: () => {
+          this.successMessage.set(success);
+        },
+        error: (err: Error) => {
+          this.errorMessage.set(err.message || 'Export failed.');
+        },
+      });
   }
 }

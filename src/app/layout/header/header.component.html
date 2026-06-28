@@ -26,14 +26,10 @@
 
     <div class="flex items-center gap-2 sm:gap-3">
       @if (showHeaderSearch()) {
-      <form class="relative hidden md:block" (ngSubmit)="submitSearch()">
-        <label>
-          <span class="sr-only">Search datasets</span>
-          <input type="search" name="headerSearch" placeholder="Search statistics…"
-            class="h-9 w-48 rounded-md border border-slate-300 bg-white px-3 text-sm focus:border-nbs-primary focus:outline-none focus:ring-2 focus:ring-nbs-primary/30 lg:w-56"
-            [(ngModel)]="searchQuery" />
-        </label>
-      </form>
+      <div class="hidden md:block">
+        <app-search-bar variant="compact" label="Search datasets" placeholder="Search statistics…"
+          inputName="headerSearch" [showSubmit]="false" [(query)]="searchQuery" (submitted)="onSearchSubmit($event)" />
+      </div>
       }
 
       @if (auth.isAuthenticated()) {
@@ -48,9 +44,7 @@
       <div class="lg:hidden">
         <app-button variant="ghost" size="sm" type="button" aria-label="Open navigation menu"
           (clicked)="mobileNav.toggle()">
-          <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round" />
-          </svg>
+          <app-icon name="menu" [size]="20" />
         </app-button>
       </div>
     </div>
@@ -58,6 +52,13 @@
 
   @if (mobileNav.open()) {
   <nav class="border-t border-nbs-border bg-white px-4 py-3 lg:hidden" aria-label="Mobile navigation">
+    @if (showHeaderSearch()) {
+    <div class="mb-3">
+      <app-search-bar variant="compact" label="Search datasets" placeholder="Search statistics…"
+        inputName="mobileHeaderSearch" [showSubmit]="false" [(query)]="searchQuery"
+        (submitted)="onSearchSubmit($event)" />
+    </div>
+    }
     <div class="flex flex-col gap-1">
       @for (item of visibleNavItems(); track item.route) {
       <a [routerLink]="item.route" routerLinkActive="bg-nbs-primary/10 text-nbs-primary"

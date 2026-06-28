@@ -10,12 +10,13 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
+import { IconComponent } from '@shared/ui';
 import { filter, fromEvent } from 'rxjs';
 
 @Component({
   selector: 'app-profile-menu',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, IconComponent],
   templateUrl: './profile-menu.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

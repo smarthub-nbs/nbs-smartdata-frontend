@@ -1,38 +1,93 @@
-<div class="mx-auto max-w-6xl space-y-8 pb-12">
-  <section class="mx-auto max-w-2xl space-y-5 pt-10 text-center sm:pt-16">
-    <div class="space-y-2">
-      <h1 class="text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
-        What statistics are you looking for?
-      </h1>
-      <p class="text-sm text-slate-600 sm:text-base">
-        Official open data from Tanzania's National Bureau of Statistics.
+<div class="nbs-enter space-y-10 pb-12">
+  <section
+    class="relative overflow-hidden rounded-xl bg-nbs-hero px-6 py-10 text-white shadow-nbs-card sm:px-10 sm:py-14">
+    <div class="nbs-stagger relative mx-auto max-w-3xl text-center">
+      <p class="text-sm font-medium text-white/80">
+        National Bureau of Statistics — United Republic of Tanzania
       </p>
-    </div>
+      <h1 class="mt-3 text-3xl font-semibold leading-tight sm:text-4xl">
+        Official open statistics for Tanzania
+      </h1>
+      <p class="mx-auto mt-3 max-w-xl text-sm text-white/85 sm:text-base">
+        Browse, search, and explore national data — free to use for research,
+        policy, and development.
+      </p>
 
-    <form (ngSubmit)="submitSmartSearch()">
-      <div
-        class="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white p-2 shadow-nbs-card transition-colors focus-within:border-nbs-primary focus-within:ring-2 focus-within:ring-nbs-primary/20 sm:flex-row sm:items-center">
-        <label class="relative min-w-0 flex-1">
-          <span class="sr-only">Search official statistics</span>
-          <app-icon name="search" [size]="20"
-            class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input type="search" name="homeSearch" placeholder="Search inflation, population, GDP, agriculture..."
-            class="h-11 w-full border-0 bg-transparent pl-10 pr-3 text-base text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-0 sm:h-12"
-            [(ngModel)]="smartQuery" />
-        </label>
-        <app-button type="submit" variant="primary" size="lg">
-          Search
-        </app-button>
+      <div class="mt-8">
+        <app-search-bar variant="hero" label="Search official statistics"
+          placeholder="Search inflation, population, GDP, agriculture..." inputName="homeSearch" [(query)]="smartQuery"
+          (submitted)="onSearchSubmit($event)" />
       </div>
-    </form>
+    </div>
+  </section>
+
+  @if (catalogStats(); as stats) {
+  <section aria-label="Catalog overview">
+    <dl class="nbs-stagger grid gap-4 sm:grid-cols-3">
+      <div class="nbs-kpi text-center">
+        <dt class="text-xs font-semibold uppercase tracking-wide text-nbs-muted">
+          Datasets
+        </dt>
+        <dd class="mt-1 text-2xl font-semibold tabular-nums text-slate-900">
+          {{ stats.datasetCount | number }}
+        </dd>
+      </div>
+      <div class="nbs-kpi text-center">
+        <dt class="text-xs font-semibold uppercase tracking-wide text-nbs-muted">
+          Topics
+        </dt>
+        <dd class="mt-1 text-2xl font-semibold tabular-nums text-slate-900">
+          {{ stats.topicCount | number }}
+        </dd>
+      </div>
+      <div class="nbs-kpi text-center">
+        <dt class="text-xs font-semibold uppercase tracking-wide text-nbs-muted">
+          Latest update
+        </dt>
+        <dd class="mt-1 text-lg font-semibold text-slate-900">
+          {{ stats.latestUpdate | date: 'mediumDate' }}
+        </dd>
+      </div>
+    </dl>
+  </section>
+  }
+
+  <section aria-labelledby="pathways-heading">
+    <h2 id="pathways-heading" class="text-xs font-semibold uppercase tracking-wide text-nbs-muted">
+      Get started
+    </h2>
+    <div class="nbs-stagger mt-3 grid gap-4 sm:grid-cols-3">
+      @for (path of pathways; track path.route) {
+      <button type="button"
+        class="nbs-card-interactive group flex cursor-pointer flex-col items-start gap-3 p-5 text-left"
+        (click)="goTo(path.route)">
+        <span
+          class="flex size-10 items-center justify-center rounded-lg bg-nbs-primary-soft text-nbs-primary transition-colors group-hover:bg-nbs-primary group-hover:text-white">
+          <app-icon [name]="path.icon" [size]="20" />
+        </span>
+        <span>
+          <span class="block text-sm font-semibold text-slate-900">{{
+            path.label
+            }}</span>
+          <span class="mt-1 block text-xs text-nbs-muted">{{
+            path.description
+            }}</span>
+        </span>
+        <span class="inline-flex items-center gap-1 text-xs font-semibold text-nbs-primary">
+          Open
+          <app-icon name="arrow-right" [size]="14" />
+        </span>
+      </button>
+      }
+    </div>
   </section>
 
   @if (topics().length > 0) {
-  <section class="mx-auto max-w-3xl text-center">
-    <h2 class="mb-3 text-xs font-semibold uppercase tracking-wide text-nbs-muted">
+  <section class="text-center" aria-labelledby="topics-heading">
+    <h2 id="topics-heading" class="text-xs font-semibold uppercase tracking-wide text-nbs-muted">
       {{ topics().length === 1 ? 'Popular topic' : 'Browse by topic' }}
     </h2>
-    <div class="flex flex-wrap justify-center gap-2">
+    <div class="mt-3 flex flex-wrap justify-center gap-2">
       @for (topic of topics(); track topic.route) {
       <button type="button"
         class="group inline-flex cursor-pointer items-center gap-2 rounded-full border border-slate-200 bg-white py-1.5 pl-3 pr-1.5 text-sm font-medium text-slate-700 transition-colors duration-200 hover:border-nbs-primary/30 hover:bg-nbs-primary-soft hover:text-nbs-primary"

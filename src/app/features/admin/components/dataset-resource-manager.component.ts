@@ -51,16 +51,19 @@ export class DatasetResourceManagerComponent {
   private loadedId = '';
 
   constructor() {
-    effect(() => {
-      const id = this.datasetId();
-      this.confirmingDelete.set(false);
-      if (id !== this.loadedId) {
-        this.resources.set(EMPTY_RESOURCES);
-        if (this.expanded()) {
-          this.load();
+    effect(
+      () => {
+        const id = this.datasetId();
+        this.confirmingDelete.set(false);
+        if (id !== this.loadedId) {
+          this.resources.set(EMPTY_RESOURCES);
+          if (this.expanded()) {
+            this.load();
+          }
         }
-      }
-    });
+      },
+      { allowSignalWrites: true },
+    );
   }
 
   protected toggle(): void {
@@ -69,7 +72,6 @@ export class DatasetResourceManagerComponent {
       this.load();
     }
   }
-
   protected deleteFile(fileId: string): void {
     this.actionId.set(fileId);
     this.workflow

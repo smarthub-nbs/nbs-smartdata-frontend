@@ -1,5 +1,4 @@
-<article
-  class="nbs-panel-compact group relative flex h-full cursor-pointer flex-col p-5 transition-all hover:border-nbs-primary/40 hover:shadow-md">
+<article class="nbs-card-interactive group relative flex h-full cursor-pointer flex-col p-5">
   <div class="flex items-start justify-between gap-2">
     <a [routerLink]="['/datasets', dataset().id]"
       class="text-base font-semibold text-slate-900 transition-colors after:absolute after:inset-0 group-hover:text-nbs-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary focus-visible:ring-offset-2">
@@ -12,7 +11,8 @@
         [attr.aria-pressed]="saved()" [attr.aria-label]="
               saved() ? 'Remove from saved datasets' : 'Save dataset'
             " (click)="onSaveClick($event)">
-        <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <svg class="size-4 transition-transform duration-200 motion-safe:active:scale-90" viewBox="0 0 24 24"
+          fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
           @if (saved()) {
           <path d="M6 4.5h12v16l-6-4.5L6 20.5v-16z" fill="currentColor" stroke="none" />
           } @else {

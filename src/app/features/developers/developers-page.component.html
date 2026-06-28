@@ -1,9 +1,9 @@
-<div class="space-y-6">
+<div class="nbs-enter space-y-6">
   <header>
-    <h1 class="text-2xl font-semibold text-slate-900">Developers</h1>
-    <p class="mt-1 text-sm text-nbs-muted">
+    <h1 class="nbs-page-title">Developers</h1>
+    <p class="nbs-page-lead">
       Unified Open API Gateway — integrate official Tanzania statistics into
-      your applications (SRS 5.2).
+      your applications.
     </p>
   </header>
 
@@ -23,12 +23,9 @@
     }
   </nav>
 
-  <section id="quick-start" class="scroll-mt-20 rounded-lg border border-nbs-border bg-white p-5 shadow-sm">
+  <section id="quick-start" class="scroll-mt-20 nbs-card p-5">
     <div class="flex items-center gap-2">
-      <svg class="size-5 text-nbs-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-        aria-hidden="true">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-      </svg>
+      <app-icon name="zap" [size]="20" class="text-nbs-primary" />
       <h2 class="text-base font-semibold text-slate-900">Quick start</h2>
     </div>
     <p class="mt-1 text-sm text-nbs-muted">
@@ -74,7 +71,7 @@
     <div class="mt-4 space-y-3">
       <div>
         <p class="text-xs font-medium text-slate-600">Base URL</p>
-        <div class="mt-1 flex items-center gap-2 rounded-md border border-slate-200 bg-nbs-surface px-3 py-2">
+        <div class="mt-1 flex items-center gap-2 rounded-md bg-nbs-surface px-3 py-2">
           <code class="min-w-0 flex-1 truncate font-mono text-sm text-slate-800">{{
             api.baseUrl
           }}</code>
@@ -84,7 +81,7 @@
 
       <div>
         <p class="text-xs font-medium text-slate-600">Example request</p>
-        <div class="mt-1 flex items-start gap-2 rounded-md border border-slate-200 bg-slate-900 px-3 py-2">
+        <div class="mt-1 flex items-start gap-2 rounded-md bg-slate-900 px-3 py-2">
           <code class="min-w-0 flex-1 break-all font-mono text-xs text-emerald-200">{{
             quickStartCurl()
           }}</code>

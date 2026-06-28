@@ -24,12 +24,11 @@ export class RegionalMapPanelComponent {
     const max = this.exploreData.getRegionalMax(indicator);
 
     return indicator.regional.map((item) => {
-      const intensity = item.value / max;
-      const alpha = 0.15 + intensity * 0.55;
+      const intensity = max > 0 ? item.value / max : 0;
       return {
         region: item.region,
         label: this.exploreData.formatValue(item.value, indicator.unit),
-        color: `rgba(0, 102, 204, ${alpha.toFixed(2)})`,
+        intensityPercent: `${Math.round(intensity * 100)}%`,
       };
     });
   });
