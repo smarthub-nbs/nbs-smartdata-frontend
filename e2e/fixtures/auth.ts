@@ -83,6 +83,16 @@ export async function seedAuthSession(
     await route.fulfill({ json: toMeResponse(role) });
   });
 
+  await page.route('**/api/v1/auth/refresh/', async (route) => {
+    await route.fulfill({
+      json: {
+        success: true,
+        message: 'ok',
+        data: { access: `e2e-access-${role}-refreshed` },
+      },
+    });
+  });
+
   await page.context().addInitScript(
     ({ accessToken, refreshToken, user }) => {
       localStorage.setItem('nbs_access_token', accessToken);
@@ -110,6 +120,16 @@ export async function mockLoginSuccess(
           access: `e2e-access-${role}`,
           refresh: `e2e-refresh-${role}`,
         },
+      },
+    });
+  });
+
+  await page.route('**/api/v1/auth/refresh/', async (route) => {
+    await route.fulfill({
+      json: {
+        success: true,
+        message: 'ok',
+        data: { access: `e2e-access-${role}-refreshed` },
       },
     });
   });
