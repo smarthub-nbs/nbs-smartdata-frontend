@@ -57,13 +57,8 @@ export const MOCK_DATASETS: Dataset[] = [
     keywords: ['census', 'population', 'housing', 'demography'],
     publisher: 'NBS Demography Division',
     updatedAt: '2024-03-15',
-    qualityScore: 96,
     recordCount: 18420,
     license: 'Open Government Licence — Tanzania',
-    updateHistory: [
-      { date: '2024-03-15', note: 'District-level corrections published' },
-      { date: '2023-11-02', note: 'Initial 2022 census release' },
-    ],
   },
   {
     id: 'pop-projection-dodoma',
@@ -78,12 +73,8 @@ export const MOCK_DATASETS: Dataset[] = [
     keywords: ['projection', 'dodoma', 'population growth'],
     publisher: 'NBS Demography Division',
     updatedAt: '2025-01-20',
-    qualityScore: 91,
     recordCount: 420,
     license: 'Open Government Licence — Tanzania',
-    updateHistory: [
-      { date: '2025-01-20', note: '2024-based projection revision' },
-    ],
   },
   {
     id: 'gdp-national-accounts',
@@ -98,13 +89,8 @@ export const MOCK_DATASETS: Dataset[] = [
     keywords: ['gdp', 'national accounts', 'economic growth'],
     publisher: 'NBS National Accounts',
     updatedAt: '2025-02-10',
-    qualityScore: 94,
     recordCount: 3120,
     license: 'Open Government Licence — Tanzania',
-    updateHistory: [
-      { date: '2025-02-10', note: 'Q4 2024 flash estimate' },
-      { date: '2024-12-05', note: 'Q3 2024 revised series' },
-    ],
   },
   {
     id: 'cpi-inflation-monthly',
@@ -119,10 +105,8 @@ export const MOCK_DATASETS: Dataset[] = [
     keywords: ['cpi', 'inflation', 'prices'],
     publisher: 'NBS Price Statistics',
     updatedAt: '2025-03-01',
-    qualityScore: 97,
     recordCount: 8900,
     license: 'Open Government Licence — Tanzania',
-    updateHistory: [{ date: '2025-03-01', note: 'February 2025 CPI release' }],
   },
   {
     id: 'agri-crop-production',
@@ -137,12 +121,8 @@ export const MOCK_DATASETS: Dataset[] = [
     keywords: ['agriculture', 'crops', 'food security', 'yield'],
     publisher: 'NBS Agriculture Statistics',
     updatedAt: '2024-09-18',
-    qualityScore: 88,
     recordCount: 1560,
     license: 'Open Government Licence — Tanzania',
-    updateHistory: [
-      { date: '2024-09-18', note: '2023/24 agricultural year final results' },
-    ],
   },
   {
     id: 'health-facility-census',
@@ -157,12 +137,8 @@ export const MOCK_DATASETS: Dataset[] = [
     keywords: ['health', 'facilities', 'geocoded'],
     publisher: 'NBS — Health Sector Working Group',
     updatedAt: '2024-06-30',
-    qualityScore: 85,
     recordCount: 7200,
     license: 'Open Government Licence — Tanzania',
-    updateHistory: [
-      { date: '2024-06-30', note: 'Annual facility census update' },
-    ],
   },
   {
     id: 'edu-enrolment-primary',
@@ -177,11 +153,7 @@ export const MOCK_DATASETS: Dataset[] = [
     keywords: ['education', 'enrolment', 'primary schools'],
     publisher: 'NBS Education Statistics',
     updatedAt: '2024-12-12',
-    qualityScore: 90,
     recordCount: 2640,
     license: 'Open Government Licence — Tanzania',
-    updateHistory: [
-      { date: '2024-12-12', note: '2024 academic year preliminary data' },
-    ],
   },
 ];

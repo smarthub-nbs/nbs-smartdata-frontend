@@ -11,4 +11,5 @@ export interface UserProfile {
   email: string;
   role: UserRole;
   initials: string;
+  isVerified: boolean;
 }

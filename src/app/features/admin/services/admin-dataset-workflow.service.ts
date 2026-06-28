@@ -24,6 +24,11 @@ import {
   BackendStatusHistory,
   DatasetFrequencyValue,
 } from '@app/features/admin/models/admin-dataset.model';
+import {
+  matchesDatasetId,
+  resolveDatasetMetadata,
+  resolveDatasetTitle,
+} from '@app/features/admin/utils/dataset-metadata.util';
 
 @Injectable({ providedIn: 'root' })
 export class AdminDatasetWorkflowService {
@@ -124,24 +129,32 @@ export class AdminDatasetWorkflowService {
   }
 
   /**
-   * Loads versions, files, and tag links for a single dataset. The backend list
-   * endpoints are not dataset-filtered server-side, so results are scoped here.
+   * Loads versions, files, and tag links for a single dataset.
    */
   listResources(datasetId: string): Observable<AdminDatasetResources> {
+    const params = { dataset: datasetId };
     return forkJoin({
-      versions: this.api.get<BackendDatasetVersion[]>('/v1/dataset/versions/'),
-      files: this.api.get<BackendDatasetFile[]>('/v1/dataset/files/'),
-      tagLinks: this.api.get<BackendDatasetTagLink[]>('/v1/dataset/tag-links/'),
+      versions: this.api.get<BackendDatasetVersion[]>(
+        '/v1/dataset/versions/',
+        params,
+      ),
+      files: this.api.get<BackendDatasetFile[]>('/v1/dataset/files/', params),
+      tagLinks: this.api.get<BackendDatasetTagLink[]>(
+        '/v1/dataset/tag-links/',
+        params,
+      ),
     }).pipe(
       map(({ versions, files, tagLinks }) => ({
         versions: versions
-          .filter((version) => version.dataset?.id === datasetId)
+          .filter((version) => matchesDatasetId(version.dataset, datasetId))
           .map((version) => this.toVersion(version)),
         files: files
-          .filter((file) => file.dataset_version?.dataset?.id === datasetId)
+          .filter((file) =>
+            matchesDatasetId(file.dataset_version?.dataset, datasetId),
+          )
           .map((file) => this.toFile(file)),
         tagLinks: tagLinks
-          .filter((link) => link.dataset?.id === datasetId)
+          .filter((link) => matchesDatasetId(link.dataset, datasetId))
           .map((link) => this.toTagLink(link)),
       })),
     );
@@ -274,9 +287,15 @@ export class AdminDatasetWorkflowService {
   }
 
   listAuditLogs(datasetId: string): Observable<BackendAuditLog[]> {
-    return this.api.get<BackendAuditLog[]>('/v1/dataset/audit-logs/', {
-      dataset: datasetId,
-    });
+    return this.api
+      .get<BackendAuditLog[]>('/v1/dataset/audit-logs/', {
+        dataset: datasetId,
+      })
+      .pipe(
+        map((logs) =>
+          logs.filter((log) => matchesDatasetId(log.dataset, datasetId)),
+        ),
+      );
   }
 
   private ensureTagLink(datasetId: string, tagName: string): Observable<void> {
@@ -384,7 +403,7 @@ export class AdminDatasetWorkflowService {
       visibility: dataset.visibility,
       categorySlug: dataset.category?.slug ?? null,
       categoryName: dataset.category?.name ?? null,
-      title: dataset.metadata?.[0]?.title ?? dataset.slug,
+      title: resolveDatasetTitle(dataset.metadata, dataset.slug),
       hasMetadata: (dataset.metadata?.length ?? 0) > 0,
       hasFile: files.length > 0,
       hasTag: (dataset.tags?.length ?? 0) > 0,
@@ -393,7 +412,7 @@ export class AdminDatasetWorkflowService {
   }
 
   private toAdminMetadata(dataset: BackendAdminDataset): AdminDatasetMetadata {
-    const metadata = dataset.metadata?.[0];
+    const metadata = resolveDatasetMetadata(dataset.metadata);
     return {
       metadataId: metadata?.id ?? null,
       title: metadata?.title ?? '',

@@ -12,4 +12,5 @@ export const HEADER_NAV_ITEMS: HeaderNavItem[] = [
     roles: ['member', 'developer', 'publisher', 'admin'],
   },
   { label: 'Admin', route: '/admin', roles: ['publisher', 'admin'] },
+  { label: 'Users', route: '/users', roles: ['admin'] },
 ];

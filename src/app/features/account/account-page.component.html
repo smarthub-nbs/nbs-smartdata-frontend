@@ -19,17 +19,36 @@
 } @else {
 <div class="space-y-8">
   <header class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-    <div>
-      <h1 class="text-2xl font-semibold text-slate-900">{{ greeting() }}</h1>
-      <p class="mt-1 text-sm text-nbs-muted">
-        Your saved datasets, queries, and shortcuts in one place.
-      </p>
+    <div class="flex items-center gap-4">
+      <span
+        class="flex size-14 shrink-0 items-center justify-center rounded-full bg-nbs-primary-soft text-lg font-semibold text-nbs-primary">
+        {{ account()?.initials }}
+      </span>
+      <div class="min-w-0">
+        <h1 class="text-2xl font-semibold text-slate-900">{{ greeting() }}</h1>
+        <p class="mt-0.5 truncate text-sm text-nbs-muted">{{ account()?.email }}</p>
+      </div>
     </div>
-    <span
-      class="inline-flex w-fit items-center gap-2 rounded-full bg-nbs-primary-soft px-3 py-1 text-xs font-semibold text-nbs-primary">
-      <span class="size-1.5 rounded-full bg-nbs-primary" aria-hidden="true"></span>
-      {{ roleLabel() }}
-    </span>
+    <div class="flex flex-wrap items-center gap-2">
+      @if (account()?.isVerified) {
+      <span
+        class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-800">
+        <span class="size-1.5 rounded-full bg-emerald-500" aria-hidden="true"></span>
+        Verified
+      </span>
+      } @else {
+      <span
+        class="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-900">
+        <span class="size-1.5 rounded-full bg-amber-500" aria-hidden="true"></span>
+        Unverified
+      </span>
+      }
+      <span
+        class="inline-flex items-center gap-2 rounded-full bg-nbs-primary-soft px-3 py-1 text-xs font-semibold text-nbs-primary">
+        <span class="size-1.5 rounded-full bg-nbs-primary" aria-hidden="true"></span>
+        {{ roleLabel() }}
+      </span>
+    </div>
   </header>
 
   <section class="grid gap-4 sm:grid-cols-3">
@@ -178,8 +197,7 @@
     <div>
       <h2 class="text-base font-semibold text-slate-900">Account settings</h2>
       <p class="mt-1 text-sm text-nbs-muted">
-        Profile and preferences. Saved content is stored locally until backend
-        persistence is available.
+        Manage your profile, preferences, and security.
       </p>
     </div>
 
@@ -191,6 +209,11 @@
             [(ngModel)]="profileName" />
           <app-text-input label="Email" type="email" name="email" [required]="true" placeholder="you@nbs.go.tz"
             [(ngModel)]="profileEmail" />
+          @if (emailChanged()) {
+          <p class="text-xs text-amber-700">
+            Changing your email will require re-verification.
+          </p>
+          }
           <div>
             <app-button type="submit" variant="primary" size="sm">
               Save profile
@@ -216,6 +239,8 @@
         </label>
       </div>
     </div>
+
+    <app-account-security />
   </section>
 </div>
 }

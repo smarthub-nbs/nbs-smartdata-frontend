@@ -10,7 +10,6 @@ export type DatasetFormat =
   | 'PDF'
   | 'ZIP';
 export type DatasetFrequency = 'Annual' | 'Quarterly' | 'Monthly';
-export type DatasetQualityLevel = 'high' | 'medium' | 'low';
 export type DatasetWorkflowStatus =
   | 'draft'
   | 'in_review'
@@ -54,23 +53,8 @@ export interface Dataset {
   keywords: string[];
   publisher: string;
   updatedAt: string;
-  qualityScore: number;
   recordCount: number;
   license: string;
-  updateHistory: DatasetUpdateRecord[];
-}
-
-export interface DatasetMetadataUpdate {
-  title: string;
-  description: string;
-  topicSlug: string;
-  format: DatasetFormat;
-  frequency: DatasetFrequency;
-  region: string;
-  publisher: string;
-  license: string;
-  keywords: string[];
-  qualityScore: number;
 }
 
 export interface DatasetTopic {

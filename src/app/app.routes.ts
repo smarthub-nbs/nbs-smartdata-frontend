@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { adminGuard } from '@app/core/guards/admin.guard';
 import { authGuard } from '@app/core/guards/auth.guard';
+import { userAdminGuard } from '@app/core/guards/user-admin.guard';
 
 export const routes: Routes = [
   {
@@ -29,6 +30,27 @@ export const routes: Routes = [
         loadComponent: () =>
           import('@app/features/auth/register-page.component').then(
             (m) => m.RegisterPageComponent,
+          ),
+      },
+      {
+        path: 'forgot-password',
+        loadComponent: () =>
+          import('@app/features/auth/forgot-password-page.component').then(
+            (m) => m.ForgotPasswordPageComponent,
+          ),
+      },
+      {
+        path: 'reset-password',
+        loadComponent: () =>
+          import('@app/features/auth/reset-password-page.component').then(
+            (m) => m.ResetPasswordPageComponent,
+          ),
+      },
+      {
+        path: 'verify-email',
+        loadComponent: () =>
+          import('@app/features/auth/verify-email-page.component').then(
+            (m) => m.VerifyEmailPageComponent,
           ),
       },
       {
@@ -87,6 +109,14 @@ export const routes: Routes = [
         loadComponent: () =>
           import('@app/features/admin/admin-page.component').then(
             (m) => m.AdminPageComponent,
+          ),
+      },
+      {
+        path: 'users',
+        canActivate: [userAdminGuard],
+        loadComponent: () =>
+          import('@app/features/users/users-page.component').then(
+            (m) => m.UsersPageComponent,
           ),
       },
       { path: 'dashboard', redirectTo: '', pathMatch: 'full' },

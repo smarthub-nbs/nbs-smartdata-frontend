@@ -8,6 +8,7 @@ import {
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { UserRole } from '@app/core/models/user.model';
+import { AccountSecurityComponent } from '@app/features/account/components/account-security.component';
 import { AccountService } from '@app/features/account/services/account.service';
 import {
   ButtonComponent,
@@ -48,6 +49,7 @@ interface HubQuickAction {
     TextInputComponent,
     SelectInputComponent,
     DataTableComponent,
+    AccountSecurityComponent,
   ],
   templateUrl: './account-page.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -133,6 +135,13 @@ export class AccountPageComponent {
   protected readonly emailNotifications = signal(
     this.account()?.preferences.emailNotifications ?? true,
   );
+
+  protected emailChanged(): boolean {
+    const current = this.account()?.email ?? '';
+    return (
+      this.profileEmail.trim() !== current && this.profileEmail.trim() !== ''
+    );
+  }
 
   protected saveProfile(): void {
     this.accountService.updateProfile(this.profileName, this.profileEmail);

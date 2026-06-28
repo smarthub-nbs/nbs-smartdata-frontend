@@ -32,6 +32,7 @@ import {
   StatusFilter,
 } from '@app/features/admin/models/admin-dataset.model';
 import { AdminDatasetWorkflowService } from '@app/features/admin/services/admin-dataset-workflow.service';
+import { DatasetService } from '@app/features/discovery/services/dataset.service';
 
 export interface AdminWorkspaceInitialState {
   status?: StatusFilter;
@@ -56,6 +57,7 @@ const ACTION_SUCCESS_MESSAGES: Record<string, string> = {
 @Injectable()
 export class AdminWorkspaceFacade {
   private readonly workflow = inject(AdminDatasetWorkflowService);
+  private readonly datasetService = inject(DatasetService);
   private readonly auth = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -383,6 +385,7 @@ export class AdminWorkspaceFacade {
       this.loadSummary();
     }
     this.loadQueue(opts.datasetId);
+    this.datasetService.markCatalogStale();
     this._mutations.update((count) => count + 1);
   }
 

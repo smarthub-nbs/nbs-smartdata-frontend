@@ -57,13 +57,6 @@
         {{ dataset().updatedAt | date: 'longDate' }}
       </dd>
     </div>
-    <div class="rounded-md border border-slate-100 bg-slate-50/70 p-3">
-      <dt class="text-xs text-nbs-muted">Quality</dt>
-      <dd class="mt-1 flex items-center gap-2">
-        <app-quality-badge [score]="dataset().qualityScore" />
-        <span class="text-sm text-slate-600">{{ dataset().qualityScore }}%</span>
-      </dd>
-    </div>
     @if (indexingStatus()) {
     <div class="rounded-md border border-slate-100 bg-slate-50/70 p-3">
       <dt class="text-xs text-nbs-muted">Index status</dt>

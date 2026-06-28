@@ -258,6 +258,7 @@ export interface BackendStatusHistory {
 
 export interface BackendAuditLog {
   id: string;
+  dataset?: string | { id: string } | null;
   action: string;
   actor_email?: string | null;
   created_at: string;

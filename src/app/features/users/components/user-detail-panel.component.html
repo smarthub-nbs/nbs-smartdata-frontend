@@ -1,0 +1,190 @@
+@if (facade.selectedUser(); as user) {
+<div aria-label="User details">
+  <div class="space-y-6">
+    @if (facade.message()) {
+    <div class="flex items-start gap-2 rounded-md border px-3 py-2 text-sm"
+      [class.border-red-200]="facade.messageError()" [class.bg-red-50]="facade.messageError()"
+      [class.text-nbs-danger]="facade.messageError()" [class.border-emerald-200]="!facade.messageError()"
+      [class.bg-emerald-50]="!facade.messageError()" [class.text-emerald-900]="!facade.messageError()">
+      <span>{{ facade.message() }}</span>
+    </div>
+    }
+
+    <div class="flex flex-wrap gap-1.5">
+      @if (user.isActive) {
+      <span
+        class="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">
+        <span class="size-1.5 rounded-full bg-emerald-500" aria-hidden="true"></span>
+        Active
+      </span>
+      } @else {
+      <span
+        class="inline-flex items-center gap-1 rounded-full bg-slate-200 px-2 py-0.5 text-xs font-medium text-slate-700">
+        <span class="size-1.5 rounded-full bg-slate-500" aria-hidden="true"></span>
+        Inactive
+      </span>
+      }
+      @if (user.isVerified) {
+      <span class="inline-flex items-center gap-1 rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-800">
+        <span class="size-1.5 rounded-full bg-sky-500" aria-hidden="true"></span>
+        Verified
+      </span>
+      } @else {
+      <span
+        class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900">
+        <span class="size-1.5 rounded-full bg-amber-500" aria-hidden="true"></span>
+        Unverified
+      </span>
+      }
+      @if (user.isSuperuser) {
+      <span class="rounded-full bg-violet-100 px-2 py-0.5 text-xs font-medium text-violet-800">
+        Superuser
+      </span>
+      } @else if (user.isStaff) {
+      <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
+        Staff
+      </span>
+      }
+    </div>
+
+    <section>
+      <h3 class="text-sm font-semibold text-slate-900">Profile</h3>
+      <div class="mt-3 grid gap-3 sm:grid-cols-2">
+        <app-text-input class="sm:col-span-2" label="Email" type="email" [required]="true" [error]="fieldError('email')"
+          [ngModel]="email()" (ngModelChange)="email.set($event)" name="detailEmail" />
+        <app-text-input label="First name" [required]="true" [error]="fieldError('firstName')" [ngModel]="firstName()"
+          (ngModelChange)="firstName.set($event)" name="detailFirstName" />
+        <app-text-input label="Last name" [required]="true" [error]="fieldError('lastName')" [ngModel]="lastName()"
+          (ngModelChange)="lastName.set($event)" name="detailLastName" />
+        <label class="inline-flex cursor-pointer items-center gap-2 text-sm text-slate-700 sm:col-span-2">
+          <input type="checkbox" class="size-4 rounded border-slate-300 text-nbs-primary focus:ring-nbs-primary/30"
+            [checked]="isVerified()" (change)="isVerified.set($any($event.target).checked)" />
+          Verified email
+        </label>
+      </div>
+    </section>
+
+    <section>
+      <div class="flex items-center justify-between gap-2">
+        <h3 class="text-sm font-semibold text-slate-900">Groups</h3>
+        @if (groupsDirty()) {
+        <span class="text-xs font-medium text-nbs-highlight">Unsaved</span>
+        }
+      </div>
+      <div class="mt-3 grid gap-2 sm:grid-cols-2">
+        @for (group of facade.groups(); track group.id) {
+        <label class="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm transition-colors"
+          [class.cursor-pointer]="!isBaselineGroup(group.name)" [class.cursor-not-allowed]="isBaselineGroup(group.name)"
+          [class.border-nbs-primary]="isGroupSelected(group.name)"
+          [class.bg-nbs-primary-soft]="isGroupSelected(group.name)" [class.text-nbs-ink]="isGroupSelected(group.name)"
+          [class.border-slate-200]="!isGroupSelected(group.name)" [class.text-slate-700]="!isGroupSelected(group.name)"
+          [class.hover:border-nbs-primary]="!isGroupSelected(group.name) && !isBaselineGroup(group.name)">
+          <input type="checkbox" class="size-4 rounded border-slate-300 text-nbs-primary focus:ring-nbs-primary/30"
+            [checked]="isGroupSelected(group.name) || isBaselineGroup(group.name)"
+            [disabled]="isBaselineGroup(group.name)" (change)="toggleGroup(group.name, $any($event.target).checked)" />
+          <span class="flex-1">{{ formatGroupLabel(group.name) }}</span>
+          @if (isBaselineGroup(group.name)) {
+          <span
+            class="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-nbs-muted">
+            Required
+          </span>
+          }
+        </label>
+        }
+      </div>
+      @if (isBaselineGroup('user')) {
+      <p class="mt-2 text-xs text-nbs-muted">
+        The {{ formatGroupLabel('user') }} role is always assigned and cannot be removed.
+      </p>
+      }
+    </section>
+
+    <section>
+      <h3 class="text-sm font-semibold text-slate-900">Account status</h3>
+      <p class="mt-1 text-xs text-nbs-muted">
+        Created {{ user.createdAt | date: 'medium' }}
+        @if (user.updatedAt) {
+        · Updated {{ user.updatedAt | date: 'medium' }}
+        }
+      </p>
+
+      <div aria-live="polite">
+        @if (isSelf()) {
+        <p class="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          You cannot deactivate your own account.
+        </p>
+        } @else if (confirmDeactivate()) {
+        <div class="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-3">
+          <p class="text-sm text-nbs-danger">Deactivate {{ user.displayName }}? They will lose access until reactivated.
+          </p>
+          <div class="mt-2 flex flex-wrap items-center gap-2">
+            <app-button variant="danger" size="sm" [loading]="facade.actionLoading() === 'deactivate'"
+              (clicked)="confirmDeactivateUser()">
+              Confirm deactivate
+            </app-button>
+            <app-button variant="ghost" size="sm" (clicked)="cancelConfirm()">Cancel</app-button>
+          </div>
+        </div>
+        } @else if (confirmReactivate()) {
+        <div class="mt-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-3">
+          <p class="text-sm text-emerald-800">Reactivate {{ user.displayName }} and restore their access?</p>
+          <div class="mt-2 flex flex-wrap items-center gap-2">
+            <app-button variant="primary" size="sm" [loading]="facade.actionLoading() === 'reactivate'"
+              (clicked)="confirmReactivateUser()">
+              Confirm reactivate
+            </app-button>
+            <app-button variant="ghost" size="sm" (clicked)="cancelConfirm()">Cancel</app-button>
+          </div>
+        </div>
+        } @else if (user.isActive) {
+        <div class="mt-3">
+          <app-button variant="danger" size="sm" (clicked)="requestDeactivate()">
+            Deactivate user
+          </app-button>
+        </div>
+        } @else {
+        <div class="mt-3">
+          <app-button variant="primary" size="sm" (clicked)="requestReactivate()">
+            Reactivate user
+          </app-button>
+        </div>
+        }
+      </div>
+    </section>
+
+    <section>
+      <button type="button"
+        class="inline-flex w-full cursor-pointer items-center justify-between gap-2 rounded text-sm font-semibold text-slate-900 transition-colors hover:text-nbs-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/40"
+        [attr.aria-expanded]="showPermissions()" (click)="togglePermissions()">
+        <span class="inline-flex items-center gap-2">
+          Permissions
+          @if (facade.detailLoading()) {
+          <span class="inline-block size-3 animate-spin rounded-full border-2 border-nbs-primary border-t-transparent"
+            aria-hidden="true"></span>
+          } @else {
+          <span class="text-xs font-normal text-nbs-muted">({{ user.permissions.length }})</span>
+          }
+        </span>
+        <svg class="size-4 text-slate-400 transition-transform" [class.rotate-180]="showPermissions()"
+          viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round" aria-hidden="true">
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </button>
+      @if (showPermissions()) {
+      @if (facade.detailLoading()) {
+      <p class="mt-3 text-xs text-nbs-muted">Loading permissions…</p>
+      } @else if (user.permissions.length === 0) {
+      <p class="mt-3 text-xs text-nbs-muted">No permissions assigned.</p>
+      } @else {
+      <ul class="mt-3 max-h-48 space-y-1 overflow-y-auto rounded-md border border-slate-200 bg-nbs-surface p-3">
+        @for (permission of user.permissions; track permission) {
+        <li class="font-mono text-xs text-slate-700">{{ permission }}</li>
+        }
+      </ul>
+      }
+      }
+    </section>
+  </div>
+</div>
+}

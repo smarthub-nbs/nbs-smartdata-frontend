@@ -56,7 +56,9 @@ export class DatasetEnrichmentService {
 
   getUpdateHistory(datasetId: string): Observable<DatasetUpdateRecord[]> {
     return this.api
-      .get<BackendStatusHistory[]>('/v1/dataset/status-history/')
+      .get<BackendStatusHistory[]>('/v1/dataset/status-history/', {
+        dataset: datasetId,
+      })
       .pipe(
         map((entries) =>
           entries
@@ -73,7 +75,9 @@ export class DatasetEnrichmentService {
     datasetId: string,
   ): Observable<DatasetIndexingStatus | null> {
     return this.api
-      .get<BackendIndexingStatus[]>('/v1/dataset/indexing-status/')
+      .get<BackendIndexingStatus[]>('/v1/dataset/indexing-status/', {
+        dataset: datasetId,
+      })
       .pipe(
         map((entries) => {
           const latest = entries
