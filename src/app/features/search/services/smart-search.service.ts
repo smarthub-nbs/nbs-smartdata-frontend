@@ -206,8 +206,6 @@ export class SmartSearchService {
       }
     }
 
-    score += dataset.qualityScore * 0.08;
-
     return { score, reasons: [...new Set(reasons)].slice(0, 3) };
   }
 
@@ -274,7 +272,6 @@ export class SmartSearchService {
     if (candidate.region === source.region) {
       score += 15;
     }
-    score += candidate.qualityScore * 0.1;
     return score;
   }
 }

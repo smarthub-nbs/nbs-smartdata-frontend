@@ -11,8 +11,6 @@ export type {
   DatasetFormat,
   DatasetFrequency,
   DatasetIndexingStatus,
-  DatasetMetadataUpdate,
-  DatasetQualityLevel,
   DatasetTopic,
   DatasetWorkflowStatus,
 } from './models/dataset.model';

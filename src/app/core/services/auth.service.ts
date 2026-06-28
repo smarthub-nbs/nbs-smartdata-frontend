@@ -1,11 +1,16 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { Observable, catchError, map, of, switchMap, tap } from 'rxjs';
+import { ApiError } from '@app/core/models/api-error.model';
 import { UserProfile, UserRole } from '@app/core/models/user.model';
+import { ApiService } from '@app/core/services/api.service';
+import { fieldErrorsFromApi } from '@app/core/utils/api-field-errors.util';
 import { environment } from '@env/environment';
 
 export interface AuthError {
   message: string;
+  fieldErrors?: Record<string, string>;
 }
 
 interface ApiEnvelope<T> {
@@ -40,6 +45,7 @@ interface CurrentUserResponse {
   email: string;
   first_name: string;
   last_name: string;
+  is_verified: boolean;
   is_staff: boolean;
   is_superuser: boolean;
   roles: string[];
@@ -52,6 +58,8 @@ const USER_KEY = 'nbs_user';
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly http = inject(HttpClient);
+  private readonly api = inject(ApiService);
+  private readonly router = inject(Router);
   private readonly currentUser = signal<UserProfile | null>(this.readUser());
   private readonly accessToken = signal<string | null>(
     localStorage.getItem(ACCESS_TOKEN_KEY),
@@ -59,7 +67,9 @@ export class AuthService {
   private refreshInFlight: Observable<string | null> | null = null;
 
   readonly user = this.currentUser.asReadonly();
-  readonly isAuthenticated = computed(() => this.currentUser() !== null);
+  readonly isAuthenticated = computed(
+    () => this.currentUser() !== null && this.accessToken() !== null,
+  );
   readonly isAdmin = computed(
     () =>
       this.currentUser()?.role === 'admin' ||
@@ -138,6 +148,7 @@ export class AuthService {
         .subscribe({ error: () => undefined });
     }
     this.clearSession();
+    void this.router.navigate(['/login']);
   }
 
   refreshAccessToken(): Observable<string | null> {
@@ -179,10 +190,17 @@ export class AuthService {
   /** Revalidate the cached session on app bootstrap so role/permissions stay fresh. */
   loadCurrentUser(): Observable<UserProfile | null> {
     if (!this.accessToken()) {
+      this.clearSession();
       return of(null);
     }
     return this.fetchCurrentUser().pipe(
-      catchError(() => of(this.currentUser())),
+      catchError((error: unknown) => {
+        if (this.isAuthFailure(error)) {
+          this.clearSession();
+          return of(null);
+        }
+        return of(this.currentUser());
+      }),
     );
   }
 
@@ -204,6 +222,107 @@ export class AuthService {
     });
   }
 
+  changePassword(
+    currentPassword: string,
+    newPassword: string,
+  ): Observable<AuthError | null> {
+    return this.api
+      .post<unknown>('/v1/auth/password/change/', {
+        current_password: currentPassword,
+        new_password: newPassword,
+      })
+      .pipe(
+        map(() => null),
+        catchError((error: unknown) =>
+          of({
+            message: this.resolveApiErrorMessage(
+              error,
+              'Could not change password.',
+            ),
+            fieldErrors: fieldErrorsFromApi(error, {
+              current_password: 'currentPassword',
+              new_password: 'newPassword',
+            }),
+          }),
+        ),
+      );
+  }
+
+  requestPasswordReset(email: string): Observable<AuthError | null> {
+    return this.api
+      .post<unknown>('/v1/auth/password/reset/request/', {
+        email: email.trim(),
+      })
+      .pipe(
+        map(() => null),
+        catchError((error: unknown) =>
+          of({
+            message: this.resolveApiErrorMessage(
+              error,
+              'Could not request password reset.',
+            ),
+          }),
+        ),
+      );
+  }
+
+  confirmPasswordReset(
+    token: string,
+    newPassword: string,
+  ): Observable<AuthError | null> {
+    return this.api
+      .post<unknown>('/v1/auth/password/reset/confirm/', {
+        token,
+        new_password: newPassword,
+      })
+      .pipe(
+        map(() => null),
+        catchError((error: unknown) =>
+          of({
+            message: this.resolveApiErrorMessage(
+              error,
+              'Could not reset password.',
+            ),
+          }),
+        ),
+      );
+  }
+
+  requestEmailVerification(): Observable<AuthError | null> {
+    return this.api.post<unknown>('/v1/auth/email/verify/request/', {}).pipe(
+      map(() => null),
+      catchError((error: unknown) =>
+        of({
+          message: this.resolveApiErrorMessage(
+            error,
+            'Could not send verification email.',
+          ),
+        }),
+      ),
+    );
+  }
+
+  confirmEmailVerification(token: string): Observable<AuthError | null> {
+    return this.api
+      .post<CurrentUserResponse>('/v1/auth/email/verify/confirm/', { token })
+      .pipe(
+        tap((user) => {
+          if (this.isAuthenticated()) {
+            this.saveUser(this.toUserProfile(user));
+          }
+        }),
+        map(() => null),
+        catchError((error: unknown) =>
+          of({
+            message: this.resolveApiErrorMessage(
+              error,
+              'Could not verify email.',
+            ),
+          }),
+        ),
+      );
+  }
+
   private fetchCurrentUser(): Observable<UserProfile> {
     return this.http
       .get<
@@ -213,6 +332,13 @@ export class AuthService {
         map((response) => this.toUserProfile(response.data)),
         tap((user) => this.saveUser(user)),
       );
+  }
+
+  private isAuthFailure(error: unknown): boolean {
+    return (
+      error instanceof HttpErrorResponse &&
+      (error.status === 401 || error.status === 403)
+    );
   }
 
   private clearSession(): void {
@@ -252,7 +378,15 @@ export class AuthService {
     }
 
     try {
-      return JSON.parse(rawUser) as UserProfile;
+      const parsed = JSON.parse(rawUser) as Partial<UserProfile>;
+      return {
+        id: parsed.id ?? '',
+        name: parsed.name ?? '',
+        email: parsed.email ?? '',
+        role: parsed.role ?? 'member',
+        initials: parsed.initials ?? 'NU',
+        isVerified: parsed.isVerified ?? false,
+      };
     } catch {
       localStorage.removeItem(USER_KEY);
       return null;
@@ -269,11 +403,17 @@ export class AuthService {
       email: user.email,
       role: this.resolveRole(user),
       initials: this.buildInitials(resolvedName),
+      isVerified: user.is_verified,
     };
   }
 
   private resolveRole(user: CurrentUserResponse): UserRole {
-    if (user.is_superuser || user.is_staff || user.roles.includes('admin')) {
+    if (
+      user.is_superuser ||
+      user.is_staff ||
+      user.roles.includes('admin') ||
+      user.roles.includes('super_admin')
+    ) {
       return 'admin';
     }
     if (user.roles.includes('publisher') || user.roles.includes('editor')) {
@@ -283,6 +423,13 @@ export class AuthService {
       return 'developer';
     }
     return 'member';
+  }
+
+  private resolveApiErrorMessage(error: unknown, fallback: string): string {
+    if (error instanceof ApiError) {
+      return error.message || fallback;
+    }
+    return this.resolveErrorMessage(error, fallback);
   }
 
   private resolveErrorMessage(error: unknown, fallback: string): string {

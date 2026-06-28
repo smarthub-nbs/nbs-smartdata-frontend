@@ -12,7 +12,6 @@ import { DATASET_ADAPTER } from '@app/features/discovery/adapters/dataset.adapte
 import {
   Dataset,
   DatasetFilters,
-  DatasetMetadataUpdate,
   DatasetTopic,
   EMPTY_DATASET_FILTERS,
 } from '@app/features/discovery/models/dataset.model';
@@ -36,6 +35,7 @@ export class DatasetService {
   });
   private readonly catalogState = signal<AsyncState<Dataset[]>>(loadingState());
   private readonly detailState = signal<AsyncState<Dataset>>(idleState());
+  private readonly catalogStale = signal(false);
   private readonly queryReload$ = new Subject<string>();
 
   readonly topics = this.topicsState.asReadonly();
@@ -129,20 +129,6 @@ export class DatasetService {
     );
   }
 
-  updateMetadata(
-    id: string,
-    metadata: DatasetMetadataUpdate,
-  ): Observable<Dataset> {
-    return this.adapter.updateMetadata(id, metadata).pipe(
-      tap((updated) => {
-        this.mergeDataset(updated);
-        if (this.catalogState().status === 'success') {
-          this.catalogState.set(successState(this.datasets()));
-        }
-      }),
-    );
-  }
-
   getTopic(slug: string): DatasetTopic | undefined {
     return this.topicsState().find((t) => t.slug === slug);
   }
@@ -172,6 +158,17 @@ export class DatasetService {
         .toLowerCase();
       return haystack.includes(normalized);
     });
+  }
+
+  markCatalogStale(): void {
+    this.catalogStale.set(true);
+  }
+
+  refreshCatalogIfStale(): void {
+    if (!this.catalogStale()) {
+      return;
+    }
+    this.refreshCatalog();
   }
 
   refreshCatalog(): void {
@@ -227,6 +224,7 @@ export class DatasetService {
       next: (datasets) => {
         this.datasets.set(datasets);
         this.catalogState.set(successState(datasets));
+        this.catalogStale.set(false);
       },
       error: (error: unknown) => {
         this.catalogState.set(

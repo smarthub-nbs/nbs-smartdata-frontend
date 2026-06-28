@@ -32,6 +32,9 @@ export class LoginPageComponent {
 
   protected readonly submitting = signal(false);
   protected readonly errorMessage = signal('');
+  protected readonly resetSuccess = signal(
+    this.route.snapshot.queryParamMap.get('reset') === 'success',
+  );
   protected readonly registerQueryParams = {
     returnUrl: this.route.snapshot.queryParamMap.get('returnUrl') ?? '/',
   };

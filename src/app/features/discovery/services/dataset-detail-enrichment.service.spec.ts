@@ -18,10 +18,8 @@ const dataset: Dataset = {
   keywords: ['population'],
   publisher: 'NBS',
   updatedAt: '2026-01-01',
-  qualityScore: 95,
   recordCount: 10,
   license: 'Open',
-  updateHistory: [],
 };
 
 describe('DatasetDetailEnrichmentService', () => {

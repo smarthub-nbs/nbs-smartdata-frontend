@@ -41,6 +41,20 @@ module.exports = {
         "nbs-hero":
           "radial-gradient(120% 120% at 100% 0%, #0a3a78 0%, #003d7a 45%, #0a1f3d 100%)",
       },
+      keyframes: {
+        "overlay-in": {
+          from: { opacity: "0" },
+          to: { opacity: "1" },
+        },
+        "modal-in": {
+          from: { opacity: "0", transform: "translateY(8px) scale(0.98)" },
+          to: { opacity: "1", transform: "translateY(0) scale(1)" },
+        },
+      },
+      animation: {
+        "overlay-in": "overlay-in 150ms ease-out",
+        "modal-in": "modal-in 180ms ease-out",
+      },
     },
   },
   plugins: [],

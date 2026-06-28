@@ -39,6 +39,10 @@ export class DatasetsPageComponent {
   protected readonly auth = inject(AuthService);
   private readonly router = inject(Router);
 
+  constructor() {
+    this.datasetService.refreshCatalogIfStale();
+  }
+
   protected readonly catalogErrorMessage = computed(() => {
     const state = this.datasetService.catalogLoadState();
     return state.status === 'error' ? state.message : null;

@@ -1,6 +1,6 @@
-import { DatasetQualityLevel } from '@app/features/discovery/models/dataset.model';
+type QualityLevel = 'high' | 'medium' | 'low';
 
-export function qualityLevel(score: number): DatasetQualityLevel {
+export function qualityLevel(score: number): QualityLevel {
   if (score >= 90) {
     return 'high';
   }

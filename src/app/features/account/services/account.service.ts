@@ -74,6 +74,8 @@ export class AccountService {
       name: user.name,
       email: user.email,
       role: user.role,
+      initials: user.initials,
+      isVerified: user.isVerified,
       savedDatasets: this.savedDatasetsForDisplay(),
       savedQueries: this.savedQueries(),
       preferences: this.preferences(),

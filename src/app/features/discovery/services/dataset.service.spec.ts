@@ -17,10 +17,8 @@ const dataset: Dataset = {
   keywords: ['population'],
   publisher: 'NBS',
   updatedAt: '2026-01-01',
-  qualityScore: 95,
   recordCount: 10,
   license: 'Open',
-  updateHistory: [],
 };
 
 describe('DatasetService', () => {
@@ -31,7 +29,6 @@ describe('DatasetService', () => {
       'list',
       'getById',
       'listTopics',
-      'updateMetadata',
     ]) as jasmine.SpyObj<DatasetAdapter>;
 
     adapter.list.and.returnValue(of([{ ...dataset }]));
@@ -62,5 +59,19 @@ describe('DatasetService', () => {
     service.patchRecordCountFromPreview(dataset.id, dataset.recordCount);
 
     expect(service.getById(dataset.id)?.recordCount).toBe(dataset.recordCount);
+  });
+
+  it('refreshes the catalog only when marked stale', () => {
+    const adapter = TestBed.inject(
+      DATASET_ADAPTER,
+    ) as jasmine.SpyObj<DatasetAdapter>;
+    adapter.list.calls.reset();
+
+    service.refreshCatalogIfStale();
+    expect(adapter.list).not.toHaveBeenCalled();
+
+    service.markCatalogStale();
+    service.refreshCatalogIfStale();
+    expect(adapter.list).toHaveBeenCalled();
   });
 });

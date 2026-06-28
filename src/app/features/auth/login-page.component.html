@@ -7,12 +7,24 @@
   </header>
 
   <section class="rounded-lg border border-nbs-border bg-white p-6 shadow-sm">
+    @if (resetSuccess()) {
+    <div class="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900"
+      role="status">
+      Password reset successfully. Sign in with your new password.
+    </div>
+    }
     <form class="space-y-4" [formGroup]="form" (ngSubmit)="submit()">
       <app-text-input formControlName="username" label="Email" placeholder="you@example.com" [required]="true"
         [error]="fieldError('username')" />
 
       <app-text-input formControlName="password" label="Password" type="password" placeholder="Enter your password"
         [required]="true" [error]="fieldError('password')" />
+
+      <div class="flex justify-end">
+        <a routerLink="/forgot-password" class="text-sm text-nbs-primary hover:underline">
+          Forgot password?
+        </a>
+      </div>
 
       @if (errorMessage()) {
       <p class="text-sm text-nbs-danger" role="alert">

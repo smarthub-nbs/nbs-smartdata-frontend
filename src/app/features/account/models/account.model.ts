@@ -27,6 +27,8 @@ export interface AccountSnapshot {
   name: string;
   email: string;
   role: UserRole;
+  initials: string;
+  isVerified: boolean;
   savedDatasets: SavedDatasetItem[];
   savedQueries: SavedQueryItem[];
   preferences: AccountPreferences;

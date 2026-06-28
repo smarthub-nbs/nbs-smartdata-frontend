@@ -8,7 +8,6 @@ import {
 import {
   Dataset,
   DatasetFilters,
-  DatasetMetadataUpdate,
   DatasetTopic,
 } from '@app/features/discovery/models/dataset.model';
 
@@ -31,36 +30,6 @@ export class MockDatasetAdapter implements DatasetAdapter {
 
   listTopics(): Observable<DatasetTopic[]> {
     return of(structuredClone(this.topics));
-  }
-
-  updateMetadata(
-    id: string,
-    metadata: DatasetMetadataUpdate,
-  ): Observable<Dataset> {
-    const topic = this.topics.find((item) => item.slug === metadata.topicSlug);
-    const now = new Date().toISOString().slice(0, 10);
-    const index = this.datasets.findIndex((dataset) => dataset.id === id);
-
-    if (index < 0) {
-      throw new Error(`Dataset not found: ${id}`);
-    }
-
-    const updated: Dataset = {
-      ...this.datasets[index],
-      ...metadata,
-      topicName: topic?.name ?? this.datasets[index].topicName,
-      updatedAt: now,
-      updateHistory: [
-        { date: now, note: 'Metadata updated by admin' },
-        ...this.datasets[index].updateHistory,
-      ].slice(0, 6),
-    };
-
-    this.datasets = this.datasets.map((dataset) =>
-      dataset.id === id ? updated : dataset,
-    );
-
-    return of(structuredClone(updated));
   }
 
   private applyFilters(

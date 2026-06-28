@@ -12,6 +12,10 @@ export {
 } from '@shared/ui/form/select-input.component';
 export { DataTableComponent } from '@shared/ui/data-table/data-table.component';
 export { IconComponent, type IconName } from '@shared/ui/icon/icon.component';
+export {
+  ModalComponent,
+  type ModalSize,
+} from '@shared/ui/modal/modal.component';
 export type {
   ButtonVariant,
   ButtonSize,

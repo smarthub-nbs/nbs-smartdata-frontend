@@ -4,12 +4,11 @@ import {
   Dataset,
   DatasetIndexingStatus,
 } from '@app/features/discovery/models/dataset.model';
-import { QualityBadgeComponent } from '@app/features/discovery/components/quality-badge.component';
 
 @Component({
   selector: 'app-dataset-metadata-panel',
   standalone: true,
-  imports: [DatePipe, DecimalPipe, QualityBadgeComponent],
+  imports: [DatePipe, DecimalPipe],
   templateUrl: './dataset-metadata-panel.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
