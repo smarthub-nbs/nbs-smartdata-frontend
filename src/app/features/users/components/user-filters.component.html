@@ -1,41 +1,73 @@
 <div class="rounded-lg border border-nbs-border bg-white p-4 shadow-sm lg:p-5">
-  <div class="grid gap-3 lg:grid-cols-[minmax(0,1.4fr)_repeat(3,minmax(0,0.7fr))]">
+  <div
+    class="grid gap-3 lg:grid-cols-[minmax(0,1.4fr)_repeat(3,minmax(0,0.7fr))]"
+  >
     <div class="flex flex-col gap-1.5">
       <label for="user-search" class="text-sm font-medium text-slate-700">
         Search
       </label>
       <div class="relative">
-        <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400">
-          <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <span
+          class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400"
+        >
+          <svg
+            class="size-4"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
             <circle cx="11" cy="11" r="7" />
             <path d="m21 21-4.3-4.3" />
           </svg>
         </span>
-        <input id="user-search" type="search"
+        <input
+          id="user-search"
+          type="search"
           class="h-10 w-full rounded-md border border-slate-300 bg-white pl-9 pr-3 text-sm text-slate-900 transition-colors placeholder:text-slate-400 focus:border-nbs-primary focus:outline-none focus:ring-2 focus:ring-nbs-primary/30"
-          placeholder="Email or name…" [value]="facade.searchTerm()" (input)="onSearchInput($event)" />
+          placeholder="Email or name…"
+          [value]="facade.searchTerm()"
+          (input)="onSearchInput($event)"
+        />
       </div>
     </div>
 
-    <app-select-input label="Group" placeholder="All groups" [options]="groupOptions()" [ngModel]="facade.groupFilter()"
-      (ngModelChange)="onGroupChange($event)" />
+    <app-select-input
+      label="Group"
+      placeholder="All groups"
+      [options]="groupOptions()"
+      [ngModel]="facade.groupFilter()"
+      (ngModelChange)="onGroupChange($event)"
+    />
 
-    <app-select-input label="Active" [options]="triStateOptions" [ngModel]="facade.activeFilter()"
-      (ngModelChange)="onActiveChange($event)" />
+    <app-select-input
+      label="Active"
+      [options]="triStateOptions"
+      [ngModel]="facade.activeFilter()"
+      (ngModelChange)="onActiveChange($event)"
+    />
 
-    <app-select-input label="Verified" [options]="triStateOptions" [ngModel]="facade.verifiedFilter()"
-      (ngModelChange)="onVerifiedChange($event)" />
+    <app-select-input
+      label="Verified"
+      [options]="triStateOptions"
+      [ngModel]="facade.verifiedFilter()"
+      (ngModelChange)="onVerifiedChange($event)"
+    />
   </div>
 
   @if (facade.hasActiveFilters()) {
-  <div class="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3">
-    <p class="text-xs text-nbs-muted" aria-live="polite">
-      Filters applied · {{ facade.pageRangeLabel() }}
-    </p>
-    <app-button variant="ghost" size="sm" (clicked)="clearFilters()">
-      Clear filters
-    </app-button>
-  </div>
+    <div
+      class="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3"
+    >
+      <p class="text-xs text-nbs-muted" aria-live="polite">
+        Filters applied · {{ facade.pageRangeLabel() }}
+      </p>
+      <app-button variant="ghost" size="sm" (clicked)="clearFilters()">
+        Clear filters
+      </app-button>
+    </div>
   }
 </div>

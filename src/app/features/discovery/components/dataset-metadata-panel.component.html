@@ -34,20 +34,20 @@
       </dd>
     </div>
     @if (dataset().year) {
-    <div class="rounded-md border border-slate-100 bg-slate-50/70 p-3">
-      <dt class="text-xs text-nbs-muted">Year</dt>
-      <dd class="mt-0.5 text-sm font-medium text-slate-900">
-        {{ dataset().year }}
-      </dd>
-    </div>
+      <div class="rounded-md border border-slate-100 bg-slate-50/70 p-3">
+        <dt class="text-xs text-nbs-muted">Year</dt>
+        <dd class="mt-0.5 text-sm font-medium text-slate-900">
+          {{ dataset().year }}
+        </dd>
+      </div>
     }
     <div class="rounded-md border border-slate-100 bg-slate-50/70 p-3">
       <dt class="text-xs text-nbs-muted">Records</dt>
       <dd class="mt-0.5 text-sm font-medium text-slate-900">
         @if (dataset().recordCount > 0) {
-        {{ dataset().recordCount | number }}
+          {{ dataset().recordCount | number }}
         } @else {
-        —
+          —
         }
       </dd>
     </div>
@@ -58,12 +58,12 @@
       </dd>
     </div>
     @if (indexingStatus()) {
-    <div class="rounded-md border border-slate-100 bg-slate-50/70 p-3">
-      <dt class="text-xs text-nbs-muted">Index status</dt>
-      <dd class="mt-0.5 text-sm font-medium text-slate-900">
-        {{ indexingStatus()!.status }}
-      </dd>
-    </div>
+      <div class="rounded-md border border-slate-100 bg-slate-50/70 p-3">
+        <dt class="text-xs text-nbs-muted">Index status</dt>
+        <dd class="mt-0.5 text-sm font-medium text-slate-900">
+          {{ indexingStatus()!.status }}
+        </dd>
+      </div>
     }
   </dl>
 </section>

@@ -1,96 +1,157 @@
 <section class="rounded-lg border border-nbs-border bg-white p-5 shadow-sm">
   <div class="flex items-center gap-2">
-    <svg class="size-5 text-nbs-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-      aria-hidden="true">
-      <path stroke-linecap="round" stroke-linejoin="round"
-        d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z" />
+    <svg
+      class="size-5 text-nbs-primary"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      aria-hidden="true"
+    >
+      <path
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z"
+      />
     </svg>
     <h2 class="text-base font-semibold text-slate-900">API reference</h2>
   </div>
   <p class="mt-1 text-sm text-nbs-muted">
     {{ api.endpoints.length }} gateway endpoints. All require
-    <code class="rounded bg-nbs-surface px-1 py-0.5 font-mono text-xs">X-API-Key</code>
+    <code class="rounded bg-nbs-surface px-1 py-0.5 font-mono text-xs"
+      >X-API-Key</code
+    >
     authentication.
   </p>
 
   <div class="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
     <label class="block min-w-0 flex-1">
       <span class="sr-only">Filter endpoints</span>
-      <input type="search"
+      <input
+        type="search"
         class="h-10 w-full rounded-md border border-slate-300 px-3 text-sm focus:border-nbs-primary focus:outline-none focus:ring-2 focus:ring-nbs-primary/30"
-        placeholder="Filter by path or description…" [value]="filterQuery()" (input)="onFilterInput($event)" />
+        placeholder="Filter by path or description…"
+        [value]="filterQuery()"
+        (input)="onFilterInput($event)"
+      />
     </label>
     @if (!isFiltering()) {
-    <div class="flex shrink-0 items-center gap-2">
-      <button type="button" class="text-xs text-nbs-primary hover:underline" (click)="expandAll()">
-        Expand all
-      </button>
-      <span class="text-xs text-slate-300" aria-hidden="true">·</span>
-      <button type="button" class="text-xs text-nbs-primary hover:underline" (click)="collapseAll()">
-        Collapse all
-      </button>
-    </div>
+      <div class="flex shrink-0 items-center gap-2">
+        <button
+          type="button"
+          class="text-xs text-nbs-primary hover:underline"
+          (click)="expandAll()"
+        >
+          Expand all
+        </button>
+        <span class="text-xs text-slate-300" aria-hidden="true">·</span>
+        <button
+          type="button"
+          class="text-xs text-nbs-primary hover:underline"
+          (click)="collapseAll()"
+        >
+          Collapse all
+        </button>
+      </div>
     }
   </div>
 
   @if (filteredGroups().length === 0) {
-  <p class="mt-4 text-sm text-nbs-muted">No endpoints match your filter.</p>
+    <p class="mt-4 text-sm text-nbs-muted">No endpoints match your filter.</p>
   } @else {
-  <p class="mt-2 text-xs text-nbs-muted">
-    @if (isFiltering()) {
-    {{ filteredCount() }} match{{ filteredCount() === 1 ? '' : 'es' }}
-    } @else {
-    Browse by group — scroll inside the list
-    }
-  </p>
+    <p class="mt-2 text-xs text-nbs-muted">
+      @if (isFiltering()) {
+        {{ filteredCount() }} match{{ filteredCount() === 1 ? '' : 'es' }}
+      } @else {
+        Browse by group — scroll inside the list
+      }
+    </p>
 
-  <div class="mt-2 max-h-[min(28rem,60vh)] overflow-y-auto rounded-md bg-nbs-surface/50">
-    @for (group of filteredGroups(); track group.id) {
-    <div class="border-b border-slate-100 last:border-b-0">
-      <button type="button"
-        class="sticky top-0 z-10 flex w-full items-center justify-between gap-2 bg-white/95 px-3 py-2.5 text-left backdrop-blur-sm hover:bg-nbs-surface"
-        [attr.aria-expanded]="isGroupExpanded(group.id)" [attr.aria-controls]="groupPanelId(group.id)"
-        (click)="toggleGroup(group.id)">
-        <span class="text-xs font-semibold uppercase tracking-wide text-slate-700">
-          {{ group.label }}
-          <span class="ml-1 font-normal text-nbs-muted">({{ group.endpoints.length }})</span>
-        </span>
-        <svg class="size-4 shrink-0 text-slate-500 transition-transform" [class.rotate-180]="isGroupExpanded(group.id)"
-          viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
+    <div
+      class="mt-2 max-h-[min(28rem,60vh)] overflow-y-auto rounded-md bg-nbs-surface/50"
+    >
+      @for (group of filteredGroups(); track group.id) {
+        <div class="border-b border-slate-100 last:border-b-0">
+          <button
+            type="button"
+            class="sticky top-0 z-10 flex w-full items-center justify-between gap-2 bg-white/95 px-3 py-2.5 text-left backdrop-blur-sm hover:bg-nbs-surface"
+            [attr.aria-expanded]="isGroupExpanded(group.id)"
+            [attr.aria-controls]="groupPanelId(group.id)"
+            (click)="toggleGroup(group.id)"
+          >
+            <span
+              class="text-xs font-semibold uppercase tracking-wide text-slate-700"
+            >
+              {{ group.label }}
+              <span class="ml-1 font-normal text-nbs-muted"
+                >({{ group.endpoints.length }})</span
+              >
+            </span>
+            <svg
+              class="size-4 shrink-0 text-slate-500 transition-transform"
+              [class.rotate-180]="isGroupExpanded(group.id)"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              aria-hidden="true"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M19 9l-7 7-7-7"
+              />
+            </svg>
+          </button>
 
-      @if (isGroupExpanded(group.id)) {
-      <ul [id]="groupPanelId(group.id)" class="divide-y divide-slate-50 px-3 pb-2">
-        @for (endpoint of group.endpoints; track endpoint.path) {
-        <li class="flex flex-col gap-2 py-2 sm:flex-row sm:items-center sm:gap-2">
-          <div class="flex min-w-0 flex-1 items-start gap-2">
-            <span [class]="methodBadgeClasses(endpoint.method)">{{
-              endpoint.method
-              }}</span>
-            <div class="min-w-0 flex-1">
-              <p class="truncate font-mono text-xs text-slate-800" [title]="endpoint.path">
-                {{ endpoint.path }}
-              </p>
-              <p class="truncate text-xs text-nbs-muted" [title]="endpoint.summary">
-                {{ endpoint.summary }}
-              </p>
-            </div>
-          </div>
-          <div class="flex shrink-0 items-center gap-1 sm:pl-0 pl-8">
-            <app-copy-button [value]="endpointUrl(endpoint.path)" label="Copy endpoint URL" />
-            <app-button variant="outline" size="sm" (clicked)="tryEndpoint(endpoint.path)">
-              Try
-            </app-button>
-          </div>
-        </li>
-        }
-      </ul>
+          @if (isGroupExpanded(group.id)) {
+            <ul
+              [id]="groupPanelId(group.id)"
+              class="divide-y divide-slate-50 px-3 pb-2"
+            >
+              @for (endpoint of group.endpoints; track endpoint.path) {
+                <li
+                  class="flex flex-col gap-2 py-2 sm:flex-row sm:items-center sm:gap-2"
+                >
+                  <div class="flex min-w-0 flex-1 items-start gap-2">
+                    <span [class]="methodBadgeClasses(endpoint.method)">{{
+                      endpoint.method
+                    }}</span>
+                    <div class="min-w-0 flex-1">
+                      <p
+                        class="truncate font-mono text-xs text-slate-800"
+                        [title]="endpoint.path"
+                      >
+                        {{ endpoint.path }}
+                      </p>
+                      <p
+                        class="truncate text-xs text-nbs-muted"
+                        [title]="endpoint.summary"
+                      >
+                        {{ endpoint.summary }}
+                      </p>
+                    </div>
+                  </div>
+                  <div class="flex shrink-0 items-center gap-1 sm:pl-0 pl-8">
+                    <app-copy-button
+                      [value]="endpointUrl(endpoint.path)"
+                      label="Copy endpoint URL"
+                    />
+                    <app-button
+                      variant="outline"
+                      size="sm"
+                      (clicked)="tryEndpoint(endpoint.path)"
+                    >
+                      Try
+                    </app-button>
+                  </div>
+                </li>
+              }
+            </ul>
+          }
+        </div>
       }
     </div>
-    }
-  </div>
   }
 
   <div class="mt-4 rounded-md bg-nbs-surface p-3 text-xs text-slate-600">

@@ -12,11 +12,7 @@ import { AuthService } from '@app/core/services/auth.service';
 import { ButtonComponent, TextInputComponent } from '@shared/ui';
 
 type RegisterField =
-  | 'firstName'
-  | 'lastName'
-  | 'email'
-  | 'password'
-  | 'confirmPassword';
+  'firstName' | 'lastName' | 'email' | 'password' | 'confirmPassword';
 
 @Component({
   selector: 'app-register-page',

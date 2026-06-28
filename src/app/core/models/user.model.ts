@@ -1,9 +1,5 @@
 export type UserRole =
-  | 'public'
-  | 'member'
-  | 'developer'
-  | 'publisher'
-  | 'admin';
+  'public' | 'member' | 'developer' | 'publisher' | 'admin';
 
 export interface UserProfile {
   id: string;

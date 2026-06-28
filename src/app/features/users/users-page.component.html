@@ -1,5 +1,7 @@
 <div class="nbs-enter space-y-6">
-  <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+  <div
+    class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"
+  >
     <div>
       <div class="flex items-center gap-2">
         <app-icon name="shield" [size]="20" class="text-nbs-primary" />
@@ -19,40 +21,51 @@
 
   <output aria-live="polite" class="block">
     @if (facade.message()) {
-    @if (facade.messageError()) {
-    <div
-      class="mt-4 flex items-start gap-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-nbs-danger">
-      <app-icon name="alert-triangle" [size]="16" class="mt-0.5 shrink-0" />
-      <span>{{ facade.message() }}</span>
-    </div>
-    } @else {
-    <div
-      class="mt-4 flex items-start gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
-      <app-icon name="check" [size]="16" class="mt-0.5 shrink-0" />
-      <span>{{ facade.message() }}</span>
-    </div>
-    }
+      @if (facade.messageError()) {
+        <div
+          class="mt-4 flex items-start gap-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-nbs-danger"
+        >
+          <app-icon name="alert-triangle" [size]="16" class="mt-0.5 shrink-0" />
+          <span>{{ facade.message() }}</span>
+        </div>
+      } @else {
+        <div
+          class="mt-4 flex items-start gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900"
+        >
+          <app-icon name="check" [size]="16" class="mt-0.5 shrink-0" />
+          <span>{{ facade.message() }}</span>
+        </div>
+      }
     }
   </output>
 
   <div class="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
     <article class="rounded-lg border border-nbs-border bg-white p-4 shadow-sm">
-      <p class="text-xs font-medium uppercase tracking-wide text-nbs-muted">Total users</p>
+      <p class="text-xs font-medium uppercase tracking-wide text-nbs-muted">
+        Total users
+      </p>
       <p class="mt-1 text-2xl font-semibold tabular-nums text-slate-900">
         {{ facade.pagination().totalItems | number }}
       </p>
       <p class="mt-0.5 text-xs text-nbs-muted">All accounts</p>
     </article>
     <article class="rounded-lg border border-nbs-border bg-white p-4 shadow-sm">
-      <p class="text-xs font-medium uppercase tracking-wide text-nbs-muted">Showing</p>
+      <p class="text-xs font-medium uppercase tracking-wide text-nbs-muted">
+        Showing
+      </p>
       <p class="mt-1 text-2xl font-semibold tabular-nums text-slate-900">
         {{ facade.items().length | number }}
       </p>
       <p class="mt-0.5 text-xs text-nbs-muted">On this page</p>
     </article>
     <article class="rounded-lg border border-nbs-border bg-white p-4 shadow-sm">
-      <p class="inline-flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-nbs-muted">
-        <span class="size-1.5 rounded-full bg-emerald-500" aria-hidden="true"></span>
+      <p
+        class="inline-flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-nbs-muted"
+      >
+        <span
+          class="size-1.5 rounded-full bg-emerald-500"
+          aria-hidden="true"
+        ></span>
         Active
       </p>
       <p class="mt-1 text-2xl font-semibold tabular-nums text-emerald-700">
@@ -61,8 +74,13 @@
       <p class="mt-0.5 text-xs text-nbs-muted">On this page</p>
     </article>
     <article class="rounded-lg border border-nbs-border bg-white p-4 shadow-sm">
-      <p class="inline-flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-nbs-muted">
-        <span class="size-1.5 rounded-full bg-sky-500" aria-hidden="true"></span>
+      <p
+        class="inline-flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-nbs-muted"
+      >
+        <span
+          class="size-1.5 rounded-full bg-sky-500"
+          aria-hidden="true"
+        ></span>
         Verified
       </p>
       <p class="mt-1 text-2xl font-semibold tabular-nums text-sky-700">
@@ -74,85 +92,139 @@
 
   <div class="mt-6 space-y-4">
     @if (facade.groupsError()) {
-    <app-page-state variant="error" title="Could not load groups" label="Groups"
-      [message]="facade.groupsError() ?? 'Request failed'">
-      <div class="mt-4">
-        <app-button variant="primary" size="sm" (clicked)="facade.retryLoadGroups()">
-          Try again
-        </app-button>
-      </div>
-    </app-page-state>
+      <app-page-state
+        variant="error"
+        title="Could not load groups"
+        label="Groups"
+        [message]="facade.groupsError() ?? 'Request failed'"
+      >
+        <div class="mt-4">
+          <app-button
+            variant="primary"
+            size="sm"
+            (clicked)="facade.retryLoadGroups()"
+          >
+            Try again
+          </app-button>
+        </div>
+      </app-page-state>
     }
 
     <app-user-filters />
 
     @if (facade.listError()) {
-    <app-page-state variant="error" title="Could not load users" label="Users"
-      [message]="facade.listError() ?? 'Request failed'">
-      <div class="mt-4">
-        <app-button variant="primary" size="sm" (clicked)="facade.retryLoadUsers()">
-          Try again
-        </app-button>
-      </div>
-    </app-page-state>
+      <app-page-state
+        variant="error"
+        title="Could not load users"
+        label="Users"
+        [message]="facade.listError() ?? 'Request failed'"
+      >
+        <div class="mt-4">
+          <app-button
+            variant="primary"
+            size="sm"
+            (clicked)="facade.retryLoadUsers()"
+          >
+            Try again
+          </app-button>
+        </div>
+      </app-page-state>
     } @else {
-    <app-user-table (rowSelected)="onRowSelected($event)" />
+      <app-user-table (rowSelected)="onRowSelected($event)" />
     }
   </div>
 </div>
 
 @if (facade.showCreateForm()) {
-<app-modal size="lg" ariaLabel="Create user" (closed)="facade.closeCreateForm()">
-  <div modalHeader class="flex min-w-0 items-center gap-3">
-    <span class="flex size-10 shrink-0 items-center justify-center rounded-full bg-nbs-primary-soft text-nbs-primary">
-      <app-icon name="plus" [size]="20" />
-    </span>
-    <div class="min-w-0">
-      <h2 class="text-base font-semibold text-slate-900">Create user</h2>
-      <p class="truncate text-sm text-nbs-muted">
-        Add a new account with optional group assignments.
-      </p>
+  <app-modal
+    size="lg"
+    ariaLabel="Create user"
+    (closed)="facade.closeCreateForm()"
+  >
+    <div modalHeader class="flex min-w-0 items-center gap-3">
+      <span
+        class="flex size-10 shrink-0 items-center justify-center rounded-full bg-nbs-primary-soft text-nbs-primary"
+      >
+        <app-icon name="plus" [size]="20" />
+      </span>
+      <div class="min-w-0">
+        <h2 class="text-base font-semibold text-slate-900">Create user</h2>
+        <p class="truncate text-sm text-nbs-muted">
+          Add a new account with optional group assignments.
+        </p>
+      </div>
     </div>
-  </div>
-  <app-user-create-form #createForm />
-  <div modalFooter
-    class="flex flex-wrap items-center justify-end gap-2 rounded-b-xl border-t border-nbs-border bg-nbs-surface px-5 py-4">
-    <app-button variant="ghost" size="sm" (clicked)="createForm.cancel()">Cancel</app-button>
-    <app-button variant="primary" size="sm" [loading]="facade.actionLoading() === 'create'"
-      (clicked)="createForm.submit()">
-      Create user
-    </app-button>
-  </div>
-</app-modal>
+    <app-user-create-form #createForm />
+    <div
+      modalFooter
+      class="flex flex-wrap items-center justify-end gap-2 rounded-b-xl border-t border-nbs-border bg-nbs-surface px-5 py-4"
+    >
+      <app-button variant="ghost" size="sm" (clicked)="createForm.cancel()"
+        >Cancel</app-button
+      >
+      <app-button
+        variant="primary"
+        size="sm"
+        [loading]="facade.actionLoading() === 'create'"
+        (clicked)="createForm.submit()"
+      >
+        Create user
+      </app-button>
+    </div>
+  </app-modal>
 }
 
 @if (facade.selectedUser(); as user) {
-<app-modal size="lg" [ariaLabel]="user.displayName + ' details'" (closed)="facade.clearSelection()">
-  <div modalHeader class="flex min-w-0 items-center gap-3">
-    <app-user-avatar [name]="user.displayName" [seed]="user.id" [muted]="!user.isActive" size="md" />
-    <div class="min-w-0">
-      <div class="flex items-center gap-2">
-        <h2 class="truncate text-base font-semibold text-slate-900">{{ user.displayName }}</h2>
-        @if (isSelf(user)) {
-        <span
-          class="rounded-full bg-nbs-primary-soft px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-nbs-primary">
-          You
-        </span>
-        }
+  <app-modal
+    size="lg"
+    [ariaLabel]="user.displayName + ' details'"
+    (closed)="facade.clearSelection()"
+  >
+    <div modalHeader class="flex min-w-0 items-center gap-3">
+      <app-user-avatar
+        [name]="user.displayName"
+        [seed]="user.id"
+        [muted]="!user.isActive"
+        size="md"
+      />
+      <div class="min-w-0">
+        <div class="flex items-center gap-2">
+          <h2 class="truncate text-base font-semibold text-slate-900">
+            {{ user.displayName }}
+          </h2>
+          @if (isSelf(user)) {
+            <span
+              class="rounded-full bg-nbs-primary-soft px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-nbs-primary"
+            >
+              You
+            </span>
+          }
+        </div>
+        <p class="truncate text-sm text-nbs-muted">{{ user.email }}</p>
       </div>
-      <p class="truncate text-sm text-nbs-muted">{{ user.email }}</p>
     </div>
-  </div>
-  <app-user-detail-panel #detailPanel />
-  <div modalFooter class="flex flex-wrap items-center justify-end gap-2 border-t border-nbs-border px-5 py-4">
-    @if (detailPanel.anyDirty()) {
-    <span class="mr-auto text-xs font-medium text-nbs-highlight">Unsaved changes</span>
-    }
-    <app-button variant="ghost" size="sm" (clicked)="detailPanel.close()">Close</app-button>
-    <app-button variant="primary" size="sm" [disabled]="!detailPanel.anyDirty()"
-      [loading]="facade.actionLoading() === 'save'" (clicked)="detailPanel.saveChanges()">
-      Save changes
-    </app-button>
-  </div>
-</app-modal>
+    <app-user-detail-panel #detailPanel />
+    <div
+      modalFooter
+      class="flex flex-wrap items-center justify-end gap-2 border-t border-nbs-border px-5 py-4"
+    >
+      @if (detailPanel.anyDirty()) {
+        <span class="mr-auto text-xs font-medium text-nbs-highlight"
+          >Unsaved changes</span
+        >
+      }
+      <app-button variant="ghost" size="sm" (clicked)="detailPanel.close()"
+        >Close</app-button
+      >
+      <app-button
+        variant="primary"
+        size="sm"
+        [disabled]="!detailPanel.anyDirty()"
+        [loading]="facade.actionLoading() === 'save'"
+        (clicked)="detailPanel.saveChanges()"
+      >
+        Save changes
+      </app-button>
+    </div>
+  </app-modal>
 }

@@ -3,13 +3,20 @@
     <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
       <div class="space-y-3 sm:col-span-2 lg:col-span-1">
         <a routerLink="/" class="flex items-center gap-2">
-          <span class="flex size-9 items-center justify-center rounded-md bg-white p-1 ring-1 ring-nbs-border"
-            aria-hidden="true">
+          <span
+            class="flex size-9 items-center justify-center rounded-md bg-white p-1 ring-1 ring-nbs-border"
+            aria-hidden="true"
+          >
             <img src="/nbs-logo.png" alt="" class="size-full object-contain" />
           </span>
           <span>
-            <span class="block text-sm font-semibold leading-tight text-slate-900">NBS</span>
-            <span class="block text-xs leading-tight text-nbs-muted">SmartData Hub</span>
+            <span
+              class="block text-sm font-semibold leading-tight text-slate-900"
+              >NBS</span
+            >
+            <span class="block text-xs leading-tight text-nbs-muted"
+              >SmartData Hub</span
+            >
           </span>
         </a>
         <p class="max-w-xs text-xs leading-5 text-nbs-muted">
@@ -18,24 +25,29 @@
       </div>
 
       @for (group of linkGroups; track group.title) {
-      <nav [attr.aria-label]="group.title">
-        <h2 class="text-xs font-semibold uppercase tracking-wide text-slate-900">
-          {{ group.title }}
-        </h2>
-        <ul class="mt-3 space-y-2">
-          @for (link of group.links; track link.label) {
-          <li>
-            @if (link.route) {
-            <a [routerLink]="link.route" class="text-sm text-slate-600 transition-colors hover:text-nbs-primary">
-              {{ link.label }}
-            </a>
-            } @else {
-            <span class="text-sm text-slate-400">{{ link.label }}</span>
+        <nav [attr.aria-label]="group.title">
+          <h2
+            class="text-xs font-semibold uppercase tracking-wide text-slate-900"
+          >
+            {{ group.title }}
+          </h2>
+          <ul class="mt-3 space-y-2">
+            @for (link of group.links; track link.label) {
+              <li>
+                @if (link.route) {
+                  <a
+                    [routerLink]="link.route"
+                    class="text-sm text-slate-600 transition-colors hover:text-nbs-primary"
+                  >
+                    {{ link.label }}
+                  </a>
+                } @else {
+                  <span class="text-sm text-slate-400">{{ link.label }}</span>
+                }
+              </li>
             }
-          </li>
-          }
-        </ul>
-      </nav>
+          </ul>
+        </nav>
       }
     </div>
 
