@@ -37,6 +37,10 @@ jobs:
       - name: Format Check
         run: npm run format:check
 
+      - name: Dependency Audit
+        run: npm audit --audit-level=high
+        continue-on-error: true
+
       - name: Check Architecture
         run: npm run check:architecture
 
