@@ -84,14 +84,12 @@ export class AuthService {
       this.currentUser()?.role === 'publisher',
   );
 
-  /** Full review authority: see all datasets, approve/reject, and publish. */
   readonly canReviewDatasets = computed(
     () => this.currentUser()?.role === 'admin',
   );
   readonly canPublishDatasets = this.canReviewDatasets;
   readonly canSeeAllDatasets = this.canReviewDatasets;
 
-  /** Owner-level authority: create drafts and manage own datasets toward review. */
   readonly canManageOwnDatasets = computed(
     () =>
       this.currentUser()?.role === 'admin' ||
@@ -198,7 +196,6 @@ export class AuthService {
     return this.accessToken();
   }
 
-  /** Revalidate the cached session on app bootstrap so role/permissions stay fresh. */
   loadCurrentUser(): Observable<UserProfile | null> {
     if (!this.accessToken()) {
       this.clearSession();

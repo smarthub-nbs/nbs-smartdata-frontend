@@ -56,7 +56,6 @@ export class AdminAnalyticsService {
   readonly analyticsLoading = this.loading.asReadonly();
   readonly analyticsError = this.loadError.asReadonly();
 
-  /** Loads usage metrics once; safe to call repeatedly (e.g. on first reveal). */
   ensureLoaded(): void {
     if (this.hasLoaded) {
       return;

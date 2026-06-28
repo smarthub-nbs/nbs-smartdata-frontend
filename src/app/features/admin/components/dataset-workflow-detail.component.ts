@@ -63,7 +63,6 @@ export class DatasetWorkflowDetailComponent {
   protected readonly metadataDirty = signal(false);
   protected readonly tagName = signal('');
 
-  /** Mirrors backend `can_change_dataset`: admins edit any status, owners only draft/rejected. */
   protected readonly editable = computed(() => {
     const status = this.record().status;
     return this.canReview() || status === 'draft' || status === 'rejected';
