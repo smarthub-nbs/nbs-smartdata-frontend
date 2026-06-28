@@ -1,4 +1,4 @@
-    <div class="relative h-80 w-full">
-      <canvas #canvas aria-label="Regional comparison chart"></canvas>
-    </div>
-  
+<div class="relative h-72 w-full sm:h-80">
+  <p class="sr-only">{{ chartSummary() }}</p>
+  <canvas #canvas [attr.aria-label]="chartAriaLabel()"></canvas>
+</div>

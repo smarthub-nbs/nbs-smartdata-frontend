@@ -72,6 +72,7 @@ export class DatasetResourceManagerComponent {
       this.load();
     }
   }
+
   protected deleteFile(fileId: string): void {
     this.actionId.set(fileId);
     this.workflow

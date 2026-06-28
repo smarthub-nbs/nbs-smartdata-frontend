@@ -1,27 +1,75 @@
-# NbsSmartdataFrontend
+# NBS SmartData Hub — Frontend
 
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 17.0.5.
+Angular 17 SPA for browsing, searching, and exploring official Tanzania statistics.
 
-## Development server
+## Prerequisites
 
-Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The application will automatically reload if you change any of the source files.
+- Node.js 22.13+
+- npm 10+
 
-## Code scaffolding
+## Setup
 
-Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.
+```bash
+npm ci
+```
 
-## Build
+## Development
 
-Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory.
+```bash
+npm start
+```
 
-## Running unit tests
+Open `http://localhost:4200/`. API requests proxy to `http://localhost:8000` via [`proxy.conf.json`](proxy.conf.json).
 
-Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
+### Environments
 
-## Running end-to-end tests
+| File | Use |
+|------|-----|
+| `src/environments/environment.ts` | Production build |
+| `src/environments/environment.development.ts` | `ng serve` (mock explore API on) |
+| `src/environments/environment.e2e.ts` | Playwright (mock discovery + explore) |
 
-Run `ng e2e` to execute the end-to-end tests via a platform of your choice. To use this command, you need to first add a package that implements end-to-end testing capabilities.
+## Scripts
 
-## Further help
+| Command | Description |
+|---------|-------------|
+| `npm start` | Dev server |
+| `npm run build` | Production build |
+| `npm run lint` | ESLint |
+| `npm run format:check` | Prettier check |
+| `npm run check:architecture` | Feature boundary rules |
+| `npm run test:ci` | Unit tests (headless) |
+| `npm run e2e` | Playwright smoke tests |
+| `npm run e2e:chrome` | E2E using installed Chrome |
 
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI Overview and Command Reference](https://angular.io/cli) page.
+## Testing
+
+```bash
+npm run test:ci
+npm run e2e:chrome   # local; CI uses bundled Chromium
+```
+
+E2E specs live in `e2e/smoke/`. The dev server starts automatically via `playwright.config.ts`.
+
+## CI
+
+GitHub Actions workflow [`.github/workflows/frontend-ci.yml`](.github/workflows/frontend-ci.yml) runs on push/PR to `main` and `development`:
+
+1. **Lint, Test, And Build** — lint, architecture check, unit tests, production build
+2. **Playwright Smoke Tests** — install Chromium, run e2e suite
+
+## Project structure
+
+```
+src/app/
+  core/       auth, guards, interceptors, ApiService
+  features/   domain pages (discovery, explore, admin, …)
+  layout/     shell, header, footer
+  shared/     UI kit, page-state, utilities
+```
+
+Path aliases: `@app/*`, `@shared/*`, `@env/*`
+
+## Auth note
+
+JWT tokens are stored in `localStorage`. See [`docs/auth-storage.md`](docs/auth-storage.md) for the threat model and HttpOnly cookie migration path.

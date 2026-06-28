@@ -1,22 +1,42 @@
-<article class="nbs-card-interactive group relative flex h-full cursor-pointer flex-col p-5">
+<article
+  class="nbs-card-interactive group relative flex h-full cursor-pointer flex-col p-5"
+>
   <div class="flex items-start justify-between gap-2">
-    <a [routerLink]="['/datasets', dataset().id]"
-      class="text-base font-semibold text-slate-900 transition-colors after:absolute after:inset-0 group-hover:text-nbs-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary focus-visible:ring-offset-2">
+    <a
+      [routerLink]="['/datasets', dataset().id]"
+      class="text-base font-semibold text-slate-900 transition-colors after:absolute after:inset-0 group-hover:text-nbs-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary focus-visible:ring-offset-2"
+    >
       {{ dataset().title }}
     </a>
     <div class="relative z-10 flex shrink-0 items-center gap-1.5">
-      <button type="button"
+      <button
+        type="button"
         class="inline-flex size-8 cursor-pointer items-center justify-center rounded-md border border-nbs-border bg-white text-slate-600 transition-colors hover:border-nbs-primary/40 hover:bg-nbs-primary-soft hover:text-nbs-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary focus-visible:ring-offset-2"
-        [class.border-nbs-primary]="saved()" [class.bg-nbs-primary-soft]="saved()" [class.text-nbs-primary]="saved()"
-        [attr.aria-pressed]="saved()" [attr.aria-label]="
-              saved() ? 'Remove from saved datasets' : 'Save dataset'
-            " (click)="onSaveClick($event)">
-        <svg class="size-4 transition-transform duration-200 motion-safe:active:scale-90" viewBox="0 0 24 24"
-          fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        [class.border-nbs-primary]="saved()"
+        [class.bg-nbs-primary-soft]="saved()"
+        [class.text-nbs-primary]="saved()"
+        [attr.aria-pressed]="saved()"
+        [attr.aria-label]="
+          saved() ? 'Remove from saved datasets' : 'Save dataset'
+        "
+        (click)="onSaveClick($event)"
+      >
+        <svg
+          class="size-4 transition-transform duration-200 motion-safe:active:scale-90"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          aria-hidden="true"
+        >
           @if (saved()) {
-          <path d="M6 4.5h12v16l-6-4.5L6 20.5v-16z" fill="currentColor" stroke="none" />
+            <path
+              d="M6 4.5h12v16l-6-4.5L6 20.5v-16z"
+              fill="currentColor"
+              stroke="none"
+            />
           } @else {
-          <path d="M6 4.5h12v16l-6-4.5L6 20.5v-16z" stroke-linejoin="round" />
+            <path d="M6 4.5h12v16l-6-4.5L6 20.5v-16z" stroke-linejoin="round" />
           }
         </svg>
       </button>
@@ -49,7 +69,8 @@
   </dl>
 
   <span
-    class="mt-4 inline-flex items-center gap-1 text-sm font-medium text-nbs-primary transition-transform group-hover:gap-1.5">
+    class="mt-4 inline-flex items-center gap-1 text-sm font-medium text-nbs-primary transition-transform group-hover:gap-1.5"
+  >
     View metadata
     <app-icon name="arrow-right" [size]="15" />
   </span>

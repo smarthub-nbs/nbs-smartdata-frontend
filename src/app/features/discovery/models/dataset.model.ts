@@ -11,11 +11,7 @@ export type DatasetFormat =
   | 'ZIP';
 export type DatasetFrequency = 'Annual' | 'Quarterly' | 'Monthly';
 export type DatasetWorkflowStatus =
-  | 'draft'
-  | 'in_review'
-  | 'approved'
-  | 'rejected'
-  | 'published';
+  'draft' | 'in_review' | 'approved' | 'rejected' | 'published';
 
 export interface DatasetUpdateRecord {
   date: string;

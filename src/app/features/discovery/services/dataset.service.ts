@@ -41,10 +41,11 @@ export class DatasetService {
   private readonly filters = signal<DatasetFilters>({
     ...EMPTY_DATASET_FILTERS,
   });
-  private readonly catalogState = signal<AsyncState<Dataset[]>>(loadingState());
+  private readonly catalogState = signal<AsyncState<Dataset[]>>(idleState());
   private readonly detailState = signal<AsyncState<Dataset>>(idleState());
   private readonly catalogStale = signal(false);
   private readonly queryReload$ = new Subject<string>();
+  private catalogInitStarted = false;
 
   readonly topics = this.topicsState.asReadonly();
   readonly activeFilters = this.filters.asReadonly();
@@ -66,9 +67,6 @@ export class DatasetService {
   ]);
 
   constructor() {
-    this.loadFacetCache();
-    this.loadCatalog();
-
     this.queryReload$
       .pipe(
         debounceTime(300),
@@ -76,6 +74,15 @@ export class DatasetService {
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe(() => this.loadCatalog());
+  }
+
+  ensureCatalogLoaded(): void {
+    if (this.catalogInitStarted) {
+      return;
+    }
+    this.catalogInitStarted = true;
+    this.loadFacetCache();
+    this.loadCatalog();
   }
 
   setFilters(partial: Partial<DatasetFilters>): void {

@@ -35,6 +35,9 @@ export class LoginPageComponent {
   protected readonly resetSuccess = signal(
     this.route.snapshot.queryParamMap.get('reset') === 'success',
   );
+  protected readonly idleSignOut = signal(
+    this.route.snapshot.queryParamMap.get('reason') === 'idle',
+  );
   protected readonly registerQueryParams = {
     returnUrl: this.route.snapshot.queryParamMap.get('returnUrl') ?? '/',
   };

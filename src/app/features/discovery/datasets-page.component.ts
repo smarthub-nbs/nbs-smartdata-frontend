@@ -40,6 +40,7 @@ export class DatasetsPageComponent {
   private readonly router = inject(Router);
 
   constructor() {
+    this.datasetService.ensureCatalogLoaded();
     this.datasetService.refreshCatalogIfStale();
   }
 

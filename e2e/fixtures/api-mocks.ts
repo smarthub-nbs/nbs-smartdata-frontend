@@ -197,3 +197,66 @@ export async function mockDeveloperApiKeys(page: Page): Promise<void> {
     await route.fulfill({ json: { status: 'revoked' } });
   });
 }
+
+const USER_LIST_ITEM = {
+  id: 'user-1',
+  email: 'member@example.com',
+  first_name: 'Member',
+  last_name: 'User',
+  is_active: true,
+  is_verified: true,
+  is_staff: false,
+  is_superuser: false,
+  groups: ['user'],
+  created_at: '2025-01-01T00:00:00Z',
+  last_login: null,
+  last_login_at: null,
+};
+
+/** Stubs user management endpoints for admin smoke tests. */
+export async function mockUsersWorkspace(page: Page): Promise<void> {
+  await page.route(/\/api\/v1\/users(\/|$|\?)/, async (route) => {
+    const url = new URL(route.request().url());
+    const pathname = url.pathname.replace(/\/$/, '');
+
+    if (pathname.endsWith('/users/groups')) {
+      await route.fulfill({
+        json: [{ id: 1, name: 'user', permissions: [] }],
+      });
+      return;
+    }
+
+    const detailMatch = pathname.match(/\/users\/([^/]+)$/);
+    if (detailMatch && detailMatch[1] !== 'groups') {
+      await route.fulfill({
+        json: {
+          ...USER_LIST_ITEM,
+          permissions: [],
+          updated_at: '2025-01-01T00:00:00Z',
+        },
+      });
+      return;
+    }
+
+    if (pathname.endsWith('/users') && route.request().method() === 'GET') {
+      await route.fulfill({
+        json: {
+          items: [USER_LIST_ITEM],
+          pagination: {
+            page: 1,
+            page_size: 10,
+            total_pages: 1,
+            total_items: 1,
+            has_next: false,
+            has_previous: false,
+            next: null,
+            previous: null,
+          },
+        },
+      });
+      return;
+    }
+
+    await route.continue();
+  });
+}

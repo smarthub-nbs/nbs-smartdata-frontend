@@ -45,6 +45,7 @@ describe('DatasetService', () => {
     });
 
     service = TestBed.inject(DatasetService);
+    service.ensureCatalogLoaded();
   });
 
   it('patches record count from a valid preview total', () => {

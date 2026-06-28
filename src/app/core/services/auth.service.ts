@@ -20,6 +20,10 @@ export interface AuthError {
   fieldErrors?: Record<string, string>;
 }
 
+export interface SignOutOptions {
+  reason?: 'idle';
+}
+
 interface ApiEnvelope<T> {
   success: boolean;
   message: string;
@@ -147,7 +151,7 @@ export class AuthService {
       );
   }
 
-  signOut(): void {
+  signOut(options?: SignOutOptions): void {
     const refresh = localStorage.getItem(REFRESH_TOKEN_KEY);
     if (refresh) {
       this.http
@@ -156,6 +160,12 @@ export class AuthService {
         .subscribe({ error: () => undefined });
     }
     this.clearSession();
+    if (options?.reason === 'idle') {
+      void this.router.navigate(['/login'], {
+        queryParams: { reason: 'idle' },
+      });
+      return;
+    }
     void this.router.navigate(['/login']);
   }
 

@@ -257,6 +257,19 @@ describe('AuthService', () => {
     expect(router.navigate).toHaveBeenCalledWith(['/login']);
   });
 
+  it('navigates to login with idle reason when signed out due to inactivity', () => {
+    localStorage.setItem('nbs_refresh_token', 'refresh-token');
+
+    service.signOut({ reason: 'idle' });
+
+    const logout = httpMock.expectOne(`${apiBase}/v1/auth/logout/`);
+    logout.flush({ success: true, message: 'ok' });
+
+    expect(router.navigate).toHaveBeenCalledWith(['/login'], {
+      queryParams: { reason: 'idle' },
+    });
+  });
+
   it('exposes role-based permission signals', () => {
     let result: unknown;
 

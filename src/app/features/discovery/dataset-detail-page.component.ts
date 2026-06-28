@@ -97,6 +97,7 @@ export class DatasetDetailPageComponent {
   });
 
   constructor() {
+    this.datasetService.ensureCatalogLoaded();
     this.facade.watchDatasetId(this.datasetId);
   }
 

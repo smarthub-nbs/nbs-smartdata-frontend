@@ -15,6 +15,7 @@ import { RecommendedDatasetsComponent } from '@app/features/search/components/re
 import { SearchResultCardComponent } from '@app/features/search/components/search-result-card.component';
 import { SmartSearchResponse } from '@app/features/search/models/smart-search.model';
 import { SmartSearchService } from '@app/features/search/services/smart-search.service';
+import { DatasetService } from '@app/features/discovery';
 import { PageStateComponent } from '@app/shared/components/page-state/page-state.component';
 import { ButtonComponent, SearchBarComponent } from '@shared/ui';
 
@@ -35,6 +36,7 @@ import { ButtonComponent, SearchBarComponent } from '@shared/ui';
 })
 export class SearchPageComponent {
   private readonly smartSearch = inject(SmartSearchService);
+  private readonly datasetService = inject(DatasetService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
@@ -49,6 +51,8 @@ export class SearchPageComponent {
   protected readonly topResultId = signal<string | null>(null);
 
   constructor() {
+    this.datasetService.ensureCatalogLoaded();
+
     this.route.queryParamMap
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((params) => {

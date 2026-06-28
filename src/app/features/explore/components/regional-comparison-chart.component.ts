@@ -4,6 +4,7 @@ import {
   Component,
   DestroyRef,
   ElementRef,
+  computed,
   effect,
   inject,
   input,
@@ -11,6 +12,7 @@ import {
 } from '@angular/core';
 import { Chart, ChartConfiguration, Chart as ChartInstance } from 'chart.js';
 import { ExploreIndicator } from '@app/features/explore/models/explore.model';
+import { ensureChartJsRegistered } from '@app/features/explore/utils/chart-js.util';
 
 @Component({
   selector: 'app-regional-comparison-chart',
@@ -22,6 +24,19 @@ export class RegionalComparisonChartComponent implements AfterViewInit {
   private readonly destroyRef = inject(DestroyRef);
 
   readonly indicator = input.required<ExploreIndicator>();
+
+  protected readonly chartAriaLabel = computed(
+    () => `${this.indicator().name} regional comparison chart`,
+  );
+
+  protected readonly chartSummary = computed(() => {
+    const indicator = this.indicator();
+    const top = [...indicator.regional].sort((a, b) => b.value - a.value)[0];
+    if (!top) {
+      return `${indicator.name} regional comparison.`;
+    }
+    return `${indicator.name} regional comparison. Highest region ${top.region}: ${top.value} ${indicator.unit}.`;
+  });
 
   private readonly canvasRef =
     viewChild.required<ElementRef<HTMLCanvasElement>>('canvas');
@@ -56,6 +71,7 @@ export class RegionalComparisonChartComponent implements AfterViewInit {
       return;
     }
 
+    ensureChartJsRegistered();
     this.destroyChart();
 
     const sorted = [...indicator.regional].sort((a, b) => b.value - a.value);
