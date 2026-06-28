@@ -44,6 +44,10 @@ export class HomePageComponent {
   private readonly router = inject(Router);
   private readonly datasetService = inject(DatasetService);
 
+  constructor() {
+    this.datasetService.ensureCatalogLoaded();
+  }
+
   protected readonly pathways: PathwayCard[] = [
     {
       label: 'Browse datasets',

@@ -56,6 +56,8 @@ export class TopicPageComponent {
   });
 
   constructor() {
+    this.datasetService.ensureCatalogLoaded();
+
     effect(() => {
       const slug = this.topicSlug();
       if (!slug) {

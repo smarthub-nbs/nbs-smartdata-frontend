@@ -4,23 +4,18 @@ import {
   Component,
   DestroyRef,
   ElementRef,
+  computed,
   effect,
   inject,
   input,
   viewChild,
 } from '@angular/core';
-import {
-  Chart,
-  ChartConfiguration,
-  Chart as ChartInstance,
-  registerables,
-} from 'chart.js';
+import { Chart, ChartConfiguration, Chart as ChartInstance } from 'chart.js';
 import {
   ExploreChartType,
   ExploreIndicator,
 } from '@app/features/explore/models/explore.model';
-
-Chart.register(...registerables);
+import { ensureChartJsRegistered } from '@app/features/explore/utils/chart-js.util';
 
 @Component({
   selector: 'app-indicator-chart',
@@ -33,6 +28,19 @@ export class IndicatorChartComponent implements AfterViewInit {
 
   readonly indicator = input.required<ExploreIndicator>();
   readonly chartType = input<ExploreChartType>('line');
+
+  protected readonly chartAriaLabel = computed(
+    () => `${this.indicator().name} trend chart`,
+  );
+
+  protected readonly chartSummary = computed(() => {
+    const indicator = this.indicator();
+    const latest = indicator.timeSeries.at(-1);
+    if (!latest) {
+      return `${indicator.name} trend data.`;
+    }
+    return `${indicator.name} trend chart. Latest value ${latest.label}: ${latest.value} ${indicator.unit}.`;
+  });
 
   private readonly canvasRef =
     viewChild.required<ElementRef<HTMLCanvasElement>>('canvas');
@@ -71,6 +79,7 @@ export class IndicatorChartComponent implements AfterViewInit {
       return;
     }
 
+    ensureChartJsRegistered();
     this.destroyChart();
 
     const labels = indicator.timeSeries.map((p) => p.label);
