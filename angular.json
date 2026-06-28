@@ -65,6 +65,17 @@
                   "with": "src/environments/environment.development.ts"
                 }
               ]
+            },
+            "e2e": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.e2e.ts"
+                }
+              ]
             }
           },
           "defaultConfiguration": "production"
@@ -80,6 +91,9 @@
             },
             "development": {
               "buildTarget": "nbs-smartdata-frontend:build:development"
+            },
+            "e2e": {
+              "buildTarget": "nbs-smartdata-frontend:build:e2e"
             }
           },
           "defaultConfiguration": "development"

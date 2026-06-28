@@ -5,7 +5,6 @@ import {
   model,
   output,
 } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { ButtonComponent } from '@shared/ui/button/button.component';
 import { IconComponent } from '@shared/ui/icon/icon.component';
 
@@ -14,9 +13,9 @@ export type SearchBarVariant = 'hero' | 'default' | 'compact';
 @Component({
   selector: 'app-search-bar',
   standalone: true,
-  imports: [FormsModule, ButtonComponent, IconComponent],
+  imports: [ButtonComponent, IconComponent],
   template: `
-    <form [class]="formClasses()" (ngSubmit)="onSubmit()">
+    <form [class]="formClasses()" (submit)="onSubmit($event)">
       @if (variant() === 'hero' || variant() === 'default') {
         <div [class]="fieldShellClasses()">
           <label class="relative min-w-0 flex-1">
@@ -31,7 +30,8 @@ export type SearchBarVariant = 'hero' | 'default' | 'compact';
               [attr.name]="inputName()"
               [placeholder]="placeholder()"
               [class]="inputClasses()"
-              [(ngModel)]="query"
+              [value]="query()"
+              (input)="onQueryInput($event)"
             />
           </label>
           @if (showSubmit()) {
@@ -58,7 +58,8 @@ export type SearchBarVariant = 'hero' | 'default' | 'compact';
             [attr.name]="inputName()"
             [placeholder]="placeholder()"
             class="h-9 w-full rounded-md border border-slate-300 bg-white py-0 pl-8 pr-3 text-sm focus:border-nbs-primary focus:outline-none focus:ring-2 focus:ring-nbs-primary/30 lg:w-56"
-            [(ngModel)]="query"
+            [value]="query()"
+            (input)="onQueryInput($event)"
           />
         </label>
       }
@@ -96,7 +97,15 @@ export class SearchBarComponent {
     return 'h-11 w-full rounded-md border border-slate-300 bg-white pl-9 pr-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-nbs-primary focus:outline-none focus:ring-2 focus:ring-nbs-primary/30';
   }
 
-  protected onSubmit(): void {
+  protected onSubmit(event: SubmitEvent): void {
+    event.preventDefault();
     this.submitted.emit(this.query().trim());
+  }
+
+  protected onQueryInput(event: Event): void {
+    const input = event.target;
+    if (input instanceof HTMLInputElement) {
+      this.query.set(input.value);
+    }
   }
 }
