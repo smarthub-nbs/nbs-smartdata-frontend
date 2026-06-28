@@ -198,18 +198,18 @@ export class DeveloperApiService {
   }
 
   loadUsageLogs(): Observable<
-    Array<{
+    {
       datasetId: string;
       apiCalls: number;
       downloads: number;
       views: number;
       lastAccessed: string;
-    }>
+    }[]
   > {
     return this.api
-      .get<
-        BackendPaginatedResponse<BackendApiUsageLog>
-      >('/v1/developer/api-usage/')
+      .get<BackendPaginatedResponse<BackendApiUsageLog>>(
+        '/v1/developer/api-usage/',
+      )
       .pipe(map((response) => this.aggregateUsage(response.items)));
   }
 
@@ -307,13 +307,13 @@ export class DeveloperApiService {
     return 'Failed to load API keys.';
   }
 
-  private aggregateUsage(logs: BackendApiUsageLog[]): Array<{
+  private aggregateUsage(logs: BackendApiUsageLog[]): {
     datasetId: string;
     apiCalls: number;
     downloads: number;
     views: number;
     lastAccessed: string;
-  }> {
+  }[] {
     const byDataset = new Map<
       string,
       {

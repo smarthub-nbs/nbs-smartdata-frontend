@@ -15,10 +15,10 @@ interface BackendFileDataResponse {
   rows?: Record<string, string | number | boolean | null>[];
   document?: {
     page_count?: number;
-    pages?: Array<{
+    pages?: {
       page_number: number;
       text: string;
-    }>;
+    }[];
   };
   offset: number;
   limit: number;

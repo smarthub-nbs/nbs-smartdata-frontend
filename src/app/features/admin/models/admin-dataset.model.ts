@@ -1,9 +1,5 @@
 export type DatasetWorkflowStatus =
-  | 'draft'
-  | 'in_review'
-  | 'approved'
-  | 'rejected'
-  | 'published';
+  'draft' | 'in_review' | 'approved' | 'rejected' | 'published';
 
 export type StatusFilter = 'all' | DatasetWorkflowStatus;
 
@@ -186,11 +182,11 @@ export interface BackendAdminDataset {
   visibility: boolean;
   category: BackendAdminCategory | null;
   metadata?: BackendAdminDatasetMetadata[];
-  tags?: Array<{ id: string; name: string; slug: string }>;
-  versions?: Array<{
+  tags?: { id: string; name: string; slug: string }[];
+  versions?: {
     version_number: number;
-    files?: Array<{ id: string; is_primary: boolean }>;
-  }>;
+    files?: { id: string; is_primary: boolean }[];
+  }[];
 }
 
 export interface AdminDatasetFile {
