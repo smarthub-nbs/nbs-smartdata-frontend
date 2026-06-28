@@ -67,7 +67,7 @@ export class TextInputComponent implements ControlValueAccessor {
 
   protected readonly inputClasses = computed(() => {
     const base =
-      'h-10 w-full rounded-md border bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-0 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:opacity-60';
+      'h-10 w-full rounded-md border bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-0 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:opacity-60 read-only:cursor-not-allowed read-only:bg-slate-50 read-only:text-slate-500 read-only:focus:ring-0';
     const state = this.error()
       ? 'border-nbs-danger focus:border-nbs-danger focus:ring-nbs-danger/30'
       : 'border-slate-300 focus:border-nbs-primary focus:ring-nbs-primary/30';

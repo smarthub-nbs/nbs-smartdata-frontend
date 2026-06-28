@@ -39,6 +39,30 @@ export class AccountSecurityComponent {
   protected readonly verificationMessage = signal('');
   protected readonly verificationError = signal(false);
 
+  protected passwordFormDirty(): boolean {
+    return (
+      this.currentPassword().length > 0 ||
+      this.newPassword().length > 0 ||
+      this.confirmPassword().length > 0
+    );
+  }
+
+  protected onPasswordFieldChange(field: string, value: string): void {
+    if (field === 'currentPassword') {
+      this.currentPassword.set(value);
+    } else if (field === 'newPassword') {
+      this.newPassword.set(value);
+    } else if (field === 'confirmPassword') {
+      this.confirmPassword.set(value);
+    }
+    this.passwordFieldErrors.update((errors) => {
+      const next = { ...errors };
+      delete next[field];
+      return next;
+    });
+    this.passwordMessage.set('');
+  }
+
   protected changePassword(): void {
     const errors = this.validatePasswordForm();
     this.passwordFieldErrors.set(errors);

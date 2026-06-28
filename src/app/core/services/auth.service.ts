@@ -204,22 +204,49 @@ export class AuthService {
     );
   }
 
-  updateProfile(update: Partial<Pick<UserProfile, 'name' | 'email'>>): void {
-    this.currentUser.update((current) => {
-      if (!current) {
-        return current;
-      }
+  updateProfile(
+    update: Partial<Pick<UserProfile, 'name' | 'email'>>,
+  ): Observable<AuthError | null> {
+    if (!this.currentUser()) {
+      return of({ message: 'You are not signed in.' });
+    }
 
-      const name = update.name?.trim() || current.name;
-      const email = update.email?.trim() || current.email;
+    const payload: Record<string, string> = {};
+    if (update.name !== undefined) {
+      const { firstName, lastName } = this.splitName(update.name);
+      payload['first_name'] = firstName;
+      payload['last_name'] = lastName;
+    }
+    if (update.email !== undefined) {
+      payload['email'] = update.email.trim();
+    }
 
-      return {
-        ...current,
-        name,
-        email,
-        initials: this.buildInitials(name),
-      };
-    });
+    return this.api.patch<CurrentUserResponse>('/v1/auth/me/', payload).pipe(
+      tap((user) => this.saveUser(this.toUserProfile(user))),
+      map(() => null),
+      catchError((error: unknown) =>
+        of({
+          message: this.resolveApiErrorMessage(
+            error,
+            'Could not update profile.',
+          ),
+          fieldErrors: fieldErrorsFromApi(error, {
+            email: 'email',
+            first_name: 'name',
+            last_name: 'name',
+          }),
+        }),
+      ),
+    );
+  }
+
+  private splitName(fullName: string): {
+    firstName: string;
+    lastName: string;
+  } {
+    const parts = fullName.trim().split(/\s+/).filter(Boolean);
+    const firstName = parts.shift() ?? '';
+    return { firstName, lastName: parts.join(' ') };
   }
 
   changePassword(

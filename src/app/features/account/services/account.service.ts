@@ -1,10 +1,11 @@
 import { effect, Injectable, computed, inject, signal } from '@angular/core';
-import { AuthService } from '@app/core/services/auth.service';
-import { SEED_SAVED_QUERIES } from '@app/features/account/data/seed-saved-queries';
+import { Observable } from 'rxjs';
+import { AuthError, AuthService } from '@app/core/services/auth.service';
 import {
   AccountPreferences,
   AccountSnapshot,
   SavedDatasetItem,
+  SavedQueryItem,
 } from '@app/features/account/models/account.model';
 import { Dataset, DatasetService } from '@app/features/discovery';
 
@@ -50,7 +51,7 @@ export class AccountService {
   private readonly savedDatasets = signal<SavedDatasetItem[]>(
     this.loadSavedDatasetsForCurrentUser(),
   );
-  private readonly savedQueries = signal(SEED_SAVED_QUERIES);
+  private readonly savedQueries = signal<SavedQueryItem[]>([]);
   private readonly preferences =
     signal<AccountPreferences>(DEFAULT_PREFERENCES);
 
@@ -126,8 +127,8 @@ export class AccountService {
     }
   }
 
-  updateProfile(name: string, email: string): void {
-    this.auth.updateProfile({ name, email });
+  updateProfile(name: string): Observable<AuthError | null> {
+    return this.auth.updateProfile({ name });
   }
 
   updatePreferences(update: Partial<AccountPreferences>): void {
