@@ -13,6 +13,10 @@ export {
 export { DataTableComponent } from '@shared/ui/data-table/data-table.component';
 export { IconComponent, type IconName } from '@shared/ui/icon/icon.component';
 export {
+  SearchBarComponent,
+  type SearchBarVariant,
+} from '@shared/ui/search-bar/search-bar.component';
+export {
   ModalComponent,
   type ModalSize,
 } from '@shared/ui/modal/modal.component';

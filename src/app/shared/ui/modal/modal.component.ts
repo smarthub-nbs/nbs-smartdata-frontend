@@ -108,7 +108,7 @@ export class ModalComponent {
 
   protected readonly panelClasses = computed(
     () =>
-      `relative my-4 flex max-h-[calc(100vh-2rem)] w-full flex-col ${SIZE_CLASSES[this.size()]} rounded-xl border border-nbs-border bg-white shadow-nbs-hover outline-none motion-safe:animate-modal-in`,
+      `relative my-4 flex max-h-[calc(100vh-2rem)] w-full flex-col ${SIZE_CLASSES[this.size()]} rounded-xl bg-white shadow-lg outline-none motion-safe:animate-modal-in`,
   );
 
   constructor() {

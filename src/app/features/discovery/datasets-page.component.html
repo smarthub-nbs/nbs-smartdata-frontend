@@ -1,7 +1,7 @@
-<div class="space-y-6">
+<div class="nbs-enter space-y-6">
   <header>
-    <h1 class="text-2xl font-semibold text-slate-900">Datasets</h1>
-    <p class="mt-1 text-sm text-nbs-muted">
+    <h1 class="nbs-page-title">Datasets</h1>
+    <p class="nbs-page-lead">
       Browse official national statistics with structured metadata.
     </p>
   </header>
@@ -55,7 +55,7 @@
     }
   </app-page-state>
   } @else if (view() === 'cards') {
-  <div class="grid grid-cols-[repeat(auto-fit,minmax(min(100%,18rem),1fr))] gap-4">
+  <div class="nbs-stagger grid grid-cols-[repeat(auto-fit,minmax(min(100%,18rem),1fr))] gap-4">
     @for (
     dataset of datasetService.filteredDatasets();
     track dataset.id

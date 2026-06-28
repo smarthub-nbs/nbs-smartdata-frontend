@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
 export type IconName =
   | 'chevron-down'
+  | 'chevron-up'
   | 'check'
   | 'plus'
   | 'x'
@@ -17,7 +18,18 @@ export type IconName =
   | 'search'
   | 'shield'
   | 'bar-chart'
-  | 'clock';
+  | 'clock'
+  | 'user'
+  | 'settings'
+  | 'log-out'
+  | 'database'
+  | 'code'
+  | 'zap'
+  | 'lock'
+  | 'menu'
+  | 'sort-neutral'
+  | 'sort-asc'
+  | 'sort-desc';
 
 @Component({
   selector: 'app-icon',
@@ -38,6 +50,9 @@ export type IconName =
       @switch (name()) {
         @case ('chevron-down') {
           <path d="m6 9 6 6 6-6" />
+        }
+        @case ('chevron-up') {
+          <path d="m18 15-6-6-6 6" />
         }
         @case ('check') {
           <path d="M20 6 9 17l-5-5" />
@@ -105,6 +120,49 @@ export type IconName =
         @case ('clock') {
           <circle cx="12" cy="12" r="10" />
           <path d="M12 6v6l4 2" />
+        }
+        @case ('user') {
+          <circle cx="12" cy="8" r="4" />
+          <path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1" />
+        }
+        @case ('settings') {
+          <path
+            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 0 0 1.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 0 0-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 0 0-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 0 0-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 0 0-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 0 0 1.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+          />
+          <circle cx="12" cy="12" r="3" />
+        }
+        @case ('log-out') {
+          <path
+            d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1"
+          />
+        }
+        @case ('database') {
+          <ellipse cx="12" cy="6" rx="8" ry="3" />
+          <path
+            d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"
+          />
+        }
+        @case ('code') {
+          <path d="m8 9-3 3 3 3m8-6 3 3-3 3" />
+        }
+        @case ('zap') {
+          <path d="M13 10V3L4 14h7v7l9-11h-7z" />
+        }
+        @case ('lock') {
+          <rect x="4" y="10" width="16" height="11" rx="2" />
+          <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+        }
+        @case ('menu') {
+          <path d="M4 6h16M4 12h16M4 18h16" />
+        }
+        @case ('sort-neutral') {
+          <path d="m8 9 4-4 4 4M8 15l4 4 4-4" />
+        }
+        @case ('sort-asc') {
+          <path d="m8 11 4-4 4 4M8 17h8" />
+        }
+        @case ('sort-desc') {
+          <path d="m8 13 4 4 4-4M8 7h8" />
         }
       }
     </svg>

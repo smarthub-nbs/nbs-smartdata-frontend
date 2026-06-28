@@ -24,13 +24,13 @@ module.exports = {
       },
       fontFamily: {
         sans: [
-          "Inter",
+          "Public Sans",
           "system-ui",
           "-apple-system",
           "Segoe UI",
-          "Roboto",
           "sans-serif",
         ],
+        display: ["Libre Franklin", "Public Sans", "system-ui", "sans-serif"],
       },
       boxShadow: {
         "nbs-card":

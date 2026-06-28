@@ -17,7 +17,7 @@ import { HEADER_NAV_ITEMS } from '@app/layout/header-nav.config';
 import { MobileNavService } from '@app/layout/mobile-nav.service';
 import { HeaderNavItem } from '@app/layout/models/nav-item.model';
 import { ProfileMenuComponent } from '@app/layout/profile-menu/profile-menu.component';
-import { ButtonComponent } from '@shared/ui';
+import { ButtonComponent, IconComponent, SearchBarComponent } from '@shared/ui';
 import { filter, map, startWith } from 'rxjs';
 
 @Component({
@@ -28,6 +28,8 @@ import { filter, map, startWith } from 'rxjs';
     RouterLink,
     RouterLinkActive,
     ButtonComponent,
+    IconComponent,
+    SearchBarComponent,
     ProfileMenuComponent,
   ],
   templateUrl: './header.component.html',
@@ -85,10 +87,9 @@ export class HeaderComponent {
     return item.roles.includes(user.role);
   }
 
-  protected submitSearch(): void {
-    const q = this.searchQuery.trim();
-    void this.router.navigate(q ? ['/search'] : ['/datasets'], {
-      queryParams: q ? { q } : {},
+  protected onSearchSubmit(query: string): void {
+    void this.router.navigate(query ? ['/search'] : ['/datasets'], {
+      queryParams: query ? { q: query } : {},
     });
     this.mobileNav.close();
   }

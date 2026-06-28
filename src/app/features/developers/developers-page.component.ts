@@ -11,7 +11,7 @@ import { ApiDocsPanelComponent } from '@app/features/developers/components/api-d
 import { ApiKeyManagerComponent } from '@app/features/developers/components/api-key-manager.component';
 import { ApiTryItConsoleComponent } from '@app/features/developers/components/api-try-it-console.component';
 import { DeveloperApiService } from '@app/features/developers/services/developer-api.service';
-import { CopyButtonComponent } from '@shared/ui';
+import { CopyButtonComponent, IconComponent } from '@shared/ui';
 
 @Component({
   selector: 'app-developers-page',
@@ -21,6 +21,7 @@ import { CopyButtonComponent } from '@shared/ui';
     ApiKeyManagerComponent,
     ApiTryItConsoleComponent,
     CopyButtonComponent,
+    IconComponent,
   ],
   templateUrl: './developers-page.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
