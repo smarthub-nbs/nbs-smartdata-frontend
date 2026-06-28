@@ -6,4 +6,6 @@ export const environment: Environment = {
   useMockExploreApi: true,
   apiBaseUrl: '/api',
   appName: 'NBS SmartData Hub',
+  sessionIdleTimeoutMs: 0,
+  sessionIdleWarningMs: 0,
 };

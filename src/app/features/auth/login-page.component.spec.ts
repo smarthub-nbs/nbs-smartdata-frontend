@@ -53,4 +53,35 @@ describe('LoginPageComponent', () => {
       'secret',
     );
   });
+
+  it('shows an idle sign-out message when reason=idle', async () => {
+    await TestBed.resetTestingModule();
+    auth = jasmine.createSpyObj('AuthService', ['signInWithPassword']);
+    auth.signInWithPassword.and.returnValue(of(null));
+
+    await TestBed.configureTestingModule({
+      imports: [LoginPageComponent],
+      providers: [
+        provideRouter([]),
+        { provide: AuthService, useValue: auth },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              queryParamMap: {
+                get: (key: string) => (key === 'reason' ? 'idle' : null),
+              },
+            },
+          },
+        },
+      ],
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(LoginPageComponent);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain(
+      'You were signed out due to inactivity.',
+    );
+  });
 });

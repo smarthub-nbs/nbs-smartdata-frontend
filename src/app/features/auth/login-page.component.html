@@ -5,45 +5,34 @@
   </header>
 
   <section class="rounded-lg border border-nbs-border bg-white p-6 shadow-sm">
+    @if (idleSignOut()) {
+    <div class="mb-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900" role="status">
+      You were signed out due to inactivity.
+    </div>
+    }
     @if (resetSuccess()) {
-      <div
-        class="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900"
-        role="status"
-      >
-        Password reset successfully. Sign in with your new password.
-      </div>
+    <div class="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900"
+      role="status">
+      Password reset successfully. Sign in with your new password.
+    </div>
     }
     <form class="space-y-4" [formGroup]="form" (ngSubmit)="submit()">
-      <app-text-input
-        formControlName="username"
-        label="Email"
-        placeholder="you@example.com"
-        [required]="true"
-        [error]="fieldError('username')"
-      />
+      <app-text-input formControlName="username" label="Email" placeholder="you@example.com" [required]="true"
+        [error]="fieldError('username')" />
 
-      <app-text-input
-        formControlName="password"
-        label="Password"
-        type="password"
-        placeholder="Enter your password"
-        [required]="true"
-        [error]="fieldError('password')"
-      />
+      <app-text-input formControlName="password" label="Password" type="password" placeholder="Enter your password"
+        [required]="true" [error]="fieldError('password')" />
 
       <div class="flex justify-end">
-        <a
-          routerLink="/forgot-password"
-          class="text-sm text-nbs-primary hover:underline"
-        >
+        <a routerLink="/forgot-password" class="text-sm text-nbs-primary hover:underline">
           Forgot password?
         </a>
       </div>
 
       @if (errorMessage()) {
-        <p class="text-sm text-nbs-danger" role="alert">
-          {{ errorMessage() }}
-        </p>
+      <p class="text-sm text-nbs-danger" role="alert">
+        {{ errorMessage() }}
+      </p>
       }
 
       <div class="flex items-center gap-2">
@@ -61,11 +50,8 @@
         Sign in with the email and password for your SmartData Hub account. New
         here?
       </p>
-      <a
-        routerLink="/register"
-        [queryParams]="registerQueryParams"
-        class="mt-2 inline-block font-medium text-nbs-primary hover:underline"
-      >
+      <a routerLink="/register" [queryParams]="registerQueryParams"
+        class="mt-2 inline-block font-medium text-nbs-primary hover:underline">
         Create an account
       </a>
     </div>
