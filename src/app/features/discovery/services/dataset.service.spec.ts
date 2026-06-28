@@ -1,8 +1,11 @@
 import { TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { of, Subject } from 'rxjs';
 import { DATASET_ADAPTER } from '@app/features/discovery/adapters/dataset.adapter';
 import { DatasetAdapter } from '@app/features/discovery/adapters/dataset-adapter.interface';
-import { Dataset } from '@app/features/discovery/models/dataset.model';
+import {
+  Dataset,
+  DatasetFilters,
+} from '@app/features/discovery/models/dataset.model';
 import { DatasetService } from '@app/features/discovery/services/dataset.service';
 
 const dataset: Dataset = {
@@ -74,5 +77,36 @@ describe('DatasetService', () => {
     service.markCatalogStale();
     service.refreshCatalogIfStale();
     expect(adapter.list).toHaveBeenCalled();
+  });
+
+  it('does not apply stale catalog responses when a newer load supersedes it', (done) => {
+    const adapter = TestBed.inject(
+      DATASET_ADAPTER,
+    ) as jasmine.SpyObj<DatasetAdapter>;
+    adapter.list.calls.reset();
+
+    const staleResponse = [{ ...dataset, id: 'stale', title: 'Stale' }];
+    const freshResponse = [{ ...dataset, id: 'fresh', title: 'Fresh' }];
+    const slowResponse$ = new Subject<Dataset[]>();
+
+    adapter.list.and.callFake((filters: DatasetFilters) => {
+      if (filters.region === 'Arusha') {
+        return slowResponse$;
+      }
+      return of(freshResponse);
+    });
+
+    service.setFilters({ region: 'Arusha' });
+    service.setFilters({ region: '' });
+
+    setTimeout(() => {
+      expect(service.listDatasets()[0]?.id).toBe('fresh');
+
+      slowResponse$.next(staleResponse);
+      slowResponse$.complete();
+
+      expect(service.listDatasets()[0]?.id).toBe('fresh');
+      done();
+    }, 0);
   });
 });

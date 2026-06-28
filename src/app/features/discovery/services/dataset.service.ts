@@ -8,10 +8,14 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   Subject,
+  catchError,
   debounceTime,
   distinctUntilChanged,
   forkJoin,
+  map,
   Observable,
+  of,
+  switchMap,
   tap,
 } from 'rxjs';
 import { ApiError } from '@app/core/models/api-error.model';
@@ -45,6 +49,8 @@ export class DatasetService {
   private readonly detailState = signal<AsyncState<Dataset>>(idleState());
   private readonly catalogStale = signal(false);
   private readonly queryReload$ = new Subject<string>();
+  private readonly catalogLoad$ = new Subject<DatasetFilters>();
+  private readonly facetLoad$ = new Subject<void>();
   private catalogInitStarted = false;
 
   readonly topics = this.topicsState.asReadonly();
@@ -74,6 +80,51 @@ export class DatasetService {
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe(() => this.loadCatalog());
+
+    this.catalogLoad$
+      .pipe(
+        switchMap((filters) => {
+          this.catalogState.set(loadingState());
+          return this.adapter.list(filters).pipe(
+            map((datasets) => ({ filters, datasets })),
+            catchError((error: unknown) =>
+              of({
+                filters,
+                error: this.resolveErrorMessage(
+                  error,
+                  'Failed to load datasets.',
+                ),
+              }),
+            ),
+          );
+        }),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((result) => {
+        if ('error' in result) {
+          this.catalogState.set(errorState(result.error));
+          return;
+        }
+
+        this.datasets.set(result.datasets);
+        this.catalogState.set(successState(result.datasets));
+        this.catalogStale.set(false);
+      });
+
+    this.facetLoad$
+      .pipe(
+        switchMap(() =>
+          forkJoin({
+            datasets: this.adapter.list(),
+            topics: this.adapter.listTopics(),
+          }),
+        ),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe(({ datasets, topics }) => {
+        this.facetDatasets.set(datasets);
+        this.topicsState.set(this.enrichTopicCounts(topics, datasets));
+      });
   }
 
   ensureCatalogLoaded(): void {
@@ -224,40 +275,11 @@ export class DatasetService {
   }
 
   private loadFacetCache(): void {
-    forkJoin({
-      datasets: this.adapter.list(),
-      topics: this.adapter.listTopics(),
-    })
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: ({ datasets, topics }) => {
-          this.facetDatasets.set(datasets);
-          this.topicsState.set(this.enrichTopicCounts(topics, datasets));
-        },
-      });
+    this.facetLoad$.next();
   }
 
   private loadCatalog(): void {
-    this.catalogState.set(loadingState());
-    const filters = this.filters();
-
-    this.adapter
-      .list(filters)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (datasets) => {
-          this.datasets.set(datasets);
-          this.catalogState.set(successState(datasets));
-          this.catalogStale.set(false);
-        },
-        error: (error: unknown) => {
-          this.catalogState.set(
-            errorState(
-              this.resolveErrorMessage(error, 'Failed to load datasets.'),
-            ),
-          );
-        },
-      });
+    this.catalogLoad$.next({ ...this.filters() });
   }
 
   private enrichTopicCounts(
