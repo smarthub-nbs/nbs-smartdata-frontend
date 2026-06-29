@@ -19,128 +19,76 @@
   </div>
 
   @if (facade.summaryError()) {
-    <p
-      class="flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900"
-      role="status"
-    >
-      <app-icon name="alert-triangle" [size]="14" class="text-amber-600" />
-      Status counts could not refresh. Showing the most recent values.
-    </p>
+  <p class="flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900"
+    role="status">
+    <app-icon name="alert-triangle" [size]="14" class="text-amber-600" />
+    Status counts could not refresh. Showing the most recent values.
+  </p>
   }
 
-  <app-dataset-create-draft
-    [inline]="true"
-    [categories]="categories()"
-    [categoriesLoading]="categoriesLoading()"
-    [categoriesError]="categoriesError()"
-    [creating]="facade.actionLoading() === 'create'"
-    (draftCreate)="onCreateDraft($event)"
-  />
+  <app-dataset-create-draft [inline]="true" [categories]="categories()" [categoriesLoading]="categoriesLoading()"
+    [categoriesError]="categoriesError()" [creating]="facade.actionLoading() === 'create'"
+    (draftCreate)="onCreateDraft($event)" />
 
   @if (facade.queueError()) {
-    <p class="text-sm text-nbs-danger" role="alert">
-      {{ facade.queueError() }}
-    </p>
+  <p class="text-sm text-nbs-danger" role="alert">
+    {{ facade.queueError() }}
+  </p>
   } @else if (facade.hasNoDatasets() && !facade.queueLoading()) {
-    <div
-      class="rounded-md border border-dashed border-slate-300 bg-nbs-surface p-4"
-    >
-      <p class="text-sm font-medium text-slate-900">No datasets yet</p>
-      <p class="mt-1 text-sm text-nbs-muted">
-        Use New draft above to create your first dataset, then upload a primary
-        file and submit for review.
-      </p>
-      <app-button
-        class="mt-3"
-        variant="primary"
-        size="sm"
-        (clicked)="openCreateDraft()"
-      >
-        Create first draft
-      </app-button>
-    </div>
+  <div class="rounded-md border border-dashed border-slate-300 bg-nbs-surface p-4">
+    <p class="text-sm font-medium text-slate-900">No datasets yet</p>
+    <p class="mt-1 text-sm text-nbs-muted">
+      Use New draft above to create your first dataset, then upload a primary
+      file and submit for review.
+    </p>
+    <app-button class="mt-3" variant="primary" size="sm" (clicked)="openCreateDraft()">
+      Create first draft
+    </app-button>
+  </div>
   } @else {
-    <div
-      class="grid items-start gap-4 lg:grid-cols-[minmax(0,16rem)_minmax(0,1fr)]"
-    >
-      <div class="lg:sticky lg:top-6">
-        <app-dataset-queue-list
-          [items]="facade.items()"
-          [pagination]="facade.pagination()"
-          [statusCounts]="facade.statusCounts()"
-          [statusFilter]="facade.statusFilter()"
-          [searchTerm]="facade.searchTerm()"
-          [selectedId]="facade.selectedId()"
-          [loading]="facade.queueLoading()"
-          [hasActiveSearch]="facade.hasActiveSearch()"
-          [pageRangeLabel]="facade.pageRangeLabel()"
-          (filterChange)="onFilter($event)"
-          (searchInput)="onSearch($event)"
-          (previousPage)="facade.goToPreviousPage()"
-          (nextPage)="facade.goToNextPage()"
-          (selectDataset)="onSelect($event)"
-        />
-      </div>
-
-      <div class="space-y-4">
-        @if (pendingSwitchId()) {
-          <div
-            class="rounded-md border border-amber-200 bg-amber-50 px-3 py-3"
-            role="alert"
-          >
-            <p
-              class="flex items-center gap-2 text-sm font-medium text-amber-900"
-            >
-              <app-icon
-                name="alert-triangle"
-                [size]="15"
-                class="text-amber-600"
-              />
-              You have unsaved metadata changes.
-            </p>
-            <p class="mt-1 text-xs text-amber-800">
-              Switch datasets and discard them, or keep editing the current one.
-            </p>
-            <div class="mt-3 flex flex-wrap gap-2">
-              <app-button
-                variant="primary"
-                size="sm"
-                (clicked)="cancelPendingSwitch()"
-              >
-                Keep editing
-              </app-button>
-              <app-button
-                variant="outline"
-                size="sm"
-                (clicked)="confirmDiscardSwitch()"
-              >
-                Discard and switch
-              </app-button>
-            </div>
-          </div>
-        }
-
-        @if (facade.selectedRecord(); as record) {
-          <app-dataset-workflow-detail
-            [record]="record"
-            [canReview]="canReview()"
-            [canPublish]="canPublish()"
-            [actionLoading]="facade.actionLoading()"
-            [message]="facade.message()"
-            [messageError]="facade.messageError()"
-            [publishedId]="facade.publishedId()"
-            (submitForReview)="facade.submit($event)"
-            (approve)="facade.approve($event)"
-            (reject)="facade.reject($event)"
-            (publish)="facade.publish($event)"
-            (uploadFile)="facade.uploadFile(record.id, $event)"
-            (linkTag)="facade.linkTag(record.id, $event)"
-            (metadataSaved)="facade.onMetadataSaved(record.id)"
-            (resourcesChanged)="facade.refreshDataset(record.id)"
-            (deleteDataset)="facade.deleteDataset($event)"
-          />
-        }
-      </div>
+  <div class="grid items-start gap-4 lg:grid-cols-[minmax(0,16rem)_minmax(0,1fr)]">
+    <div class="lg:sticky lg:top-6">
+      <app-dataset-queue-list [items]="facade.items()" [pagination]="facade.pagination()"
+        [statusCounts]="facade.statusCounts()" [statusFilter]="facade.statusFilter()" [searchTerm]="facade.searchTerm()"
+        [selectedId]="facade.selectedId()" [loading]="facade.queueLoading()"
+        [hasActiveSearch]="facade.hasActiveSearch()" [pageRangeLabel]="facade.pageRangeLabel()"
+        (filterChange)="onFilter($event)" (searchInput)="onSearch($event)" (previousPage)="facade.goToPreviousPage()"
+        (nextPage)="facade.goToNextPage()" (selectDataset)="onSelect($event)" />
     </div>
+
+    <div class="space-y-4">
+      @if (pendingSwitchId()) {
+      <div class="rounded-md border border-amber-200 bg-amber-50 px-3 py-3" role="alert">
+        <p class="flex items-center gap-2 text-sm font-medium text-amber-900">
+          <app-icon name="alert-triangle" [size]="15" class="text-amber-600" />
+          You have unsaved metadata changes.
+        </p>
+        <p class="mt-1 text-xs text-amber-800">
+          Switch datasets and discard them, or keep editing the current one.
+        </p>
+        <div class="mt-3 flex flex-wrap gap-2">
+          <app-button variant="primary" size="sm" (clicked)="cancelPendingSwitch()">
+            Keep editing
+          </app-button>
+          <app-button variant="outline" size="sm" (clicked)="confirmDiscardSwitch()">
+            Discard and switch
+          </app-button>
+        </div>
+      </div>
+      }
+
+      @if (facade.selectedRecord(); as record) {
+      <app-dataset-workflow-detail [record]="record" [categories]="categories()"
+        [categoriesLoading]="categoriesLoading()" [categoriesError]="categoriesError()" [canReview]="canReview()"
+        [canPublish]="canPublish()" [actionLoading]="facade.actionLoading()" [message]="facade.message()"
+        [messageError]="facade.messageError()" [publishedId]="facade.publishedId()"
+        (submitForReview)="facade.submit($event)" (approve)="facade.approve($event)" (reject)="facade.reject($event)"
+        (publish)="facade.publish($event)" (uploadFile)="facade.uploadFile(record.id, $event)"
+        (linkTag)="facade.linkTag(record.id, $event)" (categoryChange)="facade.updateCategory(record.id, $event)"
+        (metadataSaved)="facade.onMetadataSaved(record.id)" (resourcesChanged)="facade.refreshDataset(record.id)"
+        (deleteDataset)="facade.deleteDataset($event)" />
+      }
+    </div>
+  </div>
   }
 </section>

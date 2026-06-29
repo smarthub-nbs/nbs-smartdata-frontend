@@ -82,6 +82,15 @@ export class AdminDatasetWorkflowService {
       .pipe(map((dataset) => this.toAdminRecord(dataset)));
   }
 
+  updateDatasetCategory(
+    datasetId: string,
+    categoryId: string,
+  ): Observable<AdminDatasetRecord> {
+    return this.api
+      .patch(`/v1/dataset/${datasetId}/`, { category: categoryId })
+      .pipe(switchMap(() => this.getDataset(datasetId)));
+  }
+
   getMetadata(id: string): Observable<AdminDatasetMetadata> {
     return this.api
       .get<BackendAdminDataset>(`/v1/dataset/${id}/`)

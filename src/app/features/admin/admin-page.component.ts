@@ -18,6 +18,7 @@ import {
   DatasetWorkflowStatus,
   StatusFilter,
 } from '@app/features/admin/models/admin-dataset.model';
+import { AdminTaxonomyStore } from '@app/features/admin/services/admin-taxonomy.store';
 import { AdminWorkspaceFacade } from '@app/features/admin/services/admin-workspace.facade';
 import { DatasetService } from '@app/features/discovery';
 import { DataTableColumn, DataTableComponent, IconComponent } from '@shared/ui';
@@ -65,7 +66,7 @@ const VALID_STATUSES = new Set<DatasetWorkflowStatus>([
   ],
   templateUrl: './admin-page.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  providers: [AdminWorkspaceFacade],
+  providers: [AdminWorkspaceFacade, AdminTaxonomyStore],
 })
 export class AdminPageComponent {
   protected readonly facade = inject(AdminWorkspaceFacade);

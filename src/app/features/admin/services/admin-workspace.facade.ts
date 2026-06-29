@@ -268,6 +268,27 @@ export class AdminWorkspaceFacade {
       });
   }
 
+  updateCategory(id: string, categoryId: string): void {
+    const value = categoryId.trim();
+    if (!value) {
+      return;
+    }
+    this._actionLoading.set('category');
+    this.workflow
+      .updateDatasetCategory(id, value)
+      .pipe(
+        finalize(() => this._actionLoading.set('')),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: () => {
+          this.setMessage('Category updated.');
+          this.refreshAfterMutation({ datasetId: id });
+        },
+        error: (error: unknown) => this.showError(error),
+      });
+  }
+
   deleteDataset(id: string): void {
     this._actionLoading.set('delete');
     this.workflow

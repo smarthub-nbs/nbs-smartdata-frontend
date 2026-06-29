@@ -7,14 +7,9 @@ import {
   viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { finalize } from 'rxjs';
-import { ApiError } from '@app/core/models/api-error.model';
 import { AuthService } from '@app/core/services/auth.service';
-import {
-  BackendAdminCategory,
-  StatusFilter,
-} from '@app/features/admin/models/admin-dataset.model';
-import { AdminDatasetWorkflowService } from '@app/features/admin/services/admin-dataset-workflow.service';
+import { StatusFilter } from '@app/features/admin/models/admin-dataset.model';
+import { AdminTaxonomyStore } from '@app/features/admin/services/admin-taxonomy.store';
 import { AdminWorkspaceFacade } from '@app/features/admin/services/admin-workspace.facade';
 import { DatasetQueueListComponent } from '@app/features/admin/components/dataset-queue-list.component';
 import { DatasetWorkflowDetailComponent } from '@app/features/admin/components/dataset-workflow-detail.component';
@@ -39,23 +34,23 @@ import { ButtonComponent, IconComponent } from '@shared/ui';
 })
 export class DatasetWorkflowPanelComponent {
   protected readonly facade = inject(AdminWorkspaceFacade);
-  private readonly workflow = inject(AdminDatasetWorkflowService);
+  private readonly taxonomy = inject(AdminTaxonomyStore);
   private readonly auth = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
 
   private readonly detail = viewChild(DatasetWorkflowDetailComponent);
   private readonly createDraft = viewChild(DatasetCreateDraftComponent);
 
-  protected readonly categories = signal<BackendAdminCategory[]>([]);
-  protected readonly categoriesLoading = signal(true);
-  protected readonly categoriesError = signal<string | null>(null);
+  protected readonly categories = this.taxonomy.categories;
+  protected readonly categoriesLoading = this.taxonomy.loading;
+  protected readonly categoriesError = this.taxonomy.error;
   protected readonly pendingSwitchId = signal('');
 
   protected readonly canReview = this.auth.canReviewDatasets;
   protected readonly canPublish = this.auth.canPublishDatasets;
 
   constructor() {
-    this.loadCategories();
+    this.taxonomy.ensureLoaded();
   }
 
   protected openCreateDraft(): void {
@@ -103,31 +98,5 @@ export class DatasetWorkflowPanelComponent {
         next: () => this.createDraft()?.reset(),
         error: () => undefined,
       });
-  }
-
-  private loadCategories(): void {
-    this.categoriesLoading.set(true);
-    this.categoriesError.set(null);
-    this.workflow
-      .listCategories()
-      .pipe(
-        finalize(() => this.categoriesLoading.set(false)),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe({
-        next: (categories) => this.categories.set(categories),
-        error: (error: unknown) =>
-          this.categoriesError.set(this.resolveErrorMessage(error)),
-      });
-  }
-
-  private resolveErrorMessage(error: unknown): string {
-    if (error instanceof ApiError) {
-      return error.message;
-    }
-    if (error instanceof Error) {
-      return error.message;
-    }
-    return 'Request failed.';
   }
 }

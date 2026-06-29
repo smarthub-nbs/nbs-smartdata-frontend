@@ -20,6 +20,22 @@ const gdpDataset: Dataset = {
   license: 'Open Government Licence - Tanzania',
 };
 
+const censusDataset: Dataset = {
+  id: 'population-census',
+  title: 'Population and housing census',
+  description: 'Census tables by age and region.',
+  topicSlug: 'census',
+  topicName: 'Census',
+  format: 'CSV',
+  frequency: 'Annual',
+  region: 'National',
+  keywords: ['census'],
+  publisher: 'NBS',
+  updatedAt: '2025-03-10',
+  recordCount: 250,
+  license: 'Open Government Licence - Tanzania',
+};
+
 describe('SmartSearchService', () => {
   let service: SmartSearchService;
   let datasetService: jasmine.SpyObj<DatasetService>;
@@ -44,6 +60,17 @@ describe('SmartSearchService', () => {
       expect(response.results.length).toBeGreaterThan(0);
       expect(response.results[0]?.dataset.id).toBe('gdp-national-accounts');
       expect(response.interpretation).toContain('Economy');
+      done();
+    });
+  });
+
+  it('returns census category datasets for census queries', (done) => {
+    datasetService.searchCatalog.and.returnValue(of([censusDataset]));
+
+    service.smartSearch('census').subscribe((response) => {
+      expect(response.results.length).toBeGreaterThan(0);
+      expect(response.results[0]?.dataset.id).toBe('population-census');
+      expect(response.interpretation).toContain('Census');
       done();
     });
   });

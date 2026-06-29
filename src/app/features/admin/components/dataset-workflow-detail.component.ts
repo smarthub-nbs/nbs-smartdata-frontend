@@ -11,6 +11,7 @@ import {
 import { RouterLink } from '@angular/router';
 import {
   AdminDatasetRecord,
+  BackendAdminCategory,
   DatasetWorkflowStatus,
 } from '@app/features/admin/models/admin-dataset.model';
 import {
@@ -38,6 +39,9 @@ import { ButtonComponent, IconComponent } from '@shared/ui';
 })
 export class DatasetWorkflowDetailComponent {
   readonly record = input.required<AdminDatasetRecord>();
+  readonly categories = input.required<BackendAdminCategory[]>();
+  readonly categoriesLoading = input(false);
+  readonly categoriesError = input<string | null>(null);
   readonly canReview = input(false);
   readonly canPublish = input(false);
   readonly actionLoading = input('');
@@ -53,6 +57,7 @@ export class DatasetWorkflowDetailComponent {
   readonly uploadFile = output<File>();
   readonly metadataSaved = output<void>();
   readonly linkTag = output<string>();
+  readonly categoryChange = output<string>();
   readonly resourcesChanged = output<void>();
   readonly deleteDataset = output<string>();
 
@@ -66,6 +71,17 @@ export class DatasetWorkflowDetailComponent {
   protected readonly editable = computed(() => {
     const status = this.record().status;
     return this.canReview() || status === 'draft' || status === 'rejected';
+  });
+
+  protected readonly currentCategoryId = computed(() => {
+    const categorySlug = this.record().categorySlug;
+    if (!categorySlug) {
+      return '';
+    }
+    return (
+      this.categories().find((category) => category.slug === categorySlug)
+        ?.id ?? ''
+    );
   });
 
   protected readinessCompleteCount(record: AdminDatasetRecord): number {
@@ -139,6 +155,12 @@ export class DatasetWorkflowDetailComponent {
     if (value) {
       this.linkTag.emit(value);
       this.tagName.set('');
+    }
+  }
+
+  protected saveCategory(categoryId: string): void {
+    if (categoryId && categoryId !== this.currentCategoryId()) {
+      this.categoryChange.emit(categoryId);
     }
   }
 
