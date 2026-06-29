@@ -22,14 +22,8 @@ const REGION_ALIASES: Record<string, string> = {
 };
 
 const TOPIC_KEYWORDS: Record<string, string[]> = {
-  population: [
-    'population',
-    'census',
-    'demography',
-    'projection',
-    'housing',
-    'vital',
-  ],
+  population: ['population', 'demography', 'projection', 'housing', 'vital'],
+  census: ['census'],
   economy: [
     'gdp',
     'economy',
@@ -114,12 +108,16 @@ export class SmartSearchService {
     }
 
     const years: number[] = [];
-    const rangeMatch = normalized.match(/(\d{4})\s*[-–]\s*(\d{4})/);
+    const rangeMatch = /(\d{4})\s*[-–]\s*(\d{4})/.exec(normalized);
     if (rangeMatch) {
       years.push(Number(rangeMatch[1]), Number(rangeMatch[2]));
     } else {
-      const yearMatches = normalized.match(/\b(19|20)\d{2}\b/g);
-      yearMatches?.forEach((y) => years.push(Number(y)));
+      const yearPattern = /\b(?:19|20)\d{2}\b/g;
+      let yearMatch = yearPattern.exec(normalized);
+      while (yearMatch) {
+        years.push(Number(yearMatch[0]));
+        yearMatch = yearPattern.exec(normalized);
+      }
     }
 
     return { tokens, regions: [...regions], topics: [...topics], years };

@@ -3,6 +3,7 @@ import {
   Component,
   DestroyRef,
   ElementRef,
+  computed,
   effect,
   inject,
   input,
@@ -10,7 +11,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
 import { ApiError } from '@app/core/models/api-error.model';
@@ -81,6 +82,34 @@ export class DatasetMetadataEditorComponent {
   });
 
   private metadataId: string | null = null;
+
+  private readonly frequencyValue = toSignal(
+    this.form.controls.frequency.valueChanges,
+    { initialValue: this.form.controls.frequency.value },
+  );
+
+  protected readonly frequencyLabel = computed(
+    () =>
+      this.frequencyOptions.find(
+        (option) => option.value === this.frequencyValue(),
+      )?.label ?? this.frequencyValue(),
+  );
+
+  private readonly formValue = toSignal(this.form.valueChanges, {
+    initialValue: this.form.getRawValue(),
+  });
+
+  protected readonly readOnlyFields = computed(() => {
+    this.formValue();
+    const raw = this.form.getRawValue();
+    return [
+      { label: 'Frequency', value: this.frequencyLabel() },
+      { label: 'License', value: raw.license },
+      { label: 'Region', value: raw.region },
+      { label: 'Year', value: raw.year === null ? '' : String(raw.year) },
+      { label: 'Publisher', value: this.publisher() || 'NBS' },
+    ];
+  });
 
   constructor() {
     effect(

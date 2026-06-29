@@ -3,6 +3,7 @@ import {
   Component,
   ElementRef,
   computed,
+  effect,
   input,
   output,
   signal,
@@ -11,6 +12,7 @@ import {
 import { RouterLink } from '@angular/router';
 import {
   AdminDatasetRecord,
+  BackendAdminCategory,
   DatasetWorkflowStatus,
 } from '@app/features/admin/models/admin-dataset.model';
 import {
@@ -38,6 +40,9 @@ import { ButtonComponent, IconComponent } from '@shared/ui';
 })
 export class DatasetWorkflowDetailComponent {
   readonly record = input.required<AdminDatasetRecord>();
+  readonly categories = input.required<BackendAdminCategory[]>();
+  readonly categoriesLoading = input(false);
+  readonly categoriesError = input<string | null>(null);
   readonly canReview = input(false);
   readonly canPublish = input(false);
   readonly actionLoading = input('');
@@ -53,24 +58,130 @@ export class DatasetWorkflowDetailComponent {
   readonly uploadFile = output<File>();
   readonly metadataSaved = output<void>();
   readonly linkTag = output<string>();
+  readonly categoryChange = output<string>();
   readonly resourcesChanged = output<void>();
   readonly deleteDataset = output<string>();
 
   private readonly metadataEditor = viewChild(DatasetMetadataEditorComponent);
   private readonly fileInput =
     viewChild<ElementRef<HTMLInputElement>>('fileInput');
+  private readonly tagSection =
+    viewChild<ElementRef<HTMLElement>>('tagSection');
 
   protected readonly metadataDirty = signal(false);
   protected readonly tagName = signal('');
+  protected readonly pendingCategoryId = signal('');
+  protected readonly editMode = signal(false);
 
-  protected readonly editable = computed(() => {
+  protected readonly categoryDirty = computed(
+    () =>
+      this.pendingCategoryId() !== '' &&
+      this.pendingCategoryId() !== this.currentCategoryId(),
+  );
+
+  constructor() {
+    effect(
+      () => {
+        this.record();
+        this.editMode.set(false);
+        this.pendingCategoryId.set(this.currentCategoryId());
+      },
+      { allowSignalWrites: true },
+    );
+  }
+
+  protected readonly canModifyFinalized = computed(
+    () => this.canReview() || this.canPublish(),
+  );
+
+  private readonly isFinalized = computed(() => {
     const status = this.record().status;
-    return this.canReview() || status === 'draft' || status === 'rejected';
+    return status === 'approved' || status === 'published';
   });
 
-  protected readinessCompleteCount(record: AdminDatasetRecord): number {
-    return [record.hasMetadata, record.hasTag, record.hasFile].filter(Boolean)
-      .length;
+  protected readonly isFinalizedReadOnly = computed(
+    () => this.isFinalized() && !this.editMode(),
+  );
+
+  protected readonly contentEditable = computed(() => {
+    const status = this.record().status;
+    if (status === 'draft' || status === 'rejected') {
+      return true;
+    }
+    if (this.isFinalized()) {
+      return this.editMode() && this.canModifyFinalized();
+    }
+    return this.canReview();
+  });
+
+  protected readonly showResourceManager = computed(() => {
+    if (!this.canReview()) {
+      return false;
+    }
+    return !this.isFinalizedReadOnly();
+  });
+
+  protected startEditing(): void {
+    this.editMode.set(true);
+  }
+
+  protected stopEditing(): void {
+    if (this.metadataDirty()) {
+      this.discardMetadata();
+    }
+    this.resetCategorySelection();
+    this.tagName.set('');
+    this.editMode.set(false);
+  }
+
+  protected readonly canEditFinalized = computed(
+    () => this.isFinalizedReadOnly() && this.canModifyFinalized(),
+  );
+
+  protected readonly currentCategoryId = computed(() => {
+    const categorySlug = this.record().categorySlug;
+    if (!categorySlug) {
+      return '';
+    }
+    return (
+      this.categories().find((category) => category.slug === categorySlug)
+        ?.id ?? ''
+    );
+  });
+
+  protected showRequirements(record: AdminDatasetRecord): boolean {
+    return (
+      (record.status === 'draft' || record.status === 'rejected') &&
+      !this.canSubmit(record)
+    );
+  }
+
+  protected requirementItems(record: AdminDatasetRecord): {
+    key: string;
+    label: string;
+    complete: boolean;
+    focus: () => void;
+  }[] {
+    return [
+      {
+        key: 'metadata',
+        label: 'Metadata',
+        complete: record.hasMetadata,
+        focus: () => this.focusMetadata(),
+      },
+      {
+        key: 'tag',
+        label: 'Tag',
+        complete: record.hasTag,
+        focus: () => this.focusTagSection(),
+      },
+      {
+        key: 'file',
+        label: 'Primary file',
+        complete: record.hasFile,
+        focus: () => this.focusFileUpload(),
+      },
+    ];
   }
 
   protected readonly nextActionText = computed(() => {
@@ -119,7 +230,33 @@ export class DatasetWorkflowDetailComponent {
   }
 
   protected focusFileUpload(): void {
+    this.fileInput()?.nativeElement.scrollIntoView({
+      behavior: 'smooth',
+      block: 'nearest',
+    });
     this.fileInput()?.nativeElement.click();
+  }
+
+  protected focusTagSection(): void {
+    this.tagSection()?.nativeElement.scrollIntoView({
+      behavior: 'smooth',
+      block: 'nearest',
+    });
+  }
+
+  protected onCategoryChange(event: Event): void {
+    this.pendingCategoryId.set((event.target as HTMLSelectElement).value);
+  }
+
+  protected resetCategorySelection(): void {
+    this.pendingCategoryId.set(this.currentCategoryId());
+  }
+
+  protected saveCategory(): void {
+    const categoryId = this.pendingCategoryId();
+    if (categoryId && categoryId !== this.currentCategoryId()) {
+      this.categoryChange.emit(categoryId);
+    }
   }
 
   protected onFileSelected(event: Event): void {
@@ -174,15 +311,15 @@ export class DatasetWorkflowDetailComponent {
   }
 
   protected submitBlockedReason(record: AdminDatasetRecord): string {
+    if (record.status !== 'draft' && record.status !== 'rejected') {
+      return '';
+    }
     if (this.canSubmit(record)) {
       return '';
     }
     const missing = this.missingRequirements(record);
     if (missing.length > 0) {
       return `Missing: ${missing.join(', ')}`;
-    }
-    if (record.status !== 'draft' && record.status !== 'rejected') {
-      return 'Only draft or rejected datasets can be submitted.';
     }
     return '';
   }

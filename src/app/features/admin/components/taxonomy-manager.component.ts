@@ -2,18 +2,15 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  computed,
   inject,
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { forkJoin, finalize } from 'rxjs';
+import { finalize } from 'rxjs';
 import { ApiError } from '@app/core/models/api-error.model';
-import {
-  BackendAdminCategory,
-  BackendAdminTag,
-} from '@app/features/admin/models/admin-dataset.model';
-import { AdminDatasetWorkflowService } from '@app/features/admin/services/admin-dataset-workflow.service';
+import { AdminTaxonomyStore } from '@app/features/admin/services/admin-taxonomy.store';
 import { ButtonComponent, IconComponent } from '@shared/ui';
 
 type TaxonomyKind = 'category' | 'tag';
@@ -32,25 +29,26 @@ interface EditState {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TaxonomyManagerComponent {
-  private readonly workflow = inject(AdminDatasetWorkflowService);
+  private readonly taxonomy = inject(AdminTaxonomyStore);
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly expanded = signal(false);
-  protected readonly loading = signal(false);
-  protected readonly error = signal('');
   protected readonly actionId = signal('');
-  protected readonly categories = signal<BackendAdminCategory[]>([]);
-  protected readonly tags = signal<BackendAdminTag[]>([]);
+  protected readonly actionError = signal('');
+  protected readonly error = computed(
+    () => this.actionError() || this.taxonomy.error() || '',
+  );
+  protected readonly loading = this.taxonomy.loading;
+  protected readonly categories = this.taxonomy.categories;
+  protected readonly tags = this.taxonomy.tags;
   protected readonly newCategoryName = signal('');
   protected readonly editing = signal<EditState | null>(null);
   protected readonly confirmingId = signal('');
 
-  private loaded = false;
-
   protected toggle(): void {
     this.expanded.update((open) => !open);
-    if (this.expanded() && !this.loaded) {
-      this.load();
+    if (this.expanded()) {
+      this.taxonomy.ensureLoaded();
     }
   }
 
@@ -79,8 +77,9 @@ export class TaxonomyManagerComponent {
     if (!name) {
       return;
     }
+    this.actionError.set('');
     this.actionId.set('new-category');
-    this.workflow
+    this.taxonomy
       .createCategory(name)
       .pipe(
         finalize(() => this.actionId.set('')),
@@ -89,22 +88,23 @@ export class TaxonomyManagerComponent {
       .subscribe({
         next: () => {
           this.newCategoryName.set('');
-          this.load();
         },
-        error: (error: unknown) => this.error.set(this.resolveError(error)),
+        error: (error: unknown) =>
+          this.actionError.set(this.resolveError(error)),
       });
   }
 
   protected saveEdit(): void {
     const editing = this.editing();
-    if (!editing || !editing.name.trim()) {
+    if (!editing?.name.trim()) {
       return;
     }
+    this.actionError.set('');
     this.actionId.set(editing.id);
     const request$ =
       editing.kind === 'category'
-        ? this.workflow.updateCategory(editing.id, editing.name)
-        : this.workflow.updateTag(editing.id, editing.name);
+        ? this.taxonomy.updateCategory(editing.id, editing.name)
+        : this.taxonomy.updateTag(editing.id, editing.name);
 
     request$
       .pipe(
@@ -114,9 +114,9 @@ export class TaxonomyManagerComponent {
       .subscribe({
         next: () => {
           this.editing.set(null);
-          this.load();
         },
-        error: (error: unknown) => this.error.set(this.resolveError(error)),
+        error: (error: unknown) =>
+          this.actionError.set(this.resolveError(error)),
       });
   }
 
@@ -130,11 +130,12 @@ export class TaxonomyManagerComponent {
 
   protected confirmDelete(kind: TaxonomyKind, id: string): void {
     this.confirmingId.set('');
+    this.actionError.set('');
     this.actionId.set(id);
     const request$ =
       kind === 'category'
-        ? this.workflow.deleteCategory(id)
-        : this.workflow.deleteTag(id);
+        ? this.taxonomy.deleteCategory(id)
+        : this.taxonomy.deleteTag(id);
 
     request$
       .pipe(
@@ -142,29 +143,9 @@ export class TaxonomyManagerComponent {
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
-        next: () => this.load(),
-        error: (error: unknown) => this.error.set(this.resolveError(error)),
-      });
-  }
-
-  private load(): void {
-    this.loading.set(true);
-    this.error.set('');
-    forkJoin({
-      categories: this.workflow.listCategories(),
-      tags: this.workflow.listTags(),
-    })
-      .pipe(
-        finalize(() => this.loading.set(false)),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe({
-        next: ({ categories, tags }) => {
-          this.loaded = true;
-          this.categories.set(categories);
-          this.tags.set(tags);
-        },
-        error: (error: unknown) => this.error.set(this.resolveError(error)),
+        next: () => undefined,
+        error: (error: unknown) =>
+          this.actionError.set(this.resolveError(error)),
       });
   }
 

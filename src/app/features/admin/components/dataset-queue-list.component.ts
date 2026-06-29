@@ -4,7 +4,6 @@ import {
   input,
   output,
 } from '@angular/core';
-import { DecimalPipe } from '@angular/common';
 import {
   AdminDatasetQueuePagination,
   AdminDatasetRecord,
@@ -12,10 +11,7 @@ import {
   StatusCounts,
   StatusFilter,
 } from '@app/features/admin/models/admin-dataset.model';
-import {
-  workflowStatusChipClasses,
-  workflowStatusLabel,
-} from '@app/features/admin/utils/admin-workflow-status.util';
+import { workflowStatusLabel } from '@app/features/admin/utils/admin-workflow-status.util';
 import { IconComponent } from '@shared/ui';
 
 interface FilterChip {
@@ -35,7 +31,7 @@ const FILTER_CHIPS: readonly FilterChip[] = [
 @Component({
   selector: 'app-dataset-queue-list',
   standalone: true,
-  imports: [DecimalPipe, IconComponent],
+  imports: [IconComponent],
   templateUrl: './dataset-queue-list.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -71,10 +67,6 @@ export class DatasetQueueListComponent {
     return workflowStatusLabel(status);
   }
 
-  protected statusChipClasses(status: DatasetWorkflowStatus): string {
-    return workflowStatusChipClasses(status);
-  }
-
   protected readinessCount(record: AdminDatasetRecord): number {
     return [record.hasMetadata, record.hasTag, record.hasFile].filter(Boolean)
       .length;
@@ -84,19 +76,58 @@ export class DatasetQueueListComponent {
     const active = this.statusFilter() === filter;
     const empty = filter !== 'all' && this.chipCount(filter) === 0;
     if (active) {
-      return 'rounded-full border border-nbs-primary bg-nbs-primary/10 px-3 py-1 text-xs font-medium text-nbs-primary';
+      return 'bg-nbs-primary text-white';
     }
     if (empty) {
-      return 'rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600';
+      return 'bg-slate-100 text-slate-400 hover:bg-slate-200';
     }
-    return 'rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600 hover:border-nbs-primary hover:text-nbs-primary';
+    return 'bg-slate-100 text-slate-700 hover:bg-slate-200';
+  }
+
+  protected chipCountClasses(filter: StatusFilter): string {
+    const active = this.statusFilter() === filter;
+    return active
+      ? 'tabular-nums text-white/80'
+      : 'tabular-nums text-slate-400';
+  }
+
+  protected statusDotClasses(status: DatasetWorkflowStatus): string {
+    switch (status) {
+      case 'published':
+        return 'bg-emerald-500';
+      case 'approved':
+        return 'bg-sky-500';
+      case 'in_review':
+        return 'bg-amber-500';
+      case 'rejected':
+        return 'bg-red-500';
+      default:
+        return 'bg-slate-400';
+    }
+  }
+
+  protected statusPillClasses(status: DatasetWorkflowStatus): string {
+    const base =
+      'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium';
+    switch (status) {
+      case 'published':
+        return `${base} bg-emerald-50 text-emerald-800`;
+      case 'approved':
+        return `${base} bg-sky-50 text-sky-800`;
+      case 'in_review':
+        return `${base} bg-amber-50 text-amber-900`;
+      case 'rejected':
+        return `${base} bg-red-50 text-red-800`;
+      default:
+        return `${base} bg-slate-100 text-slate-700`;
+    }
   }
 
   protected queueItemClasses(id: string): string {
     const base =
-      'w-full rounded-md border px-3 py-3 text-left transition-colors';
+      'w-full cursor-pointer border-l-2 py-2.5 pl-3 pr-3 text-left transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-nbs-primary/40 motion-reduce:transition-none';
     return id === this.selectedId()
-      ? `${base} border-nbs-primary bg-nbs-primary/5`
-      : `${base} border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50`;
+      ? `${base} border-l-nbs-primary bg-nbs-primary/5`
+      : `${base} border-l-transparent bg-white hover:bg-slate-50`;
   }
 }

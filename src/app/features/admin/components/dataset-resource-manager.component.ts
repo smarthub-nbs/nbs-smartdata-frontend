@@ -47,6 +47,8 @@ export class DatasetResourceManagerComponent {
   protected readonly resources = signal<AdminDatasetResources>(EMPTY_RESOURCES);
   protected readonly actionId = signal('');
   protected readonly confirmingDelete = signal(false);
+  protected readonly confirmingFileId = signal('');
+  protected readonly confirmingTagLinkId = signal('');
 
   private loadedId = '';
 
@@ -55,6 +57,8 @@ export class DatasetResourceManagerComponent {
       () => {
         const id = this.datasetId();
         this.confirmingDelete.set(false);
+        this.confirmingFileId.set('');
+        this.confirmingTagLinkId.set('');
         if (id !== this.loadedId) {
           this.resources.set(EMPTY_RESOURCES);
           if (this.expanded()) {
@@ -73,7 +77,18 @@ export class DatasetResourceManagerComponent {
     }
   }
 
-  protected deleteFile(fileId: string): void {
+  protected requestDeleteFile(fileId: string): void {
+    this.confirmingFileId.set(fileId);
+    this.confirmingTagLinkId.set('');
+    this.confirmingDelete.set(false);
+  }
+
+  protected cancelDeleteFile(): void {
+    this.confirmingFileId.set('');
+  }
+
+  protected confirmDeleteFile(fileId: string): void {
+    this.confirmingFileId.set('');
     this.actionId.set(fileId);
     this.workflow
       .deleteFile(fileId)
@@ -87,7 +102,18 @@ export class DatasetResourceManagerComponent {
       });
   }
 
-  protected unlinkTag(link: AdminDatasetTagLink): void {
+  protected requestUnlinkTag(linkId: string): void {
+    this.confirmingTagLinkId.set(linkId);
+    this.confirmingFileId.set('');
+    this.confirmingDelete.set(false);
+  }
+
+  protected cancelUnlinkTag(): void {
+    this.confirmingTagLinkId.set('');
+  }
+
+  protected confirmUnlinkTag(link: AdminDatasetTagLink): void {
+    this.confirmingTagLinkId.set('');
     this.actionId.set(link.linkId);
     this.workflow
       .unlinkTag(link.linkId)
@@ -103,6 +129,8 @@ export class DatasetResourceManagerComponent {
 
   protected requestDeleteDataset(): void {
     this.confirmingDelete.set(true);
+    this.confirmingFileId.set('');
+    this.confirmingTagLinkId.set('');
   }
 
   protected cancelDeleteDataset(): void {

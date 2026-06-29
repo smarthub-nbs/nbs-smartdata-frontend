@@ -2,12 +2,10 @@ import { DecimalPipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
-  ElementRef,
   computed,
   effect,
   inject,
   signal,
-  viewChild,
 } from '@angular/core';
 import { ActivatedRoute, Params, Router } from '@angular/router';
 import { AuthService } from '@app/core/services/auth.service';
@@ -18,6 +16,7 @@ import {
   DatasetWorkflowStatus,
   StatusFilter,
 } from '@app/features/admin/models/admin-dataset.model';
+import { AdminTaxonomyStore } from '@app/features/admin/services/admin-taxonomy.store';
 import { AdminWorkspaceFacade } from '@app/features/admin/services/admin-workspace.facade';
 import { DatasetService } from '@app/features/discovery';
 import { DataTableColumn, DataTableComponent, IconComponent } from '@shared/ui';
@@ -27,23 +26,6 @@ interface PlatformMetricCard {
   value: string;
   detail: string;
 }
-
-type AttentionTone = 'slate' | 'amber' | 'sky' | 'red';
-
-interface AttentionItem {
-  label: string;
-  count: number;
-  hint: string;
-  status: StatusFilter;
-  tone: AttentionTone;
-}
-
-const ATTENTION_BAR_CLASSES: Record<AttentionTone, string> = {
-  slate: 'bg-slate-400',
-  amber: 'bg-nbs-highlight',
-  sky: 'bg-nbs-primary',
-  red: 'bg-nbs-danger',
-};
 
 const VALID_STATUSES = new Set<DatasetWorkflowStatus>([
   'draft',
@@ -65,7 +47,7 @@ const VALID_STATUSES = new Set<DatasetWorkflowStatus>([
   ],
   templateUrl: './admin-page.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  providers: [AdminWorkspaceFacade],
+  providers: [AdminWorkspaceFacade, AdminTaxonomyStore],
 })
 export class AdminPageComponent {
   protected readonly facade = inject(AdminWorkspaceFacade);
@@ -76,9 +58,6 @@ export class AdminPageComponent {
   protected readonly canManageTaxonomy = this.auth.canReviewDatasets;
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
-
-  private readonly workflowSection =
-    viewChild<ElementRef<HTMLElement>>('workflowSection');
 
   protected readonly activityExpanded = signal(false);
 
@@ -96,49 +75,6 @@ export class AdminPageComponent {
       format: (row) => this.formatLastAccessed(row.lastAccessed),
     },
   ];
-
-  protected readonly attentionItems = computed<AttentionItem[]>(() => {
-    const counts = this.facade.statusCounts();
-    const items: AttentionItem[] = [
-      {
-        label: 'Drafts to complete',
-        count: counts.draft,
-        hint: 'Need metadata, file, or tag before review',
-        status: 'draft',
-        tone: 'slate',
-      },
-      {
-        label: 'Awaiting review',
-        count: counts.in_review,
-        hint: 'Submitted and waiting for admin decision',
-        status: 'in_review',
-        tone: 'amber',
-      },
-      {
-        label: 'Ready to publish',
-        count: counts.approved,
-        hint: 'Approved and waiting for publication',
-        status: 'approved',
-        tone: 'sky',
-      },
-      {
-        label: 'Rejected — needs fixes',
-        count: counts.rejected,
-        hint: 'Update requirements and resubmit',
-        status: 'rejected',
-        tone: 'red',
-      },
-    ];
-    return items.filter((item) => item.count > 0);
-  });
-
-  protected attentionBarClass(tone: AttentionTone): string {
-    return ATTENTION_BAR_CLASSES[tone];
-  }
-
-  protected isActiveAttention(status: StatusFilter): boolean {
-    return this.facade.statusFilter() === status;
-  }
 
   protected readonly platformCards = computed<PlatformMetricCard[]>(() => {
     const summary = this.analytics.summary();
@@ -198,14 +134,6 @@ export class AdminPageComponent {
     });
 
     effect(() => this.syncUrl());
-  }
-
-  protected onAttentionSelect(status: StatusFilter): void {
-    this.facade.setStatusFilter(status);
-    this.workflowSection()?.nativeElement.scrollIntoView({
-      behavior: 'smooth',
-      block: 'start',
-    });
   }
 
   protected toggleActivityExpanded(): void {
