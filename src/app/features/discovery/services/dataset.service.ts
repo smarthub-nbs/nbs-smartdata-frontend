@@ -26,6 +26,7 @@ import {
   DatasetTopic,
   EMPTY_DATASET_FILTERS,
 } from '@app/features/discovery/models/dataset.model';
+import { buildPublishedTopics } from '@app/features/discovery/utils/dataset-topic.util';
 import {
   AsyncState,
   errorState,
@@ -123,7 +124,7 @@ export class DatasetService {
       )
       .subscribe(({ datasets, topics }) => {
         this.facetDatasets.set(datasets);
-        this.topicsState.set(this.enrichTopicCounts(topics, datasets));
+        this.topicsState.set(buildPublishedTopics(topics, datasets));
       });
   }
 
@@ -280,21 +281,6 @@ export class DatasetService {
 
   private loadCatalog(): void {
     this.catalogLoad$.next({ ...this.filters() });
-  }
-
-  private enrichTopicCounts(
-    topics: DatasetTopic[],
-    datasets: Dataset[],
-  ): DatasetTopic[] {
-    const counts = datasets.reduce<Map<string, number>>((map, dataset) => {
-      map.set(dataset.topicSlug, (map.get(dataset.topicSlug) ?? 0) + 1);
-      return map;
-    }, new Map());
-
-    return topics.map((topic) => ({
-      ...topic,
-      datasetCount: counts.get(topic.slug) ?? 0,
-    }));
   }
 
   private mergeDataset(dataset: Dataset): void {

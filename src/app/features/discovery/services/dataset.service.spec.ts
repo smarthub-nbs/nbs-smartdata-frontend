@@ -5,6 +5,7 @@ import { DatasetAdapter } from '@app/features/discovery/adapters/dataset-adapter
 import {
   Dataset,
   DatasetFilters,
+  DatasetTopic,
 } from '@app/features/discovery/models/dataset.model';
 import { DatasetService } from '@app/features/discovery/services/dataset.service';
 
@@ -77,6 +78,33 @@ describe('DatasetService', () => {
     service.markCatalogStale();
     service.refreshCatalogIfStale();
     expect(adapter.list).toHaveBeenCalled();
+  });
+
+  it('exposes only topics with published datasets in the filter list', () => {
+    const adapter = TestBed.inject(
+      DATASET_ADAPTER,
+    ) as jasmine.SpyObj<DatasetAdapter>;
+    const topics: DatasetTopic[] = [
+      {
+        id: 'topic-population',
+        slug: 'population',
+        name: 'Population',
+        description: '',
+        datasetCount: 0,
+      },
+      {
+        id: 'topic-health',
+        slug: 'health',
+        name: 'Health',
+        description: '',
+        datasetCount: 0,
+      },
+    ];
+
+    adapter.listTopics.and.returnValue(of(topics));
+    service.refreshCatalog();
+
+    expect(service.topics().map((topic) => topic.slug)).toEqual(['population']);
   });
 
   it('does not apply stale catalog responses when a newer load supersedes it', (done) => {
