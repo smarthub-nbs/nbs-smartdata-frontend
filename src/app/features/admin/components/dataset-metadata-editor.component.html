@@ -1,134 +1,77 @@
-<div #formSection id="discovery-metadata" class="space-y-4">
+<div #formSection id="discovery-metadata" class="border-t border-nbs-border pt-5">
   @if (loading() && !hasLoaded()) {
-    <p class="text-sm text-nbs-muted" aria-live="polite">Loading metadata…</p>
+  <p class="text-sm text-nbs-muted" aria-live="polite">Loading metadata…</p>
   } @else if (loadError() && !hasLoaded()) {
-    <p class="text-sm text-nbs-danger" role="alert">{{ loadError() }}</p>
+  <p class="text-sm text-nbs-danger" role="alert">{{ loadError() }}</p>
   } @else {
-    <div
-      class="space-y-4 transition-opacity duration-200"
-      [class.opacity-50]="loading()"
-      [attr.aria-busy]="loading() || null"
-    >
-      <div class="nbs-fade">
-        <h4
-          class="text-xs font-semibold uppercase tracking-wide text-slate-700"
-        >
-          Discovery metadata
-        </h4>
-        <p class="mt-1 text-xs text-nbs-muted">
-          @if (readOnly()) {
-            Read-only — this dataset can only be edited while in draft or
-            rejected status.
-          } @else {
-            Editable fields shown in Discovery and counted toward workflow
-            readiness.
-          }
+  <div class="space-y-4 transition-opacity duration-200 motion-reduce:transition-none" [class.opacity-50]="loading()"
+    [attr.aria-busy]="loading() || null">
+    @if (readOnly()) {
+    <div class="space-y-6">
+      <div>
+        <p class="text-[11px] font-semibold uppercase tracking-wider text-nbs-muted">
+          Description
+        </p>
+        <p class="mt-2 max-w-prose whitespace-pre-line text-sm leading-relaxed text-slate-700">
+          {{ form.value.description || '—' }}
         </p>
       </div>
 
-      <form
-        class="nbs-fade space-y-4"
-        [formGroup]="form"
-        (ngSubmit)="saveMetadata()"
-      >
-        <div class="grid gap-4 md:grid-cols-2">
-          <app-text-input
-            formControlName="title"
-            label="Title"
-            [required]="true"
-            [error]="controlError('title')"
-          />
-          <app-select-input
-            formControlName="frequency"
-            label="Frequency"
-            [required]="true"
-            [options]="frequencyOptions"
-            [error]="controlError('frequency')"
-          />
-
-          <div class="md:col-span-2">
-            <app-form-field
-              label="Description"
-              [required]="true"
-              [error]="controlError('description')"
-            >
-              <textarea
-                id="metadata-description"
-                formControlName="description"
-                rows="4"
-                aria-label="Description"
-                class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-nbs-primary focus:outline-none focus:ring-2 focus:ring-nbs-primary/30"
-              ></textarea>
-            </app-form-field>
-          </div>
-
-          <app-text-input
-            formControlName="license"
-            label="License"
-            [required]="true"
-            [error]="controlError('license')"
-          />
-          <app-text-input
-            formControlName="region"
-            label="Region"
-            [required]="true"
-            [error]="controlError('region')"
-          />
-          <app-text-input
-            formControlName="year"
-            type="number"
-            label="Year"
-            [required]="true"
-            [error]="controlError('year')"
-          />
+      <dl class="max-w-3xl divide-y divide-slate-100 border-y border-slate-100">
+        @for (field of readOnlyFields(); track field.label) {
+        <div class="grid gap-1 py-3 sm:grid-cols-[9rem_minmax(0,1fr)] sm:gap-4">
+          <dt class="text-[11px] font-semibold uppercase tracking-wider text-nbs-muted">
+            {{ field.label }}
+          </dt>
+          <dd class="text-sm font-medium text-slate-900">
+            {{ field.value || '—' }}
+          </dd>
         </div>
-
-        <div class="nbs-panel-muted space-y-3">
-          <div>
-            <h4
-              class="text-xs font-semibold uppercase tracking-wide text-slate-700"
-            >
-              System-managed
-            </h4>
-            <p class="mt-1 text-xs text-nbs-muted">
-              These values are filled automatically from the dataset record.
-            </p>
-          </div>
-
-          <dl class="grid gap-4 sm:grid-cols-2">
-            <div>
-              <dt class="text-xs text-nbs-muted">Publisher</dt>
-              <dd class="mt-0.5 text-sm text-slate-900">
-                {{ publisher() || 'NBS' }}
-              </dd>
-            </div>
-          </dl>
-        </div>
-
-        @if (!readOnly()) {
-          <div class="flex flex-wrap items-center gap-3">
-            <app-button
-              type="submit"
-              variant="primary"
-              size="sm"
-              [loading]="saving()"
-              [disabled]="!form.dirty"
-            >
-              Save metadata
-            </app-button>
-            @if (saveMessage()) {
-              <span
-                class="text-xs"
-                [class.text-nbs-accent]="!saveError()"
-                [class.text-nbs-danger]="saveError()"
-                aria-live="polite"
-              >
-                {{ saveMessage() }}
-              </span>
-            }
-          </div>
         }
-      </form>
+      </dl>
     </div>
+    } @else {
+    <form class="space-y-4" [formGroup]="form" (ngSubmit)="saveMetadata()">
+      <div class="grid gap-4 md:grid-cols-2">
+        <app-text-input formControlName="title" label="Title" [required]="true" [error]="controlError('title')" />
+        <app-select-input formControlName="frequency" label="Frequency" [required]="true" [options]="frequencyOptions"
+          [error]="controlError('frequency')" />
+
+        <div class="md:col-span-2">
+          <app-form-field label="Description" [required]="true" [error]="controlError('description')">
+            <textarea id="metadata-description" formControlName="description" rows="4" aria-label="Description"
+              class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-nbs-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/30"></textarea>
+          </app-form-field>
+        </div>
+
+        <app-text-input formControlName="license" label="License" [required]="true" [error]="controlError('license')" />
+        <app-text-input formControlName="region" label="Region" [required]="true" [error]="controlError('region')" />
+        <app-text-input formControlName="year" type="number" label="Year" [required]="true"
+          [error]="controlError('year')" />
+      </div>
+
+      <dl class="flex items-baseline gap-2 text-sm">
+        <dt class="text-xs text-nbs-muted">Publisher</dt>
+        <dd class="font-medium text-slate-900">{{ publisher() || 'NBS' }}</dd>
+      </dl>
+
+      <div class="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
+        <app-button type="submit" variant="primary" size="sm" [loading]="saving()" [disabled]="!form.dirty">
+          Save metadata
+        </app-button>
+        <app-button type="button" variant="ghost" size="sm" [disabled]="!form.dirty || saving()"
+          (clicked)="discardChanges()">
+          Discard changes
+        </app-button>
+        @if (saveMessage()) {
+        <output class="text-xs" [class.text-nbs-accent]="!saveError()" [class.text-nbs-danger]="saveError()"
+          aria-live="polite">
+          {{ saveMessage() }}
+        </output>
+        }
+      </div>
+    </form>
+    }
+  </div>
   }
 </div>
