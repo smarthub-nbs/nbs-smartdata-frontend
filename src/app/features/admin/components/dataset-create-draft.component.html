@@ -1,171 +1,96 @@
 @if (!inline() || expanded()) {
-  <div
-    #root
-    [class]="
+<div #root [class]="
       inline()
         ? 'rounded-lg border border-nbs-primary/25 bg-nbs-primary-soft/30 p-4'
         : 'border-t border-nbs-border pt-4'
-    "
-  >
-    @if (inline()) {
-      <div class="mb-4 flex items-start justify-between gap-3">
-        <div class="flex items-start gap-2.5">
-          <app-icon name="plus" [size]="18" class="mt-0.5 text-nbs-primary" />
-          <div>
-            <h3 class="text-sm font-semibold text-slate-900">New draft</h3>
-            <p class="mt-0.5 text-xs text-nbs-muted">
-              Fill in the details below to start a new dataset.
-            </p>
-          </div>
-        </div>
-        <button
-          type="button"
-          class="inline-flex size-8 shrink-0 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-white hover:text-slate-700"
-          aria-label="Close new draft form"
-          (click)="close()"
-        >
-          <app-icon name="x" [size]="18" />
-        </button>
-      </div>
-    } @else {
-      <button
-        type="button"
-        class="flex w-full items-center justify-between gap-2 text-left transition-colors hover:text-nbs-primary"
-        [attr.aria-expanded]="expanded()"
-        (click)="toggle()"
-      >
-        <span class="flex items-start gap-2.5">
-          <app-icon name="plus" [size]="16" class="mt-0.5 text-nbs-primary" />
-          <span>
-            <span class="block text-sm font-semibold text-slate-900"
-              >Create draft</span
-            >
-            <span class="mt-0.5 block text-xs text-nbs-muted">
-              Start a new dataset when you are ready to publish something new.
-            </span>
-          </span>
-        </span>
-        <app-icon
-          name="chevron-down"
-          [size]="16"
-          class="text-nbs-muted transition-transform motion-safe:duration-200"
-          [class.rotate-180]="expanded()"
-        />
-      </button>
-    }
-
-    @if (expanded()) {
-      @if (categoriesLoading()) {
-        <p class="mt-4 text-sm text-nbs-muted">Loading categories…</p>
-      } @else if (categoriesError()) {
-        <p class="mt-4 text-sm text-nbs-danger" role="alert">
-          {{ categoriesError() }}
+    ">
+  @if (inline()) {
+  <div class="mb-4 flex items-start justify-between gap-3">
+    <div class="flex items-start gap-2.5">
+      <app-icon name="plus" [size]="18" class="mt-0.5 text-nbs-primary" />
+      <div>
+        <h3 class="text-sm font-semibold text-slate-900">New draft</h3>
+        <p class="mt-0.5 text-xs text-nbs-muted">
+          Fill in the details below to start a new dataset.
         </p>
-      } @else {
-        <form
-          [class]="
+      </div>
+    </div>
+    <button type="button"
+      class="inline-flex size-8 shrink-0 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-white hover:text-slate-700"
+      aria-label="Close new draft form" (click)="close()">
+      <app-icon name="x" [size]="18" />
+    </button>
+  </div>
+  } @else {
+  <button type="button"
+    class="flex w-full items-center justify-between gap-2 text-left transition-colors hover:text-nbs-primary"
+    [attr.aria-expanded]="expanded()" (click)="toggle()">
+    <span class="flex items-start gap-2.5">
+      <app-icon name="plus" [size]="16" class="mt-0.5 text-nbs-primary" />
+      <span>
+        <span class="block text-sm font-semibold text-slate-900">Create draft</span>
+        <span class="mt-0.5 block text-xs text-nbs-muted">
+          Start a new dataset when you are ready to publish something new.
+        </span>
+      </span>
+    </span>
+    <app-icon name="chevron-down" [size]="16" class="text-nbs-muted transition-transform motion-safe:duration-200"
+      [class.rotate-180]="expanded()" />
+  </button>
+  }
+
+  @if (expanded()) {
+  @if (categoriesLoading()) {
+  <p class="mt-4 text-sm text-nbs-muted">Loading categories…</p>
+  } @else if (categoriesError()) {
+  <p class="mt-4 text-sm text-nbs-danger" role="alert">
+    {{ categoriesError() }}
+  </p>
+  } @else {
+  <form [class]="
             inline()
               ? 'grid gap-4 md:grid-cols-2'
               : 'mt-4 grid gap-4 md:grid-cols-2'
-          "
-          [formGroup]="form"
-          (ngSubmit)="submit()"
-        >
-          <app-select-input
-            formControlName="categoryId"
-            label="Category"
-            [required]="true"
-            [options]="categoryOptions()"
-            [error]="controlError('categoryId')"
-          />
-          <app-text-input
-            formControlName="slug"
-            label="Slug (optional)"
-            hint="Auto-generated if left blank."
-          />
-          <app-text-input
-            formControlName="title"
-            label="Title"
-            [required]="true"
-            [error]="controlError('title')"
-          />
-          <app-text-input
-            formControlName="tagName"
-            label="Tag"
-            hint="Required before review. Cannot be changed after creation."
-            [required]="true"
-            [error]="controlError('tagName')"
-          />
-          <app-text-input
-            formControlName="region"
-            label="Region"
-            [required]="true"
-            [error]="controlError('region')"
-          />
-          <app-text-input
-            formControlName="year"
-            type="number"
-            label="Year"
-            [required]="true"
-            [error]="controlError('year')"
-          />
-          <app-select-input
-            formControlName="frequency"
-            label="Frequency"
-            [required]="true"
-            [options]="frequencyOptions"
-          />
-          <app-text-input
-            formControlName="license"
-            label="License"
-            [required]="true"
-            [error]="controlError('license')"
-          />
-          <div class="md:col-span-2">
-            <app-form-field label="Description" [required]="true">
-              <textarea
-                formControlName="description"
-                rows="3"
-                aria-label="Description"
-                class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-nbs-primary focus:outline-none focus:ring-2 focus:ring-nbs-primary/30"
-              ></textarea>
-            </app-form-field>
-          </div>
-          <div class="md:col-span-2">
-            <label class="block">
-              <span class="mb-1 block text-xs font-medium text-slate-600">
-                Data file (optional on create)
-              </span>
-              <input
-                type="file"
-                accept=".csv,.json,.xlsx,.xls,.xml,.sdmx,.pdf,.tsv,.txt,.zip"
-                class="block w-full text-sm"
-                (change)="onFileSelected($event)"
-              />
-            </label>
-          </div>
-          <div class="flex flex-wrap gap-2 md:col-span-2">
-            <app-button
-              type="submit"
-              variant="primary"
-              size="sm"
-              [loading]="creating()"
-            >
-              Create draft dataset
-            </app-button>
-            @if (inline()) {
-              <app-button
-                type="button"
-                variant="outline"
-                size="sm"
-                (clicked)="close()"
-              >
-                Cancel
-              </app-button>
-            }
-          </div>
-        </form>
+          " [formGroup]="form" (ngSubmit)="submit()">
+    <app-select-input formControlName="categoryId" label="Category" [required]="true" [options]="categoryOptions()"
+      [error]="controlError('categoryId')" />
+    <app-text-input formControlName="slug" label="Slug (optional)" hint="Auto-generated if left blank." />
+    <app-text-input formControlName="title" label="Title" [required]="true" [error]="controlError('title')" />
+    <app-text-input formControlName="tagName" label="Tag"
+      hint="Required before review. Cannot be changed after creation." [required]="true"
+      [error]="controlError('tagName')" />
+    <app-text-input formControlName="region" label="Region" [required]="true" [error]="controlError('region')" />
+    <app-select-input formControlName="year" label="Year" [required]="true" [options]="yearOptions"
+      [error]="controlError('year')" />
+    <app-select-input formControlName="frequency" label="Frequency" [required]="true" [options]="frequencyOptions" />
+    <app-text-input formControlName="license" label="License" [required]="true" [error]="controlError('license')" />
+    <div class="md:col-span-2">
+      <app-form-field label="Description" [required]="true">
+        <textarea formControlName="description" rows="3" aria-label="Description"
+          class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-nbs-primary focus:outline-none focus:ring-2 focus:ring-nbs-primary/30"></textarea>
+      </app-form-field>
+    </div>
+    <div class="md:col-span-2">
+      <label class="block">
+        <span class="mb-1 block text-xs font-medium text-slate-600">
+          Data file (optional on create)
+        </span>
+        <input type="file" accept=".csv,.json,.xlsx,.xls,.xml,.sdmx,.pdf,.tsv,.txt,.zip" class="block w-full text-sm"
+          (change)="onFileSelected($event)" />
+      </label>
+    </div>
+    <div class="flex flex-wrap gap-2 md:col-span-2">
+      <app-button type="submit" variant="primary" size="sm" [loading]="creating()">
+        Create draft dataset
+      </app-button>
+      @if (inline()) {
+      <app-button type="button" variant="outline" size="sm" (clicked)="close()">
+        Cancel
+      </app-button>
       }
-    }
-  </div>
+    </div>
+  </form>
+  }
+  }
+</div>
 }

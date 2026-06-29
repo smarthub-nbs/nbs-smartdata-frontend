@@ -17,6 +17,7 @@ import {
   DatasetFrequencyValue,
 } from '@app/features/admin/models/admin-dataset.model';
 import { FREQUENCY_OPTIONS } from '@app/features/admin/utils/admin-frequency.util';
+import { YEAR_OPTIONS } from '@app/features/admin/utils/admin-year.util';
 import {
   ButtonComponent,
   FormFieldComponent,
@@ -60,6 +61,7 @@ export class DatasetCreateDraftComponent {
 
   protected readonly expanded = signal(false);
   protected readonly frequencyOptions: SelectOption[] = [...FREQUENCY_OPTIONS];
+  protected readonly yearOptions: SelectOption[] = [...YEAR_OPTIONS];
 
   protected readonly categoryOptions = computed<SelectOption[]>(() =>
     this.categories().map((category) => ({
@@ -79,10 +81,7 @@ export class DatasetCreateDraftComponent {
       Validators.required,
     ),
     region: ['National', Validators.required],
-    year: [
-      new Date().getFullYear(),
-      [Validators.required, Validators.min(1900)],
-    ],
+    year: [String(new Date().getFullYear()), Validators.required],
     tagName: ['', Validators.required],
   });
 

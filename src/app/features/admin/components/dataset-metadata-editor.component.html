@@ -46,7 +46,7 @@
 
         <app-text-input formControlName="license" label="License" [required]="true" [error]="controlError('license')" />
         <app-text-input formControlName="region" label="Region" [required]="true" [error]="controlError('region')" />
-        <app-text-input formControlName="year" type="number" label="Year" [required]="true"
+        <app-select-input formControlName="year" label="Year" [required]="true" [options]="yearOptions"
           [error]="controlError('year')" />
       </div>
 
