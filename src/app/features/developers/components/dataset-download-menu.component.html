@@ -1,0 +1,59 @@
+<button type="button"
+  class="inline-flex h-10 cursor-pointer items-center gap-2 rounded-md bg-nbs-primary px-4 text-sm font-medium text-white transition-colors duration-200 hover:bg-nbs-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary focus-visible:ring-offset-2 motion-safe:active:scale-[0.98]"
+  aria-haspopup="menu" [attr.aria-expanded]="open()" (click)="toggle()">
+  <app-icon name="download" [size]="16" />
+  Download
+  <app-icon name="chevron-down" [size]="16" class="transition-transform motion-safe:duration-200"
+    [class.rotate-180]="open()" />
+</button>
+
+@if (open()) {
+<div class="absolute right-0 z-30 mt-2 w-72 rounded-lg border border-slate-200 bg-white p-2 shadow-lg" role="menu"
+  aria-label="Download and export formats">
+  @if (!hasDownloads()) {
+  <p class="px-3 py-2 text-sm text-slate-600">
+    No downloadable file is attached to this dataset yet.
+  </p>
+  }
+
+  @if (showPrimaryFileButton()) {
+  <button type="button" role="menuitem"
+    class="flex w-full cursor-pointer flex-col rounded-md px-3 py-2 text-left transition-colors duration-200 hover:bg-nbs-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/40 disabled:cursor-not-allowed disabled:opacity-50"
+    [disabled]="exporting()" (click)="downloadPrimaryFile()">
+    <span class="text-sm font-medium text-slate-900">Primary file</span>
+    <span class="mt-0.5 text-xs text-slate-600">
+      Download {{ dataset().format }} file
+    </span>
+  </button>
+  }
+
+  @for (format of visibleFormats(); track format.id) {
+  <button type="button" role="menuitem"
+    class="flex w-full cursor-pointer flex-col rounded-md px-3 py-2 text-left transition-colors duration-200 hover:bg-nbs-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/40 disabled:cursor-not-allowed disabled:opacity-50"
+    [disabled]="exporting() || !isFormatAvailable(format.id)" (click)="download(format.id)">
+    <span class="text-sm font-medium text-slate-900">{{
+      format.label
+      }}</span>
+    <span class="mt-0.5 text-xs text-slate-600">{{
+      formatDescription(format.id)
+      }}</span>
+  </button>
+  }
+
+  @if (exporting() || errorMessage() || successMessage()) {
+  <div class="mt-1 border-t border-slate-100 px-3 pt-2">
+    @if (exporting()) {
+    <p class="text-xs text-slate-600">Preparing download…</p>
+    }
+    @if (errorMessage()) {
+    <p class="text-xs text-nbs-danger" role="alert">
+      {{ errorMessage() }}
+    </p>
+    }
+    @if (successMessage()) {
+    <p class="text-xs text-nbs-accent">{{ successMessage() }}</p>
+    }
+  </div>
+  }
+</div>
+}
