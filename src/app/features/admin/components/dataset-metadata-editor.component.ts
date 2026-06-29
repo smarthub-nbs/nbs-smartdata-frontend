@@ -22,6 +22,7 @@ import {
 } from '@app/features/admin/models/admin-dataset.model';
 import { AdminDatasetWorkflowService } from '@app/features/admin/services/admin-dataset-workflow.service';
 import { FREQUENCY_OPTIONS } from '@app/features/admin/utils/admin-frequency.util';
+import { YEAR_OPTIONS } from '@app/features/admin/utils/admin-year.util';
 import {
   ButtonComponent,
   FormFieldComponent,
@@ -65,6 +66,7 @@ export class DatasetMetadataEditorComponent {
   protected readonly publisher = signal('');
 
   protected readonly frequencyOptions: SelectOption[] = [...FREQUENCY_OPTIONS];
+  protected readonly yearOptions: SelectOption[] = [...YEAR_OPTIONS];
 
   protected readonly form = this.fb.nonNullable.group({
     title: ['', Validators.required],
@@ -75,9 +77,8 @@ export class DatasetMetadataEditorComponent {
       Validators.required,
     ),
     region: ['', Validators.required],
-    year: this.fb.nonNullable.control<number | null>(new Date().getFullYear(), [
+    year: this.fb.nonNullable.control(String(new Date().getFullYear()), [
       Validators.required,
-      Validators.min(1900),
     ]),
   });
 
@@ -106,7 +107,7 @@ export class DatasetMetadataEditorComponent {
       { label: 'Frequency', value: this.frequencyLabel() },
       { label: 'License', value: raw.license },
       { label: 'Region', value: raw.region },
-      { label: 'Year', value: raw.year === null ? '' : String(raw.year) },
+      { label: 'Year', value: raw.year },
       { label: 'Publisher', value: this.publisher() || 'NBS' },
     ];
   });
@@ -176,7 +177,7 @@ export class DatasetMetadataEditorComponent {
       license: raw.license,
       frequency: raw.frequency,
       region: raw.region,
-      year: raw.year === null ? null : Number(raw.year),
+      year: raw.year === '' ? null : Number(raw.year),
     };
 
     this.saving.set(true);
@@ -211,9 +212,6 @@ export class DatasetMetadataEditorComponent {
     if (control.hasError('required')) {
       return 'This field is required.';
     }
-    if (control.hasError('min')) {
-      return 'Enter a valid year.';
-    }
     return '';
   }
 
@@ -245,7 +243,10 @@ export class DatasetMetadataEditorComponent {
       license: metadata.license,
       frequency: metadata.frequency,
       region: metadata.region,
-      year: metadata.year,
+      year:
+        metadata.year === null
+          ? String(new Date().getFullYear())
+          : String(metadata.year),
     });
     this.form.markAsPristine();
     this.dirtyChange.emit(false);
