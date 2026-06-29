@@ -7,6 +7,7 @@ import {
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { DatasetService } from '@app/features/discovery';
+import { isMeaningfulTopic } from '@app/features/discovery/utils/dataset-topic.util';
 import { IconComponent, type IconName, SearchBarComponent } from '@shared/ui';
 
 interface TopicLink {
@@ -26,11 +27,6 @@ interface CatalogStats {
   datasetCount: number;
   topicCount: number;
   latestUpdate: string;
-}
-
-function isMeaningfulTopic(name: string, slug: string): boolean {
-  const normalized = name.trim().toLowerCase();
-  return normalized !== 'uncategorized' && slug !== 'uncategorized';
 }
 
 @Component({
