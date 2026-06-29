@@ -1,60 +1,32 @@
 @if (detailLoading()) {
-  <app-page-state
-    variant="loading"
-    title="Loading dataset"
-    label="Dataset"
-    message="Fetching dataset details…"
-  />
+<app-page-state variant="loading" title="Loading dataset" label="Dataset" message="Fetching dataset details…" />
 } @else if (detailError()) {
-  <app-dataset-detail-fallback
-    variant="error"
-    title="Could not load dataset"
-    label="Error"
-    [message]="detailError()!"
-  />
+<app-dataset-detail-fallback variant="error" title="Could not load dataset" label="Error" [message]="detailError()!" />
 } @else if (!dataset()) {
-  <app-dataset-detail-fallback
-    title="Dataset not found"
-    label="404"
-    message="The dataset you requested does not exist or may have been removed."
-  />
+<app-dataset-detail-fallback title="Dataset not found" label="404"
+  message="The dataset you requested does not exist or may have been removed." />
 } @else {
-  <div class="space-y-6">
-    <app-dataset-detail-header
-      [dataset]="dataset()!"
-      [saved]="isDatasetSaved()"
-      [canSave]="true"
-      (explore)="goToExplore()"
-      (saveToggle)="toggleSaveDataset()"
-    />
+<div class="space-y-6">
+  <app-dataset-detail-header [dataset]="dataset()!" [saved]="isDatasetSaved()" [canSave]="true"
+    (explore)="goToExplore()" (saveToggle)="toggleSaveDataset()">
+    <app-dataset-download-menu header-actions [dataset]="dataset()!" />
+  </app-dataset-detail-header>
 
-    <div class="grid gap-6 lg:grid-cols-3">
-      <div class="lg:col-span-2 space-y-6">
-        <app-dataset-metadata-panel
-          [dataset]="dataset()!"
-          [indexingStatus]="facade.isAdmin() ? facade.indexing() : null"
-        />
-        <app-dataset-file-preview
-          [dataset]="dataset()!"
-          (totalRowsLoaded)="updateRecordCount($event)"
-        />
-        <app-dataset-download-panel [dataset]="dataset()!" />
+  <div class="grid gap-6 lg:grid-cols-3">
+    <div class="lg:col-span-2 space-y-6">
+      <app-dataset-metadata-panel [dataset]="dataset()!"
+        [indexingStatus]="facade.isAdmin() ? facade.indexing() : null" />
+      <app-dataset-file-preview [dataset]="dataset()!" (totalRowsLoaded)="updateRecordCount($event)" />
 
-        @if (auth.isAuthenticated()) {
-          <app-dataset-update-history
-            [loading]="facade.loading()"
-            [entries]="facade.history()"
-          />
-        }
-      </div>
-
-      <aside class="space-y-4">
-        <app-recommended-datasets
-          [sourceDatasetId]="dataset()!.id"
-          title="Related datasets"
-          subtitle="Datasets with similar topics and coverage"
-        />
-      </aside>
+      @if (auth.isAuthenticated()) {
+      <app-dataset-update-history [loading]="facade.loading()" [entries]="facade.history()" />
+      }
     </div>
+
+    <aside class="space-y-4">
+      <app-recommended-datasets [sourceDatasetId]="dataset()!.id" title="Related datasets"
+        subtitle="Datasets with similar topics and coverage" />
+    </aside>
   </div>
+</div>
 }

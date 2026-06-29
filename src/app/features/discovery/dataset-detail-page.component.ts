@@ -15,7 +15,7 @@ import { DatasetDetailFallbackComponent } from '@app/features/discovery/componen
 import { AuthService } from '@app/core/services/auth.service';
 import { AccountService } from '@app/features/account/services/account.service';
 import { DatasetService } from '@app/features/discovery';
-import { DatasetDownloadPanelComponent } from '@app/features/developers';
+import { DatasetDownloadMenuComponent } from '@app/features/developers';
 import { RecommendedDatasetsComponent } from '@app/features/search';
 import { PageStateComponent } from '@app/shared/components/page-state/page-state.component';
 import { resolveIndicatorForTopic } from '@app/features/explore';
@@ -32,7 +32,7 @@ import { DatasetDetailFacadeService } from '@app/features/discovery/services/dat
     DatasetFilePreviewComponent,
     DatasetUpdateHistoryComponent,
     RecommendedDatasetsComponent,
-    DatasetDownloadPanelComponent,
+    DatasetDownloadMenuComponent,
     PageStateComponent,
   ],
   templateUrl: './dataset-detail-page.component.html',

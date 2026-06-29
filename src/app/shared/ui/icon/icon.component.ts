@@ -8,6 +8,7 @@ export type IconName =
   | 'x'
   | 'trash'
   | 'upload'
+  | 'download'
   | 'tag'
   | 'alert-triangle'
   | 'arrow-right'
@@ -71,6 +72,11 @@ export type IconName =
         @case ('upload') {
           <path
             d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"
+          />
+        }
+        @case ('download') {
+          <path
+            d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"
           />
         }
         @case ('tag') {
