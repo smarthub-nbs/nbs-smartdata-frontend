@@ -41,7 +41,7 @@ import { formControlClasses } from '@shared/ui/utils/form-control-styles';
           [type]="resolvedType()"
           [class]="inputClasses()"
           [placeholder]="placeholder()"
-          [disabled]="isDisabled()"
+          [disabled]="fieldDisabled()"
           [readonly]="readonly()"
           [attr.aria-invalid]="!!error() || null"
           [attr.aria-describedby]="describedBy()"
@@ -53,7 +53,7 @@ import { formControlClasses } from '@shared/ui/utils/form-control-styles';
           <button
             type="button"
             class="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 transition-colors hover:text-slate-600 focus:outline-none focus-visible:text-nbs-primary disabled:cursor-not-allowed disabled:opacity-60"
-            [disabled]="isDisabled()"
+            [disabled]="fieldDisabled()"
             [attr.aria-label]="
               showPassword() ? 'Hide password' : 'Show password'
             "
@@ -78,11 +78,16 @@ export class TextInputComponent implements ControlValueAccessor {
   );
   readonly required = input(false);
   readonly readonly = input(false);
+  readonly disabled = input(false);
 
   protected readonly inputId = `input-${Math.random().toString(36).slice(2, 9)}`;
   protected readonly value = signal('');
   protected readonly isDisabled = signal(false);
   protected readonly showPassword = signal(false);
+
+  protected readonly fieldDisabled = computed(
+    () => this.isDisabled() || this.disabled(),
+  );
 
   protected readonly isPassword = computed(() => this.type() === 'password');
 

@@ -5,16 +5,16 @@ module.exports = {
     extend: {
       colors: {
         nbs: {
-          primary: '#0066cc',
-          'primary-hover': '#0052a3',
-          'primary-active': '#003d7a',
-          'primary-soft': '#e8f1fc',
+          primary: '#0272a7',
+          'primary-hover': '#02618e',
+          'primary-active': '#024d70',
+          'primary-soft': '#e6f2f8',
           ink: '#0a1f3d',
           secondary: '#1e293b',
-          accent: '#0d9488',
-          'accent-soft': '#ccfbf1',
-          highlight: '#f59e0b',
-          'highlight-soft': '#fef3c7',
+          accent: '#219f94',
+          'accent-soft': '#d6f0ed',
+          highlight: '#edc91e',
+          'highlight-soft': '#fbf1c6',
           muted: '#475569',
           border: '#e2e8f0',
           surface: '#f8fafc',
@@ -50,7 +50,7 @@ module.exports = {
       },
       backgroundImage: {
         'nbs-hero':
-          'radial-gradient(120% 120% at 100% 0%, #0a3a78 0%, #003d7a 45%, #0a1f3d 100%)',
+          'radial-gradient(120% 120% at 100% 0%, #0394d9 0%, #0272a7 45%, #024d70 100%)',
       },
       keyframes: {
         'overlay-in': {

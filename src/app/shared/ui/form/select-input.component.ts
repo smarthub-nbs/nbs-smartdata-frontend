@@ -43,7 +43,7 @@ export interface SelectOption<T extends string = string> {
       <select
         [id]="selectId"
         [class]="selectClasses()"
-        [disabled]="isDisabled()"
+        [disabled]="fieldDisabled()"
         [attr.aria-invalid]="!!error() || null"
         [value]="value()"
         (change)="onSelectChange($event)"
@@ -69,6 +69,7 @@ export class SelectInputComponent implements ControlValueAccessor {
   readonly placeholder = input<string>('');
   readonly options = input<SelectOption[]>([]);
   readonly required = input(false);
+  readonly disabled = input(false);
 
   protected readonly selectId = `select-${Math.random().toString(36).slice(2, 9)}`;
   protected readonly value = signal('');
@@ -76,6 +77,10 @@ export class SelectInputComponent implements ControlValueAccessor {
 
   protected readonly selectClasses = computed(() =>
     formControlClasses({ error: !!this.error() }),
+  );
+
+  protected readonly fieldDisabled = computed(
+    () => this.isDisabled() || this.disabled(),
   );
 
   private onChange: (value: string) => void = () => undefined;

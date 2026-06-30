@@ -16,9 +16,13 @@ import {
   ExploreIndicator,
 } from '@app/features/explore/models/explore.model';
 import { ensureChartJsRegistered } from '@app/features/explore/utils/chart-js.util';
-
-const CHART_PRIMARY = '#0066cc';
-const CHART_PRIMARY_SOFT = 'rgba(0, 102, 204, 0.15)';
+import {
+  CHART_COLORS,
+  chartAxisTicksColor,
+  chartGridColor,
+  chartLegendOptions,
+  chartTooltipOptions,
+} from '@app/features/explore/utils/chart-colors.util';
 
 @Component({
   selector: 'app-indicator-chart',
@@ -96,9 +100,9 @@ export class IndicatorChartComponent implements AfterViewInit {
           {
             label: `${indicator.name} (${indicator.unit})`,
             data: values,
-            borderColor: CHART_PRIMARY,
+            borderColor: CHART_COLORS.primary,
             backgroundColor:
-              type === 'line' ? CHART_PRIMARY_SOFT : CHART_PRIMARY,
+              type === 'line' ? CHART_COLORS.primarySoft : CHART_COLORS.primary,
             fill: type === 'line',
             tension: 0.3,
             borderWidth: 2,
@@ -109,13 +113,31 @@ export class IndicatorChartComponent implements AfterViewInit {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-          legend: { display: true, position: 'top' },
-          tooltip: { mode: 'index', intersect: false },
+          legend: {
+            ...chartLegendOptions(),
+            display: true,
+            position: 'top',
+          },
+          tooltip: {
+            ...chartTooltipOptions(),
+            mode: 'index',
+            intersect: false,
+          },
         },
         scales: {
+          x: {
+            ticks: { color: chartAxisTicksColor() },
+            grid: { color: chartGridColor() },
+          },
           y: {
             beginAtZero: type === 'bar',
-            title: { display: true, text: indicator.unit },
+            ticks: { color: chartAxisTicksColor() },
+            grid: { color: chartGridColor() },
+            title: {
+              display: true,
+              text: indicator.unit,
+              color: CHART_COLORS.muted,
+            },
           },
         },
       },

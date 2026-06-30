@@ -22,6 +22,7 @@ import {
 import {
   ButtonComponent,
   AlertComponent,
+  EmptyStateComponent,
   IconComponent,
   ModalComponent,
 } from '@shared/ui';
@@ -47,6 +48,7 @@ const STATUS_FILTERS: readonly StatusFilterItem[] = [
     DecimalPipe,
     ButtonComponent,
     AlertComponent,
+    EmptyStateComponent,
     IconComponent,
     DatasetQueueListComponent,
     DatasetWorkflowDetailComponent,
@@ -113,7 +115,7 @@ export class DatasetWorkflowPanelComponent {
       this.mobileDetailOpen.set(true);
       return;
     }
-    if (this.detail()?.isMetadataDirty()) {
+    if (this.detail()?.hasUnsavedChanges()) {
       this.pendingSwitchId.set(id);
       return;
     }
@@ -130,7 +132,7 @@ export class DatasetWorkflowPanelComponent {
     if (!nextId) {
       return;
     }
-    this.detail()?.discardMetadata();
+    this.detail()?.discardUnsavedChanges();
     this.pendingSwitchId.set('');
     this.facade.selectDataset(nextId);
     this.mobileDetailOpen.set(true);

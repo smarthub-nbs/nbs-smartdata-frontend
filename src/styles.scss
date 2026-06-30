@@ -120,8 +120,30 @@
     @apply nbs-surface-elevated sm:p-7;
   }
 
+  .nbs-page-header {
+    @apply mb-6 space-y-1;
+  }
+
   .nbs-page-title {
-    @apply text-2xl font-semibold text-slate-900;
+    @apply relative inline-block pb-2 text-2xl font-semibold text-nbs-primary;
+
+    &::after {
+      content: '';
+      @apply absolute bottom-0 left-0 h-0.5 w-10 rounded-full bg-nbs-highlight;
+    }
+  }
+
+  .nbs-section-title {
+    @apply text-sm font-semibold text-slate-900;
+  }
+
+  .nbs-section-title-accent {
+    @apply nbs-section-title relative inline-block pb-1.5;
+
+    &::after {
+      content: '';
+      @apply absolute bottom-0 left-0 h-0.5 w-6 rounded-full bg-nbs-highlight;
+    }
   }
 
   .nbs-page-lead {

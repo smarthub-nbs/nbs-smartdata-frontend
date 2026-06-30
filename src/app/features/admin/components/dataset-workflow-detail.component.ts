@@ -12,6 +12,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 import { ApiError } from '@app/core/models/api-error.model';
@@ -25,21 +26,35 @@ import {
 } from '@app/features/admin/models/admin-dataset.model';
 import { AdminDatasetWorkflowService } from '@app/features/admin/services/admin-dataset-workflow.service';
 import {
-  workflowStatusChipClasses,
+  workflowStatusBadgeVariant,
   workflowStatusLabel,
 } from '@app/features/admin/utils/admin-workflow-status.util';
 import { DatasetMetadataEditorComponent } from '@app/features/admin/components/dataset-metadata-editor.component';
 import { DatasetResourceManagerComponent } from '@app/features/admin/components/dataset-resource-manager.component';
 import { DatasetActivityLogComponent } from '@app/features/admin/components/dataset-activity-log.component';
-import { ButtonComponent, IconComponent } from '@shared/ui';
+import {
+  AlertComponent,
+  BadgeComponent,
+  ButtonComponent,
+  IconComponent,
+  SelectInputComponent,
+  SelectOption,
+  TextInputComponent,
+} from '@shared/ui';
+import { BadgeVariant } from '@shared/ui/models/badge-variant.model';
 
 @Component({
   selector: 'app-dataset-workflow-detail',
   standalone: true,
   imports: [
+    FormsModule,
     RouterLink,
+    AlertComponent,
+    BadgeComponent,
     ButtonComponent,
     IconComponent,
+    SelectInputComponent,
+    TextInputComponent,
     DatasetMetadataEditorComponent,
     DatasetResourceManagerComponent,
     DatasetActivityLogComponent,
@@ -123,6 +138,11 @@ export class DatasetWorkflowDetailComponent {
       },
       { allowSignalWrites: true },
     );
+
+    effect(() => {
+      const dirty = this.metadataDirty() || this.categoryDirty();
+      this.dirtyChange.emit(dirty);
+    });
   }
 
   protected readonly canModifyFinalized = computed(
@@ -164,19 +184,36 @@ export class DatasetWorkflowDetailComponent {
   });
 
   protected readonly sectionNavItems = computed(() => {
-    return [
+    const items = [
       { key: 'overview', label: 'Overview' },
       { key: 'tags', label: 'Tags' },
-      { key: 'metadata', label: 'Metadata' },
+      { key: 'metadata', label: 'Details' },
     ];
+    if (this.showFilesSection()) {
+      items.push({ key: 'files', label: 'Files' });
+    }
+    items.push({ key: 'activity', label: 'Activity' });
+    return items;
   });
+
+  protected readonly categorySelectOptions = computed<SelectOption[]>(() =>
+    this.categories().map((category) => ({
+      label: category.name,
+      value: category.id,
+    })),
+  );
+
+  protected readonly tagSelectOptions = computed<SelectOption[]>(() =>
+    this.availableTags().map((tag) => ({
+      label: tag.name,
+      value: tag.id,
+    })),
+  );
 
   protected readonly availableTags = computed(() => {
     const linkedIds = this.linkedTagIds();
     return this.tags().filter((tag) => !linkedIds.has(tag.id));
   });
-
-  protected readonly tagOptions = computed(() => this.availableTags());
 
   private readonly linkedTagIds = computed(
     () => new Set(this.tagLinks().map((link) => link.tagId)),
@@ -293,9 +330,13 @@ export class DatasetWorkflowDetailComponent {
     this.metadataEditor()?.discardChanges();
   }
 
+  discardUnsavedChanges(): void {
+    this.discardMetadata();
+    this.resetCategorySelection();
+  }
+
   protected onMetadataDirtyChange(dirty: boolean): void {
     this.metadataDirty.set(dirty);
-    this.dirtyChange.emit(dirty);
   }
 
   protected focusMetadata(): void {
@@ -304,9 +345,11 @@ export class DatasetWorkflowDetailComponent {
   }
 
   protected focusFileUpload(): void {
-    this.fileInput()?.nativeElement.scrollIntoView({
+    this.activeSectionNav.set('files');
+    this.resourceManager()?.open();
+    this.filesAnchor()?.nativeElement.scrollIntoView({
       behavior: 'smooth',
-      block: 'nearest',
+      block: 'start',
     });
     this.fileInput()?.nativeElement.click();
   }
@@ -359,6 +402,20 @@ export class DatasetWorkflowDetailComponent {
       default:
         return undefined;
     }
+  }
+
+  protected onCategoryModelChange(value: string): void {
+    this.pendingCategoryId.set(value);
+  }
+
+  protected onTagNameModelChange(value: string): void {
+    this.tagLinkError.set('');
+    this.tagName.set(value);
+  }
+
+  protected onTagSelectModelChange(tagId: string): void {
+    this.tagLinkError.set('');
+    this.selectedTagId.set(tagId);
   }
 
   protected onCategoryChange(event: Event): void {
@@ -505,12 +562,16 @@ export class DatasetWorkflowDetailComponent {
     return '';
   }
 
-  protected statusLabel(status: DatasetWorkflowStatus): string {
-    return workflowStatusLabel(status);
+  protected statusBadgeVariant(status: DatasetWorkflowStatus): BadgeVariant {
+    return workflowStatusBadgeVariant(status);
   }
 
-  protected statusChipClasses(status: DatasetWorkflowStatus): string {
-    return workflowStatusChipClasses(status);
+  hasUnsavedChanges(): boolean {
+    return this.isMetadataDirty() || this.categoryDirty();
+  }
+
+  protected statusLabel(status: DatasetWorkflowStatus): string {
+    return workflowStatusLabel(status);
   }
 
   reloadTagLinks(): void {

@@ -18,15 +18,9 @@
     }
   </div>
   } @else if (items().length === 0) {
-  <div
-    class="flex flex-col items-center gap-2 rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-4 py-10 text-center">
-    <app-icon name="inbox" [size]="24" class="text-slate-300" />
-    @if (hasActiveSearch()) {
-    <p class="text-sm text-nbs-muted">No datasets match your search.</p>
-    } @else {
-    <p class="text-sm text-nbs-muted">No datasets in this status.</p>
-    }
-  </div>
+  <app-empty-state [icon]="hasActiveSearch() ? 'search' : 'inbox'" [iconSize]="24" [compact]="true"
+    [title]="hasActiveSearch() ? 'No matches' : 'No datasets in this status'"
+    [message]="hasActiveSearch() ? 'Try a different search term.' : 'Switch status filters to see other datasets.'" />
   } @else {
   <div class="flex items-center justify-between px-1">
     <p class="text-[11px] font-medium uppercase tracking-wider text-nbs-muted">
@@ -59,7 +53,7 @@
               </span>
               }
               @if (readinessCount(item) < 3) { <span class="inline-flex items-center gap-1">
-                <span class="size-1.5 rounded-full bg-amber-400/80" aria-hidden="true"></span>
+                <span class="size-1.5 rounded-full bg-nbs-warning" aria-hidden="true"></span>
                 {{ readinessCount(item) }}/3 ready
                 </span>
                 }

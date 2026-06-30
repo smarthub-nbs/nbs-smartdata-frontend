@@ -9,13 +9,16 @@ import {
   AdminDatasetRecord,
   DatasetWorkflowStatus,
 } from '@app/features/admin/models/admin-dataset.model';
-import { workflowStatusLabel } from '@app/features/admin/utils/admin-workflow-status.util';
-import { IconComponent } from '@shared/ui';
+import {
+  workflowStatusChipClasses,
+  workflowStatusLabel,
+} from '@app/features/admin/utils/admin-workflow-status.util';
+import { EmptyStateComponent, IconComponent } from '@shared/ui';
 
 @Component({
   selector: 'app-dataset-queue-list',
   standalone: true,
-  imports: [IconComponent],
+  imports: [EmptyStateComponent, IconComponent],
   templateUrl: './dataset-queue-list.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -97,20 +100,7 @@ export class DatasetQueueListComponent {
   }
 
   protected statusPillClasses(status: DatasetWorkflowStatus): string {
-    const base =
-      'inline-flex shrink-0 items-center rounded-md px-2 py-0.5 text-[11px] font-medium';
-    switch (status) {
-      case 'published':
-        return `${base} bg-nbs-success-soft text-nbs-success`;
-      case 'approved':
-        return `${base} bg-nbs-info-soft text-nbs-info`;
-      case 'in_review':
-        return `${base} bg-nbs-primary/10 text-nbs-primary`;
-      case 'rejected':
-        return `${base} bg-nbs-danger-soft text-nbs-danger`;
-      default:
-        return `${base} bg-slate-100 text-slate-600`;
-    }
+    return workflowStatusChipClasses(status, 'sm');
   }
 
   protected queueItemClasses(id: string): string {
