@@ -22,6 +22,7 @@ export class UserCreateFormComponent {
 
   protected readonly email = signal('');
   protected readonly password = signal('');
+  protected readonly confirmPassword = signal('');
   protected readonly firstName = signal('');
   protected readonly lastName = signal('');
   protected readonly isActive = signal(true);
@@ -80,6 +81,11 @@ export class UserCreateFormComponent {
     }
     if (this.password().length < 8) {
       errors['password'] = 'Password must be at least 8 characters.';
+    }
+    if (!this.confirmPassword()) {
+      errors['confirmPassword'] = 'Please confirm the password.';
+    } else if (this.confirmPassword() !== this.password()) {
+      errors['confirmPassword'] = 'Passwords do not match.';
     }
     if (!this.firstName().trim()) {
       errors['firstName'] = 'First name is required.';

@@ -7,9 +7,13 @@
           [required]="true" [error]="fieldError('email')" [ngModel]="email()" (ngModelChange)="email.set($event)"
           name="email" />
 
-        <app-text-input class="sm:col-span-2" label="Password" type="password" placeholder="Minimum 8 characters"
-          [required]="true" [error]="fieldError('password')" [ngModel]="password()"
-          (ngModelChange)="password.set($event)" name="password" />
+        <app-text-input label="Password" type="password" placeholder="Minimum 8 characters" [required]="true"
+          [error]="fieldError('password')" [ngModel]="password()" (ngModelChange)="password.set($event)"
+          name="password" />
+
+        <app-text-input label="Confirm password" type="password" placeholder="Re-enter password" [required]="true"
+          [error]="fieldError('confirmPassword')" [ngModel]="confirmPassword()"
+          (ngModelChange)="confirmPassword.set($event)" name="confirmPassword" />
 
         <app-text-input label="First name" [required]="true" [error]="fieldError('firstName')" [ngModel]="firstName()"
           (ngModelChange)="firstName.set($event)" name="firstName" />

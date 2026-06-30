@@ -1,254 +1,204 @@
-<div
-  class="w-full overflow-hidden rounded-lg border border-nbs-border bg-white shadow-sm"
->
-  <div class="overflow-x-auto">
-    <table class="min-w-full divide-y divide-slate-200">
-      <thead class="bg-nbs-surface">
-        <tr>
-          <th
-            scope="col"
-            class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-700"
-          >
-            <button
-              type="button"
-              class="inline-flex cursor-pointer items-center gap-1 rounded transition-colors hover:text-nbs-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/40"
-              (click)="toggleSort('email')"
-            >
-              User
-              <span class="text-xs text-slate-400" aria-hidden="true">{{
-                sortIndicator('email')
+<div class="-mx-6 overflow-x-auto">
+  <table class="min-w-full divide-y divide-slate-200">
+    <thead class="bg-slate-50/80">
+      <tr>
+        <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
+          <button type="button"
+            class="inline-flex cursor-pointer items-center gap-1 rounded transition-colors hover:text-nbs-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/40"
+            (click)="toggleSort('email')">
+            User
+            <span class="text-xs text-slate-400" aria-hidden="true">{{
+              sortIndicator('email')
               }}</span>
-            </button>
-          </th>
-          <th
-            scope="col"
-            class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-700"
-          >
-            Groups
-          </th>
-          <th
-            scope="col"
-            class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-700"
-          >
-            Status
-          </th>
-          <th
-            scope="col"
-            class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-700"
-          >
-            <button
-              type="button"
-              class="inline-flex cursor-pointer items-center gap-1 rounded transition-colors hover:text-nbs-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/40"
-              (click)="toggleSort('last_login_at')"
-            >
-              Last login
-              <span class="text-xs text-slate-400" aria-hidden="true">{{
-                sortIndicator('last_login_at')
+          </button>
+        </th>
+        <th scope="col" class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
+          Groups
+        </th>
+        <th scope="col" class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
+          Status
+        </th>
+        <th scope="col" class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
+          <button type="button"
+            class="inline-flex cursor-pointer items-center gap-1 rounded transition-colors hover:text-nbs-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/40"
+            (click)="toggleSort('last_login_at')">
+            Last login
+            <span class="text-xs text-slate-400" aria-hidden="true">{{
+              sortIndicator('last_login_at')
               }}</span>
-            </button>
-          </th>
-          <th scope="col" class="w-10 px-4 py-3">
-            <span class="sr-only">Open details</span>
-          </th>
-        </tr>
-      </thead>
-      <tbody class="divide-y divide-slate-100 bg-white">
-        @if (facade.listLoading()) {
-          <tr>
-            <td
-              colspan="5"
-              class="px-4 py-16 text-center text-sm text-nbs-muted"
-            >
-              <span
-                class="mr-2 inline-block size-4 animate-spin rounded-full border-2 border-nbs-primary border-t-transparent"
-                aria-hidden="true"
-              ></span>
-              Loading users…
-            </td>
-          </tr>
-        } @else if (facade.items().length === 0) {
-          <tr>
-            <td colspan="5" class="px-4 py-16 text-center">
-              <div class="mx-auto flex max-w-sm flex-col items-center">
-                <span
-                  class="flex size-12 items-center justify-center rounded-full bg-nbs-surface text-nbs-muted"
-                >
-                  @if (facade.hasActiveFilters()) {
-                    <app-icon name="search" [size]="22" />
-                  } @else {
-                    <app-icon name="inbox" [size]="22" />
-                  }
-                </span>
-                <p class="mt-3 text-sm font-medium text-slate-900">
-                  @if (facade.hasActiveFilters()) {
-                    No matching users
-                  } @else {
-                    No users yet
-                  }
-                </p>
-                <p class="mt-1 text-sm text-nbs-muted">
-                  @if (facade.hasActiveFilters()) {
-                    Try adjusting or clearing your filters.
-                  } @else {
-                    Create a user to get started.
-                  }
-                </p>
-              </div>
-            </td>
-          </tr>
-        } @else {
-          @for (user of facade.items(); track user.id) {
-            <tr
-              tabindex="0"
-              role="button"
-              [attr.aria-selected]="isSelected(user)"
-              class="group cursor-pointer border-l-2 border-transparent outline-none transition-colors hover:bg-slate-50 focus-visible:bg-slate-50 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-nbs-primary/40"
-              [class.!border-nbs-primary]="isSelected(user)"
-              [class.bg-nbs-primary-soft]="isSelected(user)"
-              (click)="selectRow(user)"
-              (keydown.enter)="selectRow(user)"
-              (keydown.space)="selectRow(user); $event.preventDefault()"
-            >
-              <td class="px-4 py-3">
-                <div class="flex items-center gap-3">
-                  <app-user-avatar
-                    [name]="user.displayName"
-                    [seed]="user.id"
-                    [muted]="!user.isActive"
-                    size="sm"
-                  />
-                  <div class="min-w-0">
-                    <div class="flex items-center gap-2">
-                      <span
-                        class="truncate text-sm font-medium text-slate-900"
-                        >{{ user.displayName }}</span
-                      >
-                      @if (isSelf(user)) {
-                        <span
-                          class="rounded-full bg-nbs-primary-soft px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-nbs-primary"
-                        >
-                          You
-                        </span>
-                      }
-                    </div>
-                    <span class="block truncate text-xs text-nbs-muted">{{
-                      user.email
-                    }}</span>
-                  </div>
-                </div>
-              </td>
-              <td class="px-4 py-3">
-                @if (user.groups.length === 0) {
-                  <span class="text-xs text-slate-400">—</span>
-                } @else {
-                  <div class="flex max-w-xs flex-wrap gap-1">
-                    @for (group of user.groups; track group) {
-                      <span
-                        class="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700"
-                      >
-                        {{ formatGroupLabel(group) }}
-                      </span>
-                    }
-                  </div>
-                }
-              </td>
-              <td class="whitespace-nowrap px-4 py-3">
-                <div class="flex flex-wrap gap-1.5">
-                  @if (user.isActive) {
-                    <span
-                      class="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800"
-                    >
-                      <span
-                        class="size-1.5 rounded-full bg-emerald-500"
-                        aria-hidden="true"
-                      ></span>
-                      Active
-                    </span>
-                  } @else {
-                    <span
-                      class="inline-flex items-center gap-1 rounded-full bg-slate-200 px-2 py-0.5 text-xs font-medium text-slate-700"
-                    >
-                      <span
-                        class="size-1.5 rounded-full bg-slate-500"
-                        aria-hidden="true"
-                      ></span>
-                      Inactive
-                    </span>
-                  }
-                  @if (user.isVerified) {
-                    <span
-                      class="inline-flex items-center gap-1 rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-800"
-                    >
-                      <span
-                        class="size-1.5 rounded-full bg-sky-500"
-                        aria-hidden="true"
-                      ></span>
-                      Verified
-                    </span>
-                  } @else {
-                    <span
-                      class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900"
-                    >
-                      <span
-                        class="size-1.5 rounded-full bg-amber-500"
-                        aria-hidden="true"
-                      ></span>
-                      Unverified
-                    </span>
-                  }
-                </div>
-              </td>
-              <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-600">
-                @if (user.lastLoginAt) {
-                  {{ user.lastLoginAt | date: 'medium' }}
-                } @else {
-                  <span class="text-slate-400">Never</span>
-                }
-              </td>
-              <td class="px-4 py-3 text-right">
-                <app-icon
-                  name="arrow-right"
-                  [size]="16"
-                  class="text-slate-300 transition-colors group-hover:text-nbs-primary"
-                  [class.text-nbs-primary]="isSelected(user)"
-                />
-              </td>
-            </tr>
-          }
-        }
-      </tbody>
-    </table>
-  </div>
-
-  @if (!facade.listLoading() && facade.items().length > 0) {
-    <div
-      class="flex flex-col gap-3 border-t border-nbs-border px-4 py-3 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between"
-    >
-      <span>{{ facade.pageRangeLabel() }}</span>
-      @if (facade.pagination().totalPages > 1) {
-        <div class="flex items-center gap-2">
-          <button
-            type="button"
-            class="cursor-pointer rounded-md border border-slate-300 px-3 py-1.5 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/40 disabled:cursor-not-allowed disabled:opacity-50"
-            [disabled]="!facade.pagination().hasPrevious"
-            (click)="facade.goToPreviousPage()"
-          >
-            Previous
           </button>
-          <span class="tabular-nums">
-            Page {{ facade.pagination().page }} of
-            {{ facade.pagination().totalPages }}
-          </span>
-          <button
-            type="button"
-            class="cursor-pointer rounded-md border border-slate-300 px-3 py-1.5 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/40 disabled:cursor-not-allowed disabled:opacity-50"
-            [disabled]="!facade.pagination().hasNext"
-            (click)="facade.goToNextPage()"
-          >
-            Next
-          </button>
-        </div>
+        </th>
+        <th scope="col" class="w-10 px-6 py-3">
+          <span class="sr-only">Open details</span>
+        </th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-100 bg-white">
+      @if (facade.listLoading()) {
+      @for (row of skeletonRows; track row) {
+      <tr>
+        <td colspan="5" class="px-6 py-3">
+          <div class="flex items-center gap-4 animate-pulse" aria-hidden="true">
+            <div class="size-8 shrink-0 rounded-full bg-slate-200"></div>
+            <div class="flex-1 space-y-2">
+              <div class="h-3.5 w-40 rounded bg-slate-200"></div>
+              <div class="h-3 w-56 rounded bg-slate-200"></div>
+            </div>
+            <div class="hidden h-5 w-20 rounded-full bg-slate-200 sm:block"></div>
+            <div class="hidden h-5 w-28 rounded-full bg-slate-200 md:block"></div>
+            <div class="hidden h-3.5 w-32 rounded bg-slate-200 lg:block"></div>
+          </div>
+        </td>
+      </tr>
       }
-    </div>
+      <tr>
+        <td colspan="5" class="sr-only">
+          <span aria-live="polite">Loading users…</span>
+        </td>
+      </tr>
+      } @else if (facade.items().length === 0) {
+      <tr>
+        <td colspan="5" class="px-6 py-16 text-center">
+          <div class="mx-auto flex max-w-sm flex-col items-center">
+            <span class="flex size-12 items-center justify-center rounded-full bg-slate-100 text-nbs-muted">
+              @if (facade.hasActiveFilters()) {
+              <app-icon name="search" [size]="22" />
+              } @else {
+              <app-icon name="inbox" [size]="22" />
+              }
+            </span>
+            <p class="mt-3 text-sm font-medium text-slate-900">
+              @if (facade.hasActiveFilters()) {
+              No matching users
+              } @else {
+              No users yet
+              }
+            </p>
+            <p class="mt-1 text-sm text-nbs-muted">
+              @if (facade.hasActiveFilters()) {
+              Try adjusting or clearing your filters.
+              } @else {
+              Create a user to get started.
+              }
+            </p>
+          </div>
+        </td>
+      </tr>
+      } @else {
+      @for (user of facade.items(); track user.id) {
+      <tr
+        class="group cursor-pointer border-l-2 border-transparent transition-colors duration-200 hover:bg-slate-50 focus-within:bg-slate-50"
+        [class.!border-nbs-primary]="isSelected(user)" [class.bg-nbs-primary-soft]="isSelected(user)"
+        (click)="selectRow(user)" (keydown.enter)="selectRow(user)"
+        (keydown.space)="selectRow(user); $event.preventDefault()">
+        <td class="px-6 py-3">
+          <div class="flex items-center gap-3">
+            <app-user-avatar [name]="user.displayName" [seed]="user.id" [muted]="!user.isActive" size="sm" />
+            <div class="min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="truncate text-sm font-medium text-slate-900">{{
+                  user.displayName
+                  }}</span>
+                @if (isSelf(user)) {
+                <span
+                  class="rounded-md border border-nbs-primary/20 bg-nbs-primary-soft px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-nbs-primary">
+                  You
+                </span>
+                }
+              </div>
+              <span class="block truncate text-xs text-nbs-muted">{{
+                user.email
+                }}</span>
+            </div>
+          </div>
+        </td>
+        <td class="px-4 py-3">
+          @if (user.groups.length === 0) {
+          <span class="text-xs text-slate-400">—</span>
+          } @else {
+          <div class="flex max-w-xs flex-wrap gap-1">
+            @for (group of user.groups; track group) {
+            <span
+              class="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-medium text-slate-700">
+              {{ formatGroupLabel(group) }}
+            </span>
+            }
+          </div>
+          }
+        </td>
+        <td class="whitespace-nowrap px-4 py-3">
+          <div class="flex flex-wrap gap-1.5">
+            @if (user.isActive) {
+            <span
+              class="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-800">
+              <span class="size-1.5 rounded-full bg-emerald-500" aria-hidden="true"></span>
+              Active
+            </span>
+            } @else {
+            <span
+              class="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
+              <span class="size-1.5 rounded-full bg-slate-500" aria-hidden="true"></span>
+              Inactive
+            </span>
+            }
+            @if (user.isVerified) {
+            <span
+              class="inline-flex items-center gap-1 rounded-md border border-sky-200 bg-sky-50 px-2 py-0.5 text-xs font-medium text-sky-800">
+              <span class="size-1.5 rounded-full bg-sky-500" aria-hidden="true"></span>
+              Verified
+            </span>
+            } @else {
+            <span
+              class="inline-flex items-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-900">
+              <span class="size-1.5 rounded-full bg-amber-500" aria-hidden="true"></span>
+              Unverified
+            </span>
+            }
+          </div>
+        </td>
+        <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-600">
+          @if (user.lastLoginAt) {
+          {{ user.lastLoginAt | date: 'medium' }}
+          } @else {
+          <span class="text-slate-400">Never</span>
+          }
+        </td>
+        <td class="px-6 py-3 text-right">
+          <button type="button"
+            class="inline-flex items-center justify-center rounded-md p-1 text-slate-400 transition-colors duration-200 hover:text-nbs-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/40 group-hover:text-nbs-primary"
+            [class.text-nbs-primary]="isSelected(user)" [attr.aria-label]="'Open ' + user.displayName + ' details'"
+            (click)="$event.stopPropagation(); selectRow(user)">
+            <app-icon name="arrow-right" [size]="16" />
+          </button>
+        </td>
+      </tr>
+      }
+      }
+    </tbody>
+  </table>
+</div>
+
+@if (!facade.listLoading() && facade.items().length > 0) {
+<div
+  class="-mx-6 flex flex-col gap-3 border-t border-slate-200/80 px-6 py-3 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
+  <span>{{ facade.pageRangeLabel() }}</span>
+  @if (facade.pagination().totalPages > 1) {
+  <div class="flex items-center gap-2">
+    <button type="button"
+      class="cursor-pointer rounded-md border border-slate-300 px-3 py-1.5 transition-colors duration-200 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/40 disabled:cursor-not-allowed disabled:opacity-50"
+      [disabled]="!facade.pagination().hasPrevious" (click)="facade.goToPreviousPage()">
+      Previous
+    </button>
+    <span class="tabular-nums">
+      Page {{ facade.pagination().page }} of
+      {{ facade.pagination().totalPages }}
+    </span>
+    <button type="button"
+      class="cursor-pointer rounded-md border border-slate-300 px-3 py-1.5 transition-colors duration-200 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/40 disabled:cursor-not-allowed disabled:opacity-50"
+      [disabled]="!facade.pagination().hasNext" (click)="facade.goToNextPage()">
+      Next
+    </button>
+  </div>
   }
 </div>
+}

@@ -4,35 +4,38 @@
     <div class="flex flex-wrap gap-1.5">
       @if (user.isActive) {
       <span
-        class="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">
+        class="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-800">
         <span class="size-1.5 rounded-full bg-emerald-500" aria-hidden="true"></span>
         Active
       </span>
       } @else {
       <span
-        class="inline-flex items-center gap-1 rounded-full bg-slate-200 px-2 py-0.5 text-xs font-medium text-slate-700">
+        class="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
         <span class="size-1.5 rounded-full bg-slate-500" aria-hidden="true"></span>
         Inactive
       </span>
       }
       @if (user.isVerified) {
-      <span class="inline-flex items-center gap-1 rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-800">
+      <span
+        class="inline-flex items-center gap-1 rounded-md border border-sky-200 bg-sky-50 px-2 py-0.5 text-xs font-medium text-sky-800">
         <span class="size-1.5 rounded-full bg-sky-500" aria-hidden="true"></span>
         Verified
       </span>
       } @else {
       <span
-        class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900">
+        class="inline-flex items-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-900">
         <span class="size-1.5 rounded-full bg-amber-500" aria-hidden="true"></span>
         Unverified
       </span>
       }
       @if (user.isSuperuser) {
-      <span class="rounded-full bg-violet-100 px-2 py-0.5 text-xs font-medium text-violet-800">
+      <span
+        class="inline-flex items-center rounded-md border border-violet-200 bg-violet-50 px-2 py-0.5 text-xs font-medium text-violet-800">
         Superuser
       </span>
       } @else if (user.isStaff) {
-      <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
+      <span
+        class="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-medium text-slate-700">
         Staff
       </span>
       }
@@ -62,7 +65,7 @@
         <span class="text-xs font-medium text-nbs-highlight">Unsaved</span>
         }
       </div>
-      <div class="mt-3 grid gap-2 sm:grid-cols-2">
+      <div class="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         @for (group of facade.groups(); track group.id) {
         <label class="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm transition-colors"
           [class.cursor-pointer]="!isBaselineGroup(group.name)" [class.cursor-not-allowed]="isBaselineGroup(group.name)"
@@ -80,7 +83,7 @@
           <span class="flex-1">{{ formatGroupLabel(group.name) }}</span>
           @if (isBaselineGroup(group.name)) {
           <span
-            class="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-nbs-muted">
+            class="rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-nbs-muted">
             Required
           </span>
           }
@@ -138,7 +141,7 @@
         </div>
         } @else if (user.isActive) {
         <div class="mt-3">
-          <app-button variant="danger" size="sm" (clicked)="requestDeactivate()">
+          <app-button variant="danger-outline" size="sm" (clicked)="requestDeactivate()">
             Deactivate user
           </app-button>
         </div>
