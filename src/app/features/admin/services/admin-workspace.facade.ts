@@ -17,6 +17,7 @@ import {
 } from 'rxjs';
 import { ApiError } from '@app/core/models/api-error.model';
 import { AuthService } from '@app/core/services/auth.service';
+import { ToastService } from '@app/core/services/toast.service';
 import {
   ADMIN_QUEUE_PAGE_SIZE,
   AdminDatasetDraft,
@@ -53,6 +54,7 @@ export class AdminWorkspaceFacade {
   private readonly workflow = inject(AdminDatasetWorkflowService);
   private readonly datasetService = inject(DatasetService);
   private readonly auth = inject(AuthService);
+  private readonly toast = inject(ToastService);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly scope: AdminQueueScope = this.auth.canSeeAllDatasets()
@@ -212,6 +214,10 @@ export class AdminWorkspaceFacade {
         next: (record) => this._selectedRecord.set(record),
         error: (error: unknown) => this.showError(error),
       });
+  }
+
+  clearSelection(): void {
+    this._selectedRecord.set(null);
   }
 
   submit(id: string): void {
@@ -446,13 +452,16 @@ export class AdminWorkspaceFacade {
   }
 
   showError(error: unknown): void {
+    const message = this.resolveErrorMessage(error);
     this._messageError.set(true);
-    this._message.set(this.resolveErrorMessage(error));
+    this._message.set(message);
+    this.toast.error(message);
   }
 
   private setMessage(message: string): void {
     this._messageError.set(false);
     this._message.set(message);
+    this.toast.success(message);
   }
 
   private runAction(

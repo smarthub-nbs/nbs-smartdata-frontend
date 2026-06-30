@@ -15,6 +15,10 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
         return throwError(() => error);
       }
 
+      if (isLoginEndpoint(req.url)) {
+        return throwError(() => error);
+      }
+
       if (isAuthEndpoint(req.url)) {
         auth.signOut();
         void router.navigate(['/login'], {
@@ -44,10 +48,10 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   );
 };
 
+function isLoginEndpoint(url: string): boolean {
+  return url.includes('/v1/auth/login/');
+}
+
 function isAuthEndpoint(url: string): boolean {
-  return (
-    url.includes('/v1/auth/login/') ||
-    url.includes('/v1/auth/refresh/') ||
-    url.includes('/v1/auth/logout/')
-  );
+  return url.includes('/v1/auth/refresh/') || url.includes('/v1/auth/logout/');
 }

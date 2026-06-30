@@ -1,4 +1,4 @@
-<div #formSection id="discovery-metadata" class="border-t border-nbs-border pt-5">
+<div #formSection id="discovery-metadata" class="pt-2">
   @if (loading() && !hasLoaded()) {
   <p class="text-sm text-nbs-muted" aria-live="polite">Loading metadata…</p>
   } @else if (loadError() && !hasLoaded()) {
@@ -7,23 +7,23 @@
   <div class="space-y-4 transition-opacity duration-200 motion-reduce:transition-none" [class.opacity-50]="loading()"
     [attr.aria-busy]="loading() || null">
     @if (readOnly()) {
-    <div class="space-y-6">
-      <div>
-        <p class="text-[11px] font-semibold uppercase tracking-wider text-nbs-muted">
+    <div class="rounded-xl bg-slate-50/70 p-5">
+      <div class="border-b border-slate-200/60 pb-5">
+        <p class="text-[11px] font-medium uppercase tracking-wider text-nbs-muted">
           Description
         </p>
-        <p class="mt-2 max-w-prose whitespace-pre-line text-sm leading-relaxed text-slate-700">
+        <p class="mt-1.5 max-w-prose whitespace-pre-line text-sm leading-relaxed text-slate-700">
           {{ form.value.description || '—' }}
         </p>
       </div>
 
-      <dl class="max-w-3xl divide-y divide-slate-100 border-y border-slate-100">
+      <dl class="grid grid-cols-1 gap-x-10 gap-y-5 pt-5 sm:grid-cols-2 xl:grid-cols-3">
         @for (field of readOnlyFields(); track field.label) {
-        <div class="grid gap-1 py-3 sm:grid-cols-[9rem_minmax(0,1fr)] sm:gap-4">
-          <dt class="text-[11px] font-semibold uppercase tracking-wider text-nbs-muted">
+        <div>
+          <dt class="text-[11px] font-medium uppercase tracking-wider text-nbs-muted">
             {{ field.label }}
           </dt>
-          <dd class="text-sm font-medium text-slate-900">
+          <dd class="mt-0.5 text-sm font-medium text-slate-900">
             {{ field.value || '—' }}
           </dd>
         </div>

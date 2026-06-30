@@ -55,7 +55,7 @@ export class DatasetCreateDraftComponent {
   readonly categoriesLoading = input(false);
   readonly categoriesError = input<string | null>(null);
   readonly creating = input(false);
-  readonly inline = input(false);
+  readonly presentation = input<'modal' | 'inline' | 'accordion'>('accordion');
 
   readonly draftCreate = output<CreateDraftPayload>();
 
@@ -152,7 +152,7 @@ export class DatasetCreateDraftComponent {
     return '';
   }
 
-  protected submit(): void {
+  submit(): void {
     this.form.markAllAsTouched();
     if (this.form.invalid) {
       return;
@@ -176,6 +176,18 @@ export class DatasetCreateDraftComponent {
 
   reset(): void {
     this.file.set(null);
+    this.form.reset({
+      categoryId: '',
+      title: '',
+      description: '',
+      license: 'Open Government Licence - Tanzania',
+      frequency: 'annual',
+      region: 'National',
+      year: String(new Date().getFullYear()),
+      tagName: '',
+    });
+    this.form.markAsPristine();
+    this.form.markAsUntouched();
     this.expanded.set(false);
   }
 }

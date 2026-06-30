@@ -9,6 +9,7 @@ export interface DatasetUsageMetrics {
 export interface DatasetUsageRow extends DatasetUsageMetrics {
   title: string;
   topic: string;
+  resolved: boolean;
 }
 
 export interface UsageSummary {

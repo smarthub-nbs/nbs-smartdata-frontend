@@ -57,8 +57,6 @@ export class DatasetWorkflowDetailComponent {
   readonly canReview = input(false);
   readonly canPublish = input(false);
   readonly actionLoading = input('');
-  readonly message = input('');
-  readonly messageError = input(false);
   readonly publishedId = input('');
 
   readonly dirtyChange = output<boolean>();
@@ -76,10 +74,20 @@ export class DatasetWorkflowDetailComponent {
   private readonly workflow = inject(AdminDatasetWorkflowService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly metadataEditor = viewChild(DatasetMetadataEditorComponent);
+  private readonly activityLog = viewChild(DatasetActivityLogComponent);
+  private readonly resourceManager = viewChild(DatasetResourceManagerComponent);
   private readonly fileInput =
     viewChild<ElementRef<HTMLInputElement>>('fileInput');
+  private readonly overviewAnchor =
+    viewChild<ElementRef<HTMLElement>>('overviewAnchor');
   private readonly tagSection =
     viewChild<ElementRef<HTMLElement>>('tagSection');
+  private readonly metadataAnchor =
+    viewChild<ElementRef<HTMLElement>>('metadataAnchor');
+  private readonly filesAnchor =
+    viewChild<ElementRef<HTMLElement>>('filesAnchor');
+  private readonly activityAnchor =
+    viewChild<ElementRef<HTMLElement>>('activityAnchor');
 
   protected readonly metadataDirty = signal(false);
   protected readonly tagName = signal('');
@@ -92,6 +100,7 @@ export class DatasetWorkflowDetailComponent {
   protected readonly confirmingUnlinkId = signal('');
   protected readonly pendingCategoryId = signal('');
   protected readonly editMode = signal(false);
+  protected readonly activeSectionNav = signal('overview');
 
   protected readonly categoryDirty = computed(
     () =>
@@ -109,6 +118,7 @@ export class DatasetWorkflowDetailComponent {
         this.selectedTagId.set('');
         this.tagLinkError.set('');
         this.confirmingUnlinkId.set('');
+        this.activeSectionNav.set('overview');
         this.loadTagLinks(record.id);
       },
       { allowSignalWrites: true },
@@ -144,6 +154,21 @@ export class DatasetWorkflowDetailComponent {
       return false;
     }
     return !this.isFinalizedReadOnly();
+  });
+
+  protected readonly showFilesSection = computed(() => {
+    const record = this.record();
+    return (
+      this.showResourceManager() || (this.contentEditable() && !record.hasFile)
+    );
+  });
+
+  protected readonly sectionNavItems = computed(() => {
+    return [
+      { key: 'overview', label: 'Overview' },
+      { key: 'tags', label: 'Tags' },
+      { key: 'metadata', label: 'Metadata' },
+    ];
   });
 
   protected readonly availableTags = computed(() => {
@@ -274,6 +299,7 @@ export class DatasetWorkflowDetailComponent {
   }
 
   protected focusMetadata(): void {
+    this.activeSectionNav.set('metadata');
     this.metadataEditor()?.scrollIntoView();
   }
 
@@ -286,10 +312,53 @@ export class DatasetWorkflowDetailComponent {
   }
 
   protected focusTagSection(): void {
-    this.tagSection()?.nativeElement.scrollIntoView({
+    this.goToSection('tags');
+  }
+
+  protected goToSection(key: string): void {
+    this.activeSectionNav.set(key);
+    if (key === 'activity') {
+      this.activityLog()?.open();
+    } else if (key === 'files') {
+      this.resourceManager()?.open();
+    }
+    this.sectionElement(key)?.scrollIntoView({
       behavior: 'smooth',
-      block: 'nearest',
+      block: 'start',
     });
+  }
+
+  protected requirementChipClasses(complete: boolean): string {
+    const base =
+      'inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/40 motion-reduce:transition-none';
+    return complete
+      ? `${base} bg-nbs-primary/10 text-nbs-primary`
+      : `${base} bg-slate-50 text-slate-600 hover:bg-slate-100`;
+  }
+
+  protected sectionTabClasses(key: string): string {
+    const base =
+      'cursor-pointer whitespace-nowrap rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/40 motion-reduce:transition-none';
+    return this.activeSectionNav() === key
+      ? `${base} bg-nbs-primary/10 text-nbs-primary`
+      : `${base} text-slate-500 hover:bg-slate-50 hover:text-slate-700`;
+  }
+
+  private sectionElement(key: string): HTMLElement | undefined {
+    switch (key) {
+      case 'overview':
+        return this.overviewAnchor()?.nativeElement;
+      case 'tags':
+        return this.tagSection()?.nativeElement;
+      case 'metadata':
+        return this.metadataAnchor()?.nativeElement;
+      case 'files':
+        return this.filesAnchor()?.nativeElement;
+      case 'activity':
+        return this.activityAnchor()?.nativeElement;
+      default:
+        return undefined;
+    }
   }
 
   protected onCategoryChange(event: Event): void {

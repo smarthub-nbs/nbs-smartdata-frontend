@@ -1,7 +1,9 @@
+import { DecimalPipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  computed,
   inject,
   signal,
   viewChild,
@@ -17,17 +19,33 @@ import {
   CreateDraftPayload,
   DatasetCreateDraftComponent,
 } from '@app/features/admin/components/dataset-create-draft.component';
-import { ButtonComponent, IconComponent } from '@shared/ui';
+import { ButtonComponent, IconComponent, ModalComponent } from '@shared/ui';
+
+interface StatusFilterItem {
+  key: StatusFilter;
+  label: string;
+}
+
+const STATUS_FILTERS: readonly StatusFilterItem[] = [
+  { key: 'all', label: 'All' },
+  { key: 'draft', label: 'Draft' },
+  { key: 'in_review', label: 'In review' },
+  { key: 'approved', label: 'Approved' },
+  { key: 'rejected', label: 'Rejected' },
+  { key: 'published', label: 'Published' },
+];
 
 @Component({
   selector: 'app-dataset-workflow-panel',
   standalone: true,
   imports: [
+    DecimalPipe,
     ButtonComponent,
     IconComponent,
     DatasetQueueListComponent,
     DatasetWorkflowDetailComponent,
     DatasetCreateDraftComponent,
+    ModalComponent,
   ],
   templateUrl: './dataset-workflow-panel.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -46,20 +64,47 @@ export class DatasetWorkflowPanelComponent {
   protected readonly categoriesLoading = this.taxonomy.loading;
   protected readonly categoriesError = this.taxonomy.error;
   protected readonly pendingSwitchId = signal('');
+  protected readonly mobileDetailOpen = signal(false);
+  protected readonly createDraftOpen = signal(false);
 
   protected readonly canReview = this.auth.canReviewDatasets;
   protected readonly canPublish = this.auth.canPublishDatasets;
+  protected readonly statusFilters = STATUS_FILTERS;
+
+  protected readonly showQueueOnMobile = computed(
+    () => !this.mobileDetailOpen(),
+  );
+
+  protected readonly showDetailOnMobile = computed(() =>
+    this.mobileDetailOpen(),
+  );
+
+  protected readonly showDetailEmptyState = computed(
+    () =>
+      !this.facade.queueLoading() &&
+      !this.facade.selectedRecord() &&
+      this.facade.items().length > 0,
+  );
 
   constructor() {
     this.taxonomy.ensureLoaded();
+    if (this.facade.selectedId()) {
+      this.mobileDetailOpen.set(true);
+    }
   }
 
   protected openCreateDraft(): void {
-    this.createDraft()?.open();
+    this.createDraftOpen.set(true);
+  }
+
+  protected closeCreateDraft(): void {
+    this.createDraftOpen.set(false);
+    this.createDraft()?.reset();
   }
 
   protected onSelect(id: string): void {
     if (id === this.facade.selectedId()) {
+      this.mobileDetailOpen.set(true);
       return;
     }
     if (this.detail()?.isMetadataDirty()) {
@@ -67,6 +112,11 @@ export class DatasetWorkflowPanelComponent {
       return;
     }
     this.facade.selectDataset(id);
+    this.mobileDetailOpen.set(true);
+  }
+
+  protected backToQueue(): void {
+    this.mobileDetailOpen.set(false);
   }
 
   protected confirmDiscardSwitch(): void {
@@ -77,6 +127,7 @@ export class DatasetWorkflowPanelComponent {
     this.detail()?.discardMetadata();
     this.pendingSwitchId.set('');
     this.facade.selectDataset(nextId);
+    this.mobileDetailOpen.set(true);
   }
 
   protected cancelPendingSwitch(): void {
@@ -85,6 +136,7 @@ export class DatasetWorkflowPanelComponent {
 
   protected onFilter(filter: StatusFilter): void {
     this.facade.setStatusFilter(filter);
+    this.mobileDetailOpen.set(false);
   }
 
   protected onSearch(term: string): void {
@@ -96,7 +148,11 @@ export class DatasetWorkflowPanelComponent {
       .createDraft(payload.draft, payload.file)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: () => this.createDraft()?.reset(),
+        next: () => {
+          this.createDraftOpen.set(false);
+          this.createDraft()?.reset();
+          this.mobileDetailOpen.set(true);
+        },
         error: () => undefined,
       });
   }
@@ -110,5 +166,25 @@ export class DatasetWorkflowPanelComponent {
   protected onResourcesChanged(datasetId: string): void {
     this.facade.refreshDataset(datasetId);
     this.detail()?.reloadTagLinks();
+  }
+
+  protected statCount(filter: StatusFilter): number {
+    return this.facade.statusCounts()[filter];
+  }
+
+  protected statFilterClasses(filter: StatusFilter): string {
+    const base =
+      'inline-flex cursor-pointer items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/40 motion-reduce:transition-none';
+    const active = this.facade.statusFilter() === filter;
+    return active
+      ? `${base} bg-nbs-primary text-white`
+      : `${base} bg-slate-100 text-slate-600 hover:bg-slate-200`;
+  }
+
+  protected statCountClasses(filter: StatusFilter): string {
+    const base = 'tabular-nums';
+    return this.facade.statusFilter() === filter
+      ? `${base} text-white/75`
+      : `${base} text-slate-400`;
   }
 }

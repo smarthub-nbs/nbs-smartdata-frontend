@@ -7,7 +7,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { ActivatedRoute, Params, Router } from '@angular/router';
+import { ActivatedRoute, Params, Router, RouterLink } from '@angular/router';
 import { AuthService } from '@app/core/services/auth.service';
 import { DatasetUsageRow, AdminAnalyticsService } from '@app/features/admin';
 import { DatasetWorkflowPanelComponent } from '@app/features/admin/components/dataset-workflow-panel.component';
@@ -18,6 +18,10 @@ import {
 } from '@app/features/admin/models/admin-dataset.model';
 import { AdminTaxonomyStore } from '@app/features/admin/services/admin-taxonomy.store';
 import { AdminWorkspaceFacade } from '@app/features/admin/services/admin-workspace.facade';
+import {
+  AdminSection,
+  parseAdminSection,
+} from '@app/features/admin/utils/admin-section.util';
 import { DatasetService } from '@app/features/discovery';
 import { DataTableColumn, DataTableComponent, IconComponent } from '@shared/ui';
 
@@ -25,6 +29,13 @@ interface PlatformMetricCard {
   label: string;
   value: string;
   detail: string;
+}
+
+interface AdminNavItem {
+  key: AdminSection;
+  label: string;
+  icon: 'layers' | 'tag' | 'bar-chart';
+  requiresReview?: boolean;
 }
 
 const VALID_STATUSES = new Set<DatasetWorkflowStatus>([
@@ -35,11 +46,18 @@ const VALID_STATUSES = new Set<DatasetWorkflowStatus>([
   'published',
 ]);
 
+const ADMIN_NAV_ITEMS: readonly AdminNavItem[] = [
+  { key: 'publishing', label: 'Publishing', icon: 'layers' },
+  { key: 'taxonomy', label: 'Taxonomy', icon: 'tag', requiresReview: true },
+  { key: 'activity', label: 'Activity', icon: 'bar-chart' },
+];
+
 @Component({
   selector: 'app-admin-page',
   standalone: true,
   imports: [
     DecimalPipe,
+    RouterLink,
     DataTableComponent,
     DatasetWorkflowPanelComponent,
     TaxonomyManagerComponent,
@@ -56,10 +74,21 @@ export class AdminPageComponent {
   private readonly datasetService = inject(DatasetService);
 
   protected readonly canManageTaxonomy = this.auth.canReviewDatasets;
+  protected readonly canManageUsers = this.auth.isAdmin;
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
-  protected readonly activityExpanded = signal(false);
+  protected readonly activeSection = signal<AdminSection>('publishing');
+
+  protected readonly navItems = computed(() =>
+    ADMIN_NAV_ITEMS.filter(
+      (item) => !item.requiresReview || this.canManageTaxonomy(),
+    ),
+  );
+
+  protected readonly scopeLabel = computed(() =>
+    this.facade.scope === 'all' ? 'All datasets' : 'Your datasets',
+  );
 
   protected readonly usageColumns: DataTableColumn<DatasetUsageRow>[] = [
     { key: 'title', header: 'Dataset', sortable: true },
@@ -79,8 +108,8 @@ export class AdminPageComponent {
   protected readonly platformCards = computed<PlatformMetricCard[]>(() => {
     const summary = this.analytics.summary();
     const datasetCount = this.analytics.datasetCount();
-    const activeCount = this.analytics.rows().length;
-    const topDataset = this.analytics.topRows()[0] ?? null;
+    const activeCount = this.analytics.activeDatasetCount();
+    const topDataset = this.analytics.topResolvedRow();
 
     return [
       {
@@ -99,21 +128,44 @@ export class AdminPageComponent {
         detail: 'Discovery page views',
       },
       {
-        label: 'Active datasets',
-        value: `${activeCount}/${datasetCount}`,
-        detail: topDataset
-          ? `Top demand: ${topDataset.title}`
-          : 'No recorded activity yet',
+        label: 'Datasets with activity',
+        value: activeCount.toLocaleString(),
+        detail: this.activeDatasetsDetail(topDataset, datasetCount),
       },
     ];
   });
 
-  protected readonly topDemandDataset = computed(
-    () => this.analytics.topRows()[0] ?? null,
-  );
+  private activeDatasetsDetail(
+    topDataset: DatasetUsageRow | null,
+    datasetCount: number,
+  ): string {
+    if (topDataset) {
+      return `Top demand: ${topDataset.title}`;
+    }
+    if (datasetCount > 0) {
+      return `of ${datasetCount.toLocaleString()} published`;
+    }
+    return 'No recorded activity yet';
+  }
+
+  protected readonly topDemandDataset = this.analytics.topResolvedRow;
+
+  protected onUsageRowClick(row: DatasetUsageRow): void {
+    if (!row.resolved) {
+      return;
+    }
+    this.router.navigate(['/datasets', row.datasetId]);
+  }
+
+  protected refreshActivity(): void {
+    this.analytics.refresh();
+  }
 
   constructor() {
     const params = this.route.snapshot.queryParamMap;
+    this.activeSection.set(
+      parseAdminSection(params.get('section'), this.canManageTaxonomy()),
+    );
     this.facade.init({
       status: this.toStatusFilter(params.get('status')),
       q: params.get('q') ?? undefined,
@@ -121,13 +173,17 @@ export class AdminPageComponent {
       datasetId: params.get('dataset') ?? undefined,
     });
 
+    if (this.activeSection() === 'activity') {
+      this.analytics.ensureLoaded();
+    }
+
     let lastMutation = this.facade.mutations();
     effect(() => {
       const mutation = this.facade.mutations();
       if (mutation !== lastMutation) {
         lastMutation = mutation;
         this.datasetService.refreshCatalog();
-        if (this.activityExpanded()) {
+        if (this.activeSection() === 'activity') {
           this.analytics.refresh();
         }
       }
@@ -136,11 +192,22 @@ export class AdminPageComponent {
     effect(() => this.syncUrl());
   }
 
-  protected toggleActivityExpanded(): void {
-    this.activityExpanded.update((open) => !open);
-    if (this.activityExpanded()) {
+  protected setSection(section: AdminSection): void {
+    if (section === this.activeSection()) {
+      return;
+    }
+    this.activeSection.set(section);
+    if (section === 'activity') {
       this.analytics.ensureLoaded();
     }
+  }
+
+  protected sectionTabClasses(section: AdminSection): string {
+    const base =
+      'inline-flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/40 motion-reduce:transition-none';
+    return section === this.activeSection()
+      ? `${base} bg-nbs-primary/10 text-nbs-primary`
+      : `${base} text-slate-600 hover:bg-slate-100 hover:text-slate-900`;
   }
 
   private syncUrl(): void {
@@ -148,8 +215,10 @@ export class AdminPageComponent {
     const search = this.facade.searchTerm().trim();
     const page = this.facade.currentPage();
     const dataset = this.facade.selectedId();
+    const section = this.activeSection();
 
     const queryParams: Params = {
+      section: section === 'publishing' ? null : section,
       status: status === 'all' ? null : status,
       q: search || null,
       page: page > 1 ? page : null,

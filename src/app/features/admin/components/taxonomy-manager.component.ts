@@ -2,8 +2,10 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  OnInit,
   computed,
   inject,
+  input,
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -29,9 +31,17 @@ interface EditState {
   templateUrl: './taxonomy-manager.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class TaxonomyManagerComponent {
+export class TaxonomyManagerComponent implements OnInit {
+  readonly embedded = input(false);
+
   private readonly taxonomy = inject(AdminTaxonomyStore);
   private readonly destroyRef = inject(DestroyRef);
+
+  ngOnInit(): void {
+    if (this.embedded()) {
+      this.taxonomy.ensureLoaded();
+    }
+  }
 
   protected readonly expanded = signal(false);
   protected readonly actionId = signal('');

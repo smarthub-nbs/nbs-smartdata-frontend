@@ -16,6 +16,7 @@ import {
 } from 'rxjs';
 import { ApiError } from '@app/core/models/api-error.model';
 import { AuthService } from '@app/core/services/auth.service';
+import { ToastService } from '@app/core/services/toast.service';
 import {
   AssignGroupsPayload,
   CreateUserPayload,
@@ -45,6 +46,7 @@ export interface UsersWorkspaceInitialState {
 export class UsersWorkspaceFacade {
   private readonly usersApi = inject(UserManagementService);
   private readonly auth = inject(AuthService);
+  private readonly toast = inject(ToastService);
   private readonly destroyRef = inject(DestroyRef);
 
   private readonly _items = signal<ManagedUser[]>([]);
@@ -125,7 +127,6 @@ export class UsersWorkspaceFacade {
 
   private requestId = 0;
   private readonly searchInputs = new Subject<string>();
-  private messageTimeout: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
     this.searchInputs
@@ -138,8 +139,6 @@ export class UsersWorkspaceFacade {
         this._currentPage.set(1);
         this.loadUsers();
       });
-
-    this.destroyRef.onDestroy(() => this.clearMessageTimeout());
   }
 
   init(initial?: UsersWorkspaceInitialState): void {
@@ -437,7 +436,6 @@ export class UsersWorkspaceFacade {
   }
 
   clearMessage(): void {
-    this.clearMessageTimeout();
     this._message.set('');
     this._messageError.set(false);
   }
@@ -528,28 +526,14 @@ export class UsersWorkspaceFacade {
   private showSuccess(message: string): void {
     this._message.set(message);
     this._messageError.set(false);
-    this.scheduleMessageClear();
+    this.toast.success(message);
   }
 
   private showError(error: unknown): void {
-    this.clearMessageTimeout();
-    this._message.set(this.resolveErrorMessage(error));
+    const message = this.resolveErrorMessage(error);
+    this._message.set(message);
     this._messageError.set(true);
-  }
-
-  private scheduleMessageClear(): void {
-    this.clearMessageTimeout();
-    this.messageTimeout = setTimeout(() => {
-      this._message.set('');
-      this.messageTimeout = null;
-    }, 4000);
-  }
-
-  private clearMessageTimeout(): void {
-    if (this.messageTimeout !== null) {
-      clearTimeout(this.messageTimeout);
-      this.messageTimeout = null;
-    }
+    this.toast.error(message);
   }
 
   private resolveErrorMessage(error: unknown): string {

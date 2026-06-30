@@ -1,59 +1,76 @@
-<div class="mx-auto max-w-lg space-y-6">
-  <header>
-    <h1 class="text-2xl font-semibold text-slate-900">Sign in</h1>
-    <p class="mt-1 text-sm text-nbs-muted">Use your SmartData Hub account.</p>
-  </header>
-
-  <section class="rounded-lg border border-nbs-border bg-white p-6 shadow-sm">
-    @if (idleSignOut()) {
-    <div class="mb-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900" role="status">
-      You were signed out due to inactivity.
-    </div>
-    }
-    @if (resetSuccess()) {
-    <div class="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900"
-      role="status">
-      Password reset successfully. Sign in with your new password.
-    </div>
-    }
-    <form class="space-y-4" [formGroup]="form" (ngSubmit)="submit()">
-      <app-text-input formControlName="username" label="Email" placeholder="you@example.com" [required]="true"
-        [error]="fieldError('username')" />
-
-      <app-text-input formControlName="password" label="Password" type="password" placeholder="Enter your password"
-        [required]="true" [error]="fieldError('password')" />
-
-      <div class="flex justify-end">
-        <a routerLink="/forgot-password" class="text-sm text-nbs-primary hover:underline">
-          Forgot password?
-        </a>
-      </div>
-
-      @if (errorMessage()) {
-      <p class="text-sm text-nbs-danger" role="alert">
-        {{ errorMessage() }}
+<div class="flex min-h-[70vh] items-center justify-center py-8">
+  <div class="w-full max-w-md">
+    <div class="mb-6 text-center">
+      <span
+        class="mx-auto mb-4 flex size-12 items-center justify-center rounded-2xl bg-nbs-primary/10 text-nbs-primary">
+        <app-icon name="lock" [size]="24" />
+      </span>
+      <h1 class="text-2xl font-semibold tracking-tight text-slate-900">Sign in</h1>
+      <p class="mt-1.5 text-sm text-nbs-muted">
+        Use your SmartData Hub account to continue.
       </p>
+    </div>
+
+    <section
+      class="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-[0_18px_50px_-36px_rgba(15,23,42,0.45)] sm:p-7">
+      @if (idleSignOut()) {
+      <output
+        class="mb-4 flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-900">
+        <app-icon name="alert-triangle" [size]="16" class="mt-0.5 shrink-0 text-amber-600" />
+        <span>You were signed out due to inactivity.</span>
+      </output>
+      }
+      @if (resetSuccess()) {
+      <output
+        class="mb-4 flex items-start gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-sm text-emerald-900">
+        <app-icon name="check" [size]="16" class="mt-0.5 shrink-0 text-emerald-600" />
+        <span>Password reset successfully. Sign in with your new password.</span>
+      </output>
       }
 
-      <div class="flex items-center gap-2">
-        <app-button type="submit" variant="primary" [loading]="submitting()">
+      <form class="space-y-4" [formGroup]="form" (ngSubmit)="submit()">
+        <app-text-input formControlName="username" label="Email" type="email" placeholder="you@example.com"
+          [required]="true" [error]="fieldError('username')" />
+
+        <app-text-input formControlName="password" label="Password" type="password" placeholder="Enter your password"
+          [required]="true" [error]="fieldError('password')" />
+
+        <div class="flex justify-end">
+          <a routerLink="/forgot-password"
+            class="text-sm font-medium text-nbs-primary transition-colors hover:text-nbs-primary-hover hover:underline">
+            Forgot password?
+          </a>
+        </div>
+
+        @if (errorMessage()) {
+        <div
+          class="flex items-start gap-2 rounded-md border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-nbs-danger"
+          role="alert">
+          <app-icon name="alert-triangle" [size]="16" class="mt-0.5 shrink-0" />
+          <span>{{ errorMessage() }}</span>
+        </div>
+        }
+
+        <app-button type="submit" variant="primary" size="lg" [fullWidth]="true" [loading]="submitting()">
           Sign in
         </app-button>
-        <a routerLink="/" class="text-sm text-slate-600 hover:text-nbs-primary">
-          Cancel
+      </form>
+
+      <div class="mt-6 border-t border-slate-100 pt-5 text-center text-sm text-slate-600">
+        New to SmartData Hub?
+        <a routerLink="/register" [queryParams]="registerQueryParams"
+          class="font-medium text-nbs-primary transition-colors hover:text-nbs-primary-hover hover:underline">
+          Create an account
         </a>
       </div>
-    </form>
+    </section>
 
-    <div class="mt-6 rounded-md bg-nbs-surface p-4 text-sm text-slate-700">
-      <p>
-        Sign in with the email and password for your SmartData Hub account. New
-        here?
-      </p>
-      <a routerLink="/register" [queryParams]="registerQueryParams"
-        class="mt-2 inline-block font-medium text-nbs-primary hover:underline">
-        Create an account
+    <p class="mt-6 text-center">
+      <a routerLink="/"
+        class="inline-flex items-center gap-1.5 text-sm text-slate-500 transition-colors hover:text-nbs-primary">
+        <app-icon name="arrow-right" [size]="15" class="rotate-180" />
+        Back to home
       </a>
-    </div>
-  </section>
+    </p>
+  </div>
 </div>

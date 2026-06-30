@@ -62,6 +62,10 @@ export class DatasetActivityLogComponent {
     this.expanded.update((value) => !value);
   }
 
+  open(): void {
+    this.expanded.set(true);
+  }
+
   private load(datasetId: string): Observable<ActivityLoadState> {
     if (!datasetId) {
       return of<ActivityLoadState>({ status: 'success', entries: [] });
