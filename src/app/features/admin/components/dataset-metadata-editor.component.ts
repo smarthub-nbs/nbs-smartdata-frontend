@@ -15,6 +15,7 @@ import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
 import { ApiError } from '@app/core/models/api-error.model';
+import { ToastService } from '@app/core/services/toast.service';
 import { fieldErrorsFromApi } from '@app/core/utils/api-field-errors.util';
 import {
   AdminDatasetMetadata,
@@ -55,6 +56,7 @@ export class DatasetMetadataEditorComponent {
 
   private readonly workflow = inject(AdminDatasetWorkflowService);
   private readonly fb = inject(FormBuilder);
+  private readonly toast = inject(ToastService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly formSection =
     viewChild<ElementRef<HTMLElement>>('formSection');
@@ -198,8 +200,10 @@ export class DatasetMetadataEditorComponent {
       )
       .subscribe({
         next: (metadata) => {
+          const message = 'Metadata saved successfully.';
           this.saveError.set(false);
-          this.saveMessage.set('Metadata saved successfully.');
+          this.saveMessage.set(message);
+          this.toast.success(message);
           this.loadForm(metadata);
           this.metadataSaved.emit();
         },
@@ -211,7 +215,9 @@ export class DatasetMetadataEditorComponent {
             this.saveMessage.set('Fix the highlighted fields before saving.');
             return;
           }
-          this.saveMessage.set(this.resolveErrorMessage(error));
+          const message = this.resolveErrorMessage(error);
+          this.saveMessage.set(message);
+          this.toast.error(message);
         },
       });
   }

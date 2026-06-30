@@ -67,8 +67,6 @@ export class UsersWorkspaceFacade {
   private readonly _listLoading = signal(true);
   private readonly _listError = signal<string | null>(null);
   private readonly _actionLoading = signal('');
-  private readonly _message = signal('');
-  private readonly _messageError = signal(false);
   private readonly _showCreateForm = signal(false);
   private readonly _mutations = signal(0);
 
@@ -88,8 +86,6 @@ export class UsersWorkspaceFacade {
   readonly listLoading = this._listLoading.asReadonly();
   readonly listError = this._listError.asReadonly();
   readonly actionLoading = this._actionLoading.asReadonly();
-  readonly message = this._message.asReadonly();
-  readonly messageError = this._messageError.asReadonly();
   readonly showCreateForm = this._showCreateForm.asReadonly();
   readonly mutations = this._mutations.asReadonly();
   readonly currentUserId = computed(() => this.auth.user()?.id ?? '');
@@ -266,7 +262,6 @@ export class UsersWorkspaceFacade {
   }
 
   openCreateForm(): void {
-    this.clearMessage();
     this._selectedUser.set(null);
     this._showCreateForm.set(true);
   }
@@ -276,7 +271,6 @@ export class UsersWorkspaceFacade {
   }
 
   selectUser(id: string): void {
-    this.clearMessage();
     this._showCreateForm.set(false);
     const onPage = this._items().find((user) => user.id === id) ?? null;
     if (onPage) {
@@ -435,11 +429,6 @@ export class UsersWorkspaceFacade {
     this.loadGroups();
   }
 
-  clearMessage(): void {
-    this._message.set('');
-    this._messageError.set(false);
-  }
-
   private loadGroups(): void {
     this._groupsLoading.set(true);
     this._groupsError.set(null);
@@ -524,15 +513,11 @@ export class UsersWorkspaceFacade {
   }
 
   private showSuccess(message: string): void {
-    this._message.set(message);
-    this._messageError.set(false);
     this.toast.success(message);
   }
 
   private showError(error: unknown): void {
     const message = this.resolveErrorMessage(error);
-    this._message.set(message);
-    this._messageError.set(true);
     this.toast.error(message);
   }
 

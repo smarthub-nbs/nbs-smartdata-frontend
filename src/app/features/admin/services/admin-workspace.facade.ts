@@ -6,6 +6,7 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Router } from '@angular/router';
 import {
   Observable,
   Subject,
@@ -55,6 +56,7 @@ export class AdminWorkspaceFacade {
   private readonly datasetService = inject(DatasetService);
   private readonly auth = inject(AuthService);
   private readonly toast = inject(ToastService);
+  private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly scope: AdminQueueScope = this.auth.canSeeAllDatasets()
@@ -75,8 +77,6 @@ export class AdminWorkspaceFacade {
   private readonly _queueError = signal<string | null>(null);
   private readonly _summaryError = signal<string | null>(null);
   private readonly _actionLoading = signal('');
-  private readonly _message = signal('');
-  private readonly _messageError = signal(false);
   private readonly _publishedId = signal('');
   private readonly _mutations = signal(0);
 
@@ -91,8 +91,6 @@ export class AdminWorkspaceFacade {
   readonly queueError = this._queueError.asReadonly();
   readonly summaryError = this._summaryError.asReadonly();
   readonly actionLoading = this._actionLoading.asReadonly();
-  readonly message = this._message.asReadonly();
-  readonly messageError = this._messageError.asReadonly();
   readonly publishedId = this._publishedId.asReadonly();
   readonly mutations = this._mutations.asReadonly();
 
@@ -200,7 +198,6 @@ export class AdminWorkspaceFacade {
   }
 
   selectDataset(id: string): void {
-    this.clearMessage();
     this._publishedId.set('');
     const onPage = this._items().find((item) => item.id === id) ?? null;
     if (onPage) {
@@ -446,22 +443,24 @@ export class AdminWorkspaceFacade {
       });
   }
 
-  clearMessage(): void {
-    this._message.set('');
-    this._messageError.set(false);
-  }
-
   showError(error: unknown): void {
     const message = this.resolveErrorMessage(error);
-    this._messageError.set(true);
-    this._message.set(message);
     this.toast.error(message);
   }
 
   private setMessage(message: string): void {
-    this._messageError.set(false);
-    this._message.set(message);
     this.toast.success(message);
+  }
+
+  private setPublishMessage(message: string, datasetId: string): void {
+    this.toast.show({
+      message,
+      variant: 'success',
+      action: {
+        label: 'View in Discovery',
+        handler: () => void this.router.navigate(['/datasets', datasetId]),
+      },
+    });
   }
 
   private runAction(
@@ -481,7 +480,14 @@ export class AdminWorkspaceFacade {
       )
       .subscribe({
         next: () => {
-          this.setMessage(ACTION_SUCCESS_MESSAGES[key]);
+          if (key === 'publish' && refresh.publishedId) {
+            this.setPublishMessage(
+              ACTION_SUCCESS_MESSAGES[key],
+              refresh.publishedId,
+            );
+          } else {
+            this.setMessage(ACTION_SUCCESS_MESSAGES[key]);
+          }
           this.refreshAfterMutation(refresh);
         },
         error: (error: unknown) => this.showError(error),
