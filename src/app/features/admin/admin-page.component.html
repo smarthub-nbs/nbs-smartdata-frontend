@@ -71,11 +71,11 @@
     </div>
     <p class="sr-only" aria-live="polite">Loading platform activity…</p>
     } @else if (analytics.analyticsError()) {
-    <div class="rounded-md border border-red-100 bg-red-50 px-4 py-3" role="alert">
-      <p class="text-sm font-medium text-red-900">
+    <div class="rounded-md border border-nbs-danger-border bg-nbs-danger-soft px-4 py-3" role="alert">
+      <p class="text-sm font-medium text-nbs-danger">
         Platform activity could not load.
       </p>
-      <p class="mt-1 text-sm text-red-800">
+      <p class="mt-1 text-sm text-nbs-danger">
         {{ analytics.analyticsError() }}
       </p>
     </div>

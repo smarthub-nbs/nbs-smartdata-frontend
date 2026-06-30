@@ -40,7 +40,7 @@
             <p class="truncate text-sm text-slate-900">
               {{ file.filename }}
               @if (file.isPrimary) {
-              <span class="ml-1 rounded-full bg-sky-100 px-1.5 py-0.5 text-[10px] font-medium text-sky-800">
+              <span class="ml-1 rounded-full bg-nbs-info-soft px-1.5 py-0.5 text-[10px] font-medium text-nbs-info">
                 Primary
               </span>
               }
@@ -136,11 +136,11 @@
       }
     </section>
 
-    <section class="rounded-md border border-red-200 bg-red-50 p-3">
-      <h5 class="text-xs font-semibold uppercase tracking-wide text-red-900">
+    <section class="rounded-md border border-nbs-danger-border bg-nbs-danger-soft p-3">
+      <h5 class="text-xs font-semibold uppercase tracking-wide text-nbs-danger">
         Danger zone
       </h5>
-      <p class="mt-1 text-xs text-red-800">
+      <p class="mt-1 text-xs text-nbs-danger">
         Deleting removes this dataset from the workspace. This cannot be
         undone here.
       </p>

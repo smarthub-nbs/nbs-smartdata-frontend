@@ -157,9 +157,9 @@ export class ApiTryItConsoleComponent {
   protected statusClasses(status: number): string {
     const base = 'rounded px-1.5 py-0.5 font-mono text-xs';
     if (status < 400) {
-      return `${base} bg-emerald-100 text-emerald-800`;
+      return `${base} bg-nbs-success-soft text-nbs-success`;
     }
-    return `${base} bg-red-100 text-red-800`;
+    return `${base} bg-nbs-danger-soft text-nbs-danger`;
   }
 
   protected toggleHeaders(): void {

@@ -17,7 +17,7 @@ describe('BadgeComponent', () => {
 
   it('renders variant and dot indicator', () => {
     const badge = fixture.nativeElement.querySelector('span');
-    expect(badge.className).toContain('border-emerald-200');
+    expect(badge.className).toContain('border-nbs-success-border');
     expect(
       fixture.nativeElement.querySelector('[aria-hidden="true"]'),
     ).toBeTruthy();

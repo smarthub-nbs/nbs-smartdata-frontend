@@ -14,6 +14,8 @@ import { Chart, ChartConfiguration, Chart as ChartInstance } from 'chart.js';
 import { ExploreIndicator } from '@app/features/explore/models/explore.model';
 import { ensureChartJsRegistered } from '@app/features/explore/utils/chart-js.util';
 
+const CHART_ACCENT = '#0d9488';
+
 @Component({
   selector: 'app-regional-comparison-chart',
   standalone: true,
@@ -86,7 +88,7 @@ export class RegionalComparisonChartComponent implements AfterViewInit {
           {
             label: `${indicator.name} by region (${indicator.unit})`,
             data: values,
-            backgroundColor: '#0d9488',
+            backgroundColor: CHART_ACCENT,
             borderRadius: 4,
           },
         ],

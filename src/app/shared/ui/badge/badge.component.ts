@@ -10,19 +10,19 @@ import {
 } from '@shared/ui/models/badge-variant.model';
 
 const VARIANT_CLASSES: Record<BadgeVariant, string> = {
-  success: 'border-emerald-200 bg-emerald-50 text-emerald-800',
-  warning: 'border-amber-200 bg-amber-50 text-amber-900',
-  danger: 'border-red-200 bg-red-50 text-red-800',
-  info: 'border-sky-200 bg-sky-50 text-sky-800',
+  success: 'border-nbs-success-border bg-nbs-success-soft text-nbs-success',
+  warning: 'border-nbs-warning-border bg-nbs-warning-soft text-nbs-warning',
+  danger: 'border-nbs-danger-border bg-nbs-danger-soft text-nbs-danger',
+  info: 'border-nbs-info-border bg-nbs-info-soft text-nbs-info',
   neutral: 'border-slate-200 bg-slate-100 text-slate-700',
   primary: 'border-nbs-primary/20 bg-nbs-primary-soft text-nbs-primary',
 };
 
 const DOT_CLASSES: Record<BadgeVariant, string> = {
-  success: 'bg-emerald-500',
-  warning: 'bg-amber-500',
-  danger: 'bg-red-500',
-  info: 'bg-sky-500',
+  success: 'bg-nbs-success',
+  warning: 'bg-nbs-warning',
+  danger: 'bg-nbs-danger',
+  info: 'bg-nbs-info',
   neutral: 'bg-slate-500',
   primary: 'bg-nbs-primary',
 };

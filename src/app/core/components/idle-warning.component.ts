@@ -29,7 +29,7 @@ const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
             class="flex size-12 items-center justify-center rounded-full transition-colors duration-300"
             [class.bg-nbs-primary-soft]="!isUrgent()"
             [class.text-nbs-primary]="!isUrgent()"
-            [class.bg-red-50]="isUrgent()"
+            [class.bg-nbs-danger-soft]="isUrgent()"
             [class.text-nbs-danger]="isUrgent()"
             aria-hidden="true"
           >

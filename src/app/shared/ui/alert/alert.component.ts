@@ -12,23 +12,23 @@ const ALERT_STYLES: Record<
   { container: string; icon: string; iconName: IconName }
 > = {
   success: {
-    container: 'border-emerald-200 bg-emerald-50 text-emerald-900',
-    icon: 'text-emerald-600',
+    container: 'border-nbs-success-border bg-nbs-success-soft text-nbs-success',
+    icon: 'text-nbs-success',
     iconName: 'check',
   },
   warning: {
-    container: 'border-amber-200 bg-amber-50 text-amber-900',
-    icon: 'text-amber-600',
+    container: 'border-nbs-warning-border bg-nbs-warning-soft text-nbs-warning',
+    icon: 'text-nbs-warning',
     iconName: 'alert-triangle',
   },
   error: {
-    container: 'border-red-200 bg-red-50 text-nbs-danger',
+    container: 'border-nbs-danger-border bg-nbs-danger-soft text-nbs-danger',
     icon: 'text-nbs-danger',
     iconName: 'alert-triangle',
   },
   info: {
-    container: 'border-slate-200 bg-nbs-surface text-slate-900',
-    icon: 'text-nbs-primary',
+    container: 'border-nbs-info-border bg-nbs-info-soft text-nbs-info',
+    icon: 'text-nbs-info',
     iconName: 'info',
   },
 };

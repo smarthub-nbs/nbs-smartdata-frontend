@@ -113,7 +113,7 @@
   }
 
   .nbs-surface-elevated {
-    @apply rounded-2xl border border-slate-200/80 bg-white p-6 shadow-[0_18px_50px_-36px_rgba(15,23,42,0.45)];
+    @apply rounded-2xl border border-nbs-border bg-white p-6 shadow-[0_18px_50px_-36px_rgba(15,23,42,0.45)];
   }
 
   .nbs-surface-elevated-compact {

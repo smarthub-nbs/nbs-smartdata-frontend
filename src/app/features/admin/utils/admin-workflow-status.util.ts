@@ -22,13 +22,13 @@ export function workflowStatusChipClasses(
     'inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium';
   switch (status) {
     case 'published':
-      return `${base} bg-slate-100 text-slate-700`;
+      return `${base} bg-nbs-success-soft text-nbs-success`;
     case 'approved':
-      return `${base} bg-slate-100 text-slate-700`;
+      return `${base} bg-nbs-info-soft text-nbs-info`;
     case 'in_review':
       return `${base} bg-nbs-primary/10 text-nbs-primary`;
     case 'rejected':
-      return `${base} bg-red-50 text-red-700`;
+      return `${base} bg-nbs-danger-soft text-nbs-danger`;
     default:
       return `${base} bg-slate-100 text-slate-600`;
   }

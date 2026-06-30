@@ -17,6 +17,9 @@ import {
 } from '@app/features/explore/models/explore.model';
 import { ensureChartJsRegistered } from '@app/features/explore/utils/chart-js.util';
 
+const CHART_PRIMARY = '#0066cc';
+const CHART_PRIMARY_SOFT = 'rgba(0, 102, 204, 0.15)';
+
 @Component({
   selector: 'app-indicator-chart',
   standalone: true,
@@ -93,9 +96,9 @@ export class IndicatorChartComponent implements AfterViewInit {
           {
             label: `${indicator.name} (${indicator.unit})`,
             data: values,
-            borderColor: '#0066cc',
+            borderColor: CHART_PRIMARY,
             backgroundColor:
-              type === 'line' ? 'rgba(0, 102, 204, 0.15)' : '#0066cc',
+              type === 'line' ? CHART_PRIMARY_SOFT : CHART_PRIMARY,
             fill: type === 'line',
             tension: 0.3,
             borderWidth: 2,

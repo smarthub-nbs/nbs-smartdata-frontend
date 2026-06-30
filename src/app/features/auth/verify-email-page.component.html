@@ -6,36 +6,26 @@
 
   <section class="rounded-lg border border-nbs-border bg-white p-6 shadow-sm">
     @if (loading()) {
-      <p class="text-sm text-nbs-muted">Verifying your email…</p>
+    <p class="text-sm text-nbs-muted">Verifying your email…</p>
     } @else if (success()) {
-      <div
-        class="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900"
-        role="status"
-      >
-        Your email has been verified successfully.
-      </div>
-      <div class="mt-4 flex flex-wrap gap-2">
-        <a
-          routerLink="/account"
-          class="inline-flex cursor-pointer items-center rounded-md bg-nbs-primary px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-nbs-primary/90"
-        >
-          Go to account
-        </a>
-        <a
-          routerLink="/login"
-          class="inline-flex items-center text-sm text-nbs-primary hover:underline"
-        >
-          Sign in
-        </a>
-      </div>
-    } @else {
-      <p class="text-sm text-nbs-danger" role="alert">{{ errorMessage() }}</p>
-      <a
-        routerLink="/account"
-        class="mt-4 inline-block text-sm font-medium text-nbs-primary hover:underline"
-      >
-        Back to account
+    <div class="rounded-md border border-nbs-success-border bg-nbs-success-soft px-4 py-3 text-sm text-nbs-success"
+      role="status">
+      Your email has been verified successfully.
+    </div>
+    <div class="mt-4 flex flex-wrap gap-2">
+      <a routerLink="/account"
+        class="inline-flex cursor-pointer items-center rounded-md bg-nbs-primary px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-nbs-primary/90">
+        Go to account
       </a>
+      <a routerLink="/login" class="inline-flex items-center text-sm text-nbs-primary hover:underline">
+        Sign in
+      </a>
+    </div>
+    } @else {
+    <p class="text-sm text-nbs-danger" role="alert">{{ errorMessage() }}</p>
+    <a routerLink="/account" class="mt-4 inline-block text-sm font-medium text-nbs-primary hover:underline">
+      Back to account
+    </a>
     }
   </section>
 </div>

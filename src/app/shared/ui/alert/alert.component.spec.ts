@@ -17,6 +17,6 @@ describe('AlertComponent', () => {
   it('renders with alert role by default', () => {
     const alert = fixture.nativeElement.querySelector('[role="alert"]');
     expect(alert).toBeTruthy();
-    expect(alert.className).toContain('border-red-200');
+    expect(alert.className).toContain('border-nbs-danger-border');
   });
 });
