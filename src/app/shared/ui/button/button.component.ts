@@ -22,6 +22,8 @@ const VARIANT_CLASSES: Record<ButtonVariant, string> = {
     'bg-transparent text-slate-700 hover:bg-slate-100 active:bg-slate-200 focus-visible:ring-slate-400',
   danger:
     'bg-nbs-danger text-white hover:bg-nbs-danger-hover active:bg-red-800 focus-visible:ring-red-500',
+  'danger-outline':
+    'border border-red-200 bg-white text-nbs-danger hover:border-nbs-danger hover:bg-nbs-danger hover:text-white active:bg-red-800 focus-visible:ring-red-500',
 };
 
 const SIZE_CLASSES: Record<ButtonSize, string> = {

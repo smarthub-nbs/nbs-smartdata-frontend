@@ -5,6 +5,7 @@ import { UsersWorkspaceFacade } from '@app/features/users/services/users-workspa
 import { formatGroupLabel } from '@app/features/users/utils/user-display.util';
 import {
   ButtonComponent,
+  IconComponent,
   SelectInputComponent,
   SelectOption,
 } from '@shared/ui';
@@ -12,17 +13,23 @@ import {
 @Component({
   selector: 'app-user-filters',
   standalone: true,
-  imports: [FormsModule, ButtonComponent, SelectInputComponent],
+  imports: [FormsModule, ButtonComponent, IconComponent, SelectInputComponent],
   templateUrl: './user-filters.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class UserFiltersComponent {
   protected readonly facade = inject(UsersWorkspaceFacade);
 
-  protected readonly triStateOptions: SelectOption<TriStateFilter>[] = [
+  protected readonly activeOptions: SelectOption<TriStateFilter>[] = [
     { label: 'All', value: 'all' },
-    { label: 'Yes', value: 'yes' },
-    { label: 'No', value: 'no' },
+    { label: 'Active', value: 'yes' },
+    { label: 'Inactive', value: 'no' },
+  ];
+
+  protected readonly verifiedOptions: SelectOption<TriStateFilter>[] = [
+    { label: 'All', value: 'all' },
+    { label: 'Verified', value: 'yes' },
+    { label: 'Unverified', value: 'no' },
   ];
 
   protected groupOptions(): SelectOption[] {

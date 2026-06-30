@@ -20,6 +20,7 @@ import { IconComponent } from '@shared/ui';
 })
 export class UserTableComponent {
   protected readonly facade = inject(UsersWorkspaceFacade);
+  protected readonly skeletonRows = [0, 1, 2, 3, 4];
 
   readonly rowSelected = output<ManagedUser>();
 
