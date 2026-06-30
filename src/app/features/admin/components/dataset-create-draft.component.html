@@ -54,11 +54,26 @@
           " [formGroup]="form" (ngSubmit)="submit()">
     <app-select-input formControlName="categoryId" label="Category" [required]="true" [options]="categoryOptions()"
       [error]="controlError('categoryId')" />
-    <app-text-input formControlName="slug" label="Slug (optional)" hint="Auto-generated if left blank." />
     <app-text-input formControlName="title" label="Title" [required]="true" [error]="controlError('title')" />
-    <app-text-input formControlName="tagName" label="Tag"
-      hint="Required before review. Cannot be changed after creation." [required]="true"
+    @if (canCreateTags()) {
+    <label class="block">
+      <span class="mb-1 block text-xs font-medium text-slate-600">Tag</span>
+      <input type="text" formControlName="tagName" placeholder="e.g. Population" list="draft-tag-options"
+        class="h-10 w-full rounded-md border border-slate-300 px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-nbs-primary focus:outline-none focus:ring-2 focus:ring-nbs-primary/30" />
+      <datalist id="draft-tag-options">
+        @for (tag of tags(); track tag.id) {
+        <option [value]="tag.name"></option>
+        }
+      </datalist>
+      <p class="mt-1 text-xs text-nbs-muted">
+        At least one tag is required before review. You can add more tags later.
+      </p>
+    </label>
+    } @else {
+    <app-select-input formControlName="tagName" label="Tag" [required]="true" [options]="tagOptions()"
+      hint="At least one tag is required before review. You can add more tags later."
       [error]="controlError('tagName')" />
+    }
     <app-text-input formControlName="region" label="Region" [required]="true" [error]="controlError('region')" />
     <app-select-input formControlName="year" label="Year" [required]="true" [options]="yearOptions"
       [error]="controlError('year')" />

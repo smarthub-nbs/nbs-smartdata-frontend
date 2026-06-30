@@ -42,6 +42,7 @@ export class DatasetWorkflowPanelComponent {
   private readonly createDraft = viewChild(DatasetCreateDraftComponent);
 
   protected readonly categories = this.taxonomy.categories;
+  protected readonly tags = this.taxonomy.tags;
   protected readonly categoriesLoading = this.taxonomy.loading;
   protected readonly categoriesError = this.taxonomy.error;
   protected readonly pendingSwitchId = signal('');
@@ -98,5 +99,16 @@ export class DatasetWorkflowPanelComponent {
         next: () => this.createDraft()?.reset(),
         error: () => undefined,
       });
+  }
+
+  protected onTagsChanged(datasetId: string): void {
+    this.facade.onTagsChanged(datasetId);
+    this.taxonomy.refresh();
+    this.detail()?.reloadTagLinks();
+  }
+
+  protected onResourcesChanged(datasetId: string): void {
+    this.facade.refreshDataset(datasetId);
+    this.detail()?.reloadTagLinks();
   }
 }

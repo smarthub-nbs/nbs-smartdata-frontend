@@ -48,9 +48,11 @@ export const EMPTY_QUEUE_PAGINATION: AdminDatasetQueuePagination = {
 
 export type DatasetFrequencyValue = 'annual' | 'quarterly' | 'monthly';
 
+/** Matches `DatasetMetadata.title` max_length on the backend. */
+export const METADATA_TITLE_MAX_LENGTH = 100;
+
 export interface AdminDatasetDraft {
   categoryId: string;
-  slug: string;
   title: string;
   description: string;
   license: string;

@@ -10,6 +10,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
 import { ApiError } from '@app/core/models/api-error.model';
+import { fieldErrorsFromApi } from '@app/core/utils/api-field-errors.util';
 import { AdminTaxonomyStore } from '@app/features/admin/services/admin-taxonomy.store';
 import { ButtonComponent, IconComponent } from '@shared/ui';
 
@@ -42,6 +43,7 @@ export class TaxonomyManagerComponent {
   protected readonly categories = this.taxonomy.categories;
   protected readonly tags = this.taxonomy.tags;
   protected readonly newCategoryName = signal('');
+  protected readonly newTagName = signal('');
   protected readonly editing = signal<EditState | null>(null);
   protected readonly confirmingId = signal('');
 
@@ -91,6 +93,35 @@ export class TaxonomyManagerComponent {
         },
         error: (error: unknown) =>
           this.actionError.set(this.resolveError(error)),
+      });
+  }
+
+  protected addTag(): void {
+    const name = this.newTagName().trim();
+    if (!name) {
+      return;
+    }
+    const duplicate = this.tags().some(
+      (tag) => tag.name.toLowerCase() === name.toLowerCase(),
+    );
+    if (duplicate) {
+      this.actionError.set('A tag with this name already exists.');
+      return;
+    }
+    this.actionError.set('');
+    this.actionId.set('new-tag');
+    this.taxonomy
+      .createTag(name)
+      .pipe(
+        finalize(() => this.actionId.set('')),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: () => {
+          this.newTagName.set('');
+        },
+        error: (error: unknown) =>
+          this.actionError.set(this.resolveFieldError(error, 'name')),
       });
   }
 
@@ -147,6 +178,11 @@ export class TaxonomyManagerComponent {
         error: (error: unknown) =>
           this.actionError.set(this.resolveError(error)),
       });
+  }
+
+  private resolveFieldError(error: unknown, field: string): string {
+    const fieldErrors = fieldErrorsFromApi(error);
+    return fieldErrors[field] ?? this.resolveError(error);
   }
 
   private resolveError(error: unknown): string {

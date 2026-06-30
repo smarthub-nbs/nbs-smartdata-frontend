@@ -1,10 +1,7 @@
 <section class="nbs-panel">
-  <button
-    type="button"
+  <button type="button"
     class="flex w-full items-center justify-between gap-3 text-left transition-colors hover:text-nbs-primary"
-    [attr.aria-expanded]="expanded()"
-    (click)="toggle()"
-  >
+    [attr.aria-expanded]="expanded()" (click)="toggle()">
     <div class="flex items-start gap-2.5">
       <app-icon name="tag" [size]="18" class="mt-0.5 text-nbs-accent" />
       <div>
@@ -14,223 +11,146 @@
         </p>
       </div>
     </div>
-    <app-icon
-      name="chevron-down"
-      [size]="18"
-      class="shrink-0 text-nbs-muted transition-transform motion-safe:duration-200"
-      [class.rotate-180]="expanded()"
-    />
+    <app-icon name="chevron-down" [size]="18"
+      class="shrink-0 text-nbs-muted transition-transform motion-safe:duration-200" [class.rotate-180]="expanded()" />
   </button>
 
   @if (expanded()) {
-    <div class="mt-5 space-y-6 border-t border-nbs-border pt-5">
-      @if (error()) {
-        <p class="text-sm text-nbs-danger" role="alert">{{ error() }}</p>
-      }
+  <div class="mt-5 space-y-6 border-t border-nbs-border pt-5">
+    @if (error()) {
+    <p class="text-sm text-nbs-danger" role="alert">{{ error() }}</p>
+    }
 
-      @if (loading()) {
-        <p class="text-sm text-nbs-muted" aria-live="polite">
-          Loading taxonomy…
-        </p>
-      } @else {
-        <div class="grid gap-6 lg:grid-cols-2">
-          <section class="space-y-3">
-            <h3
-              class="text-xs font-semibold uppercase tracking-wide text-nbs-muted"
-            >
-              Categories ({{ categories().length }})
-            </h3>
+    @if (loading()) {
+    <p class="text-sm text-nbs-muted" aria-live="polite">
+      Loading taxonomy…
+    </p>
+    } @else {
+    <div class="grid gap-6 lg:grid-cols-2">
+      <section class="space-y-3">
+        <h3 class="text-xs font-semibold uppercase tracking-wide text-nbs-muted">
+          Categories ({{ categories().length }})
+        </h3>
 
-            <form class="flex items-end gap-2" (ngSubmit)="addCategory()">
-              <label class="flex-1">
-                <span class="mb-1 block text-xs font-medium text-slate-600"
-                  >New category</span
-                >
-                <input
-                  type="text"
-                  name="newCategory"
-                  placeholder="e.g. Population"
-                  class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-nbs-primary focus:outline-none focus:ring-2 focus:ring-nbs-primary/30"
-                  [ngModel]="newCategoryName()"
-                  (ngModelChange)="newCategoryName.set($event)"
-                />
-              </label>
-              <app-button
-                type="submit"
-                variant="primary"
-                size="sm"
-                [loading]="actionId() === 'new-category'"
-              >
-                Add
-              </app-button>
-            </form>
+        <form class="flex items-end gap-2" (ngSubmit)="addCategory()">
+          <label class="flex-1">
+            <span class="mb-1 block text-xs font-medium text-slate-600">New category</span>
+            <input type="text" name="newCategory" placeholder="e.g. Population"
+              class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-nbs-primary focus:outline-none focus:ring-2 focus:ring-nbs-primary/30"
+              [ngModel]="newCategoryName()" (ngModelChange)="newCategoryName.set($event)" />
+          </label>
+          <app-button type="submit" variant="primary" size="sm" [loading]="actionId() === 'new-category'">
+            Add
+          </app-button>
+        </form>
 
-            <ul
-              class="divide-y divide-slate-100 rounded-md border border-slate-200"
-            >
-              @for (category of categories(); track category.id) {
-                <li class="flex items-center justify-between gap-2 px-3 py-2">
-                  @if (isEditing('category', category.id)) {
-                    <input
-                      type="text"
-                      class="flex-1 rounded-md border border-slate-300 px-2 py-1 text-sm text-slate-900 focus:border-nbs-primary focus:outline-none focus:ring-2 focus:ring-nbs-primary/30"
-                      [ngModel]="editing()?.name"
-                      (ngModelChange)="updateEditName($event)"
-                    />
-                    <app-button
-                      variant="primary"
-                      size="sm"
-                      [loading]="actionId() === category.id"
-                      (clicked)="saveEdit()"
-                    >
-                      Save
-                    </app-button>
-                    <app-button
-                      variant="ghost"
-                      size="sm"
-                      (clicked)="cancelEdit()"
-                      >Cancel</app-button
-                    >
-                  } @else if (confirmingId() === category.id) {
-                    <span class="flex-1 text-sm text-slate-700"
-                      >Delete “{{ category.name }}”?</span
-                    >
-                    <app-button
-                      variant="danger"
-                      size="sm"
-                      [loading]="actionId() === category.id"
-                      (clicked)="confirmDelete('category', category.id)"
-                    >
-                      Confirm
-                    </app-button>
-                    <app-button
-                      variant="ghost"
-                      size="sm"
-                      (clicked)="cancelDelete()"
-                      >Cancel</app-button
-                    >
-                  } @else {
-                    <div class="min-w-0">
-                      <p class="truncate text-sm text-slate-900">
-                        {{ category.name }}
-                      </p>
-                      <p class="text-xs text-nbs-muted">{{ category.slug }}</p>
-                    </div>
-                    <div class="flex items-center gap-1">
-                      <app-button
-                        variant="ghost"
-                        size="sm"
-                        (clicked)="
+        <ul class="divide-y divide-slate-100 rounded-md border border-slate-200">
+          @for (category of categories(); track category.id) {
+          <li class="flex items-center justify-between gap-2 px-3 py-2">
+            @if (isEditing('category', category.id)) {
+            <input type="text"
+              class="flex-1 rounded-md border border-slate-300 px-2 py-1 text-sm text-slate-900 focus:border-nbs-primary focus:outline-none focus:ring-2 focus:ring-nbs-primary/30"
+              [ngModel]="editing()?.name" (ngModelChange)="updateEditName($event)" />
+            <app-button variant="primary" size="sm" [loading]="actionId() === category.id" (clicked)="saveEdit()">
+              Save
+            </app-button>
+            <app-button variant="ghost" size="sm" (clicked)="cancelEdit()">Cancel</app-button>
+            } @else if (confirmingId() === category.id) {
+            <span class="flex-1 text-sm text-slate-700">Delete “{{ category.name }}”?</span>
+            <app-button variant="danger" size="sm" [loading]="actionId() === category.id"
+              (clicked)="confirmDelete('category', category.id)">
+              Confirm
+            </app-button>
+            <app-button variant="ghost" size="sm" (clicked)="cancelDelete()">Cancel</app-button>
+            } @else {
+            <div class="min-w-0">
+              <p class="truncate text-sm text-slate-900">
+                {{ category.name }}
+              </p>
+              <p class="text-xs text-nbs-muted">{{ category.slug }}</p>
+            </div>
+            <div class="flex items-center gap-1">
+              <app-button variant="ghost" size="sm" (clicked)="
                           startEdit('category', category.id, category.name)
-                        "
-                      >
-                        Rename
-                      </app-button>
-                      <app-button
-                        variant="ghost"
-                        size="sm"
-                        (clicked)="requestDelete(category.id)"
-                      >
-                        Delete
-                      </app-button>
-                    </div>
-                  }
-                </li>
-              } @empty {
-                <li class="px-3 py-2 text-xs text-nbs-muted">
-                  No categories yet.
-                </li>
-              }
-            </ul>
-          </section>
+                        ">
+                Rename
+              </app-button>
+              <app-button variant="ghost" size="sm" (clicked)="requestDelete(category.id)">
+                Delete
+              </app-button>
+            </div>
+            }
+          </li>
+          } @empty {
+          <li class="px-3 py-2 text-xs text-nbs-muted">
+            No categories yet.
+          </li>
+          }
+        </ul>
+      </section>
 
-          <section class="space-y-3">
-            <h3
-              class="text-xs font-semibold uppercase tracking-wide text-nbs-muted"
-            >
-              Tags ({{ tags().length }})
-            </h3>
-            <p class="text-xs text-nbs-muted">
-              Tags are created when linked to a dataset. Rename or remove unused
-              ones here.
-            </p>
+      <section class="space-y-3">
+        <h3 class="text-xs font-semibold uppercase tracking-wide text-nbs-muted">
+          Tags ({{ tags().length }})
+        </h3>
+        <p class="text-xs text-nbs-muted">
+          Add tags here, or create them inline when linking to a dataset.
+        </p>
 
-            <ul
-              class="divide-y divide-slate-100 rounded-md border border-slate-200"
-            >
-              @for (tag of tags(); track tag.id) {
-                <li class="flex items-center justify-between gap-2 px-3 py-2">
-                  @if (isEditing('tag', tag.id)) {
-                    <input
-                      type="text"
-                      class="flex-1 rounded-md border border-slate-300 px-2 py-1 text-sm text-slate-900 focus:border-nbs-primary focus:outline-none focus:ring-2 focus:ring-nbs-primary/30"
-                      [ngModel]="editing()?.name"
-                      (ngModelChange)="updateEditName($event)"
-                    />
-                    <app-button
-                      variant="primary"
-                      size="sm"
-                      [loading]="actionId() === tag.id"
-                      (clicked)="saveEdit()"
-                    >
-                      Save
-                    </app-button>
-                    <app-button
-                      variant="ghost"
-                      size="sm"
-                      (clicked)="cancelEdit()"
-                      >Cancel</app-button
-                    >
-                  } @else if (confirmingId() === tag.id) {
-                    <span class="flex-1 text-sm text-slate-700"
-                      >Delete “{{ tag.name }}”?</span
-                    >
-                    <app-button
-                      variant="danger"
-                      size="sm"
-                      [loading]="actionId() === tag.id"
-                      (clicked)="confirmDelete('tag', tag.id)"
-                    >
-                      Confirm
-                    </app-button>
-                    <app-button
-                      variant="ghost"
-                      size="sm"
-                      (clicked)="cancelDelete()"
-                      >Cancel</app-button
-                    >
-                  } @else {
-                    <div class="min-w-0">
-                      <p class="truncate text-sm text-slate-900">
-                        {{ tag.name }}
-                      </p>
-                      <p class="text-xs text-nbs-muted">{{ tag.slug }}</p>
-                    </div>
-                    <div class="flex items-center gap-1">
-                      <app-button
-                        variant="ghost"
-                        size="sm"
-                        (clicked)="startEdit('tag', tag.id, tag.name)"
-                      >
-                        Rename
-                      </app-button>
-                      <app-button
-                        variant="ghost"
-                        size="sm"
-                        (clicked)="requestDelete(tag.id)"
-                      >
-                        Delete
-                      </app-button>
-                    </div>
-                  }
-                </li>
-              } @empty {
-                <li class="px-3 py-2 text-xs text-nbs-muted">No tags yet.</li>
-              }
-            </ul>
-          </section>
-        </div>
-      }
+        <form class="flex items-end gap-2" (ngSubmit)="addTag()">
+          <label class="flex-1">
+            <span class="mb-1 block text-xs font-medium text-slate-600">New tag</span>
+            <input type="text" name="newTag" placeholder="e.g. Open Data"
+              class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-nbs-primary focus:outline-none focus:ring-2 focus:ring-nbs-primary/30"
+              [ngModel]="newTagName()" (ngModelChange)="newTagName.set($event)" />
+          </label>
+          <app-button type="submit" variant="primary" size="sm" [loading]="actionId() === 'new-tag'">
+            Add
+          </app-button>
+        </form>
+
+        <ul class="divide-y divide-slate-100 rounded-md border border-slate-200">
+          @for (tag of tags(); track tag.id) {
+          <li class="flex items-center justify-between gap-2 px-3 py-2">
+            @if (isEditing('tag', tag.id)) {
+            <input type="text"
+              class="flex-1 rounded-md border border-slate-300 px-2 py-1 text-sm text-slate-900 focus:border-nbs-primary focus:outline-none focus:ring-2 focus:ring-nbs-primary/30"
+              [ngModel]="editing()?.name" (ngModelChange)="updateEditName($event)" />
+            <app-button variant="primary" size="sm" [loading]="actionId() === tag.id" (clicked)="saveEdit()">
+              Save
+            </app-button>
+            <app-button variant="ghost" size="sm" (clicked)="cancelEdit()">Cancel</app-button>
+            } @else if (confirmingId() === tag.id) {
+            <span class="flex-1 text-sm text-slate-700">Delete “{{ tag.name }}”?</span>
+            <app-button variant="danger" size="sm" [loading]="actionId() === tag.id"
+              (clicked)="confirmDelete('tag', tag.id)">
+              Confirm
+            </app-button>
+            <app-button variant="ghost" size="sm" (clicked)="cancelDelete()">Cancel</app-button>
+            } @else {
+            <div class="min-w-0">
+              <p class="truncate text-sm text-slate-900">
+                {{ tag.name }}
+              </p>
+              <p class="text-xs text-nbs-muted">{{ tag.slug }}</p>
+            </div>
+            <div class="flex items-center gap-1">
+              <app-button variant="ghost" size="sm" (clicked)="startEdit('tag', tag.id, tag.name)">
+                Rename
+              </app-button>
+              <app-button variant="ghost" size="sm" (clicked)="requestDelete(tag.id)">
+                Delete
+              </app-button>
+            </div>
+            }
+          </li>
+          } @empty {
+          <li class="px-3 py-2 text-xs text-nbs-muted">No tags yet.</li>
+          }
+        </ul>
+      </section>
     </div>
+    }
+  </div>
   }
 </section>

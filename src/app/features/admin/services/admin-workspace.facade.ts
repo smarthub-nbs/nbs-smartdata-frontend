@@ -248,13 +248,29 @@ export class AdminWorkspaceFacade {
   }
 
   linkTag(id: string, tagName: string): void {
-    const value = tagName.trim();
-    if (!value) {
+    this.linkTagWithOptions(id, { tagName });
+  }
+
+  linkTagWithOptions(
+    id: string,
+    options: { tagId?: string; tagName?: string },
+  ): void {
+    const tagId = options.tagId?.trim();
+    const tagName = options.tagName?.trim();
+    if (!tagId && !tagName) {
       return;
     }
+
     this._actionLoading.set('tag');
-    this.workflow
-      .linkTagByName(id, value)
+    const request$ = tagId
+      ? this.workflow.linkTagById(id, tagId)
+      : this.workflow.linkTagByName(
+          id,
+          tagName ?? '',
+          this.auth.canReviewDatasets(),
+        );
+
+    request$
       .pipe(
         finalize(() => this._actionLoading.set('')),
         takeUntilDestroyed(this.destroyRef),
@@ -266,6 +282,10 @@ export class AdminWorkspaceFacade {
         },
         error: (error: unknown) => this.showError(error),
       });
+  }
+
+  onTagsChanged(id: string): void {
+    this.refreshAfterMutation({ datasetId: id });
   }
 
   updateCategory(id: string, categoryId: string): void {
@@ -332,7 +352,11 @@ export class AdminWorkspaceFacade {
 
   createDraft(draft: AdminDatasetDraft, file: File | null): Observable<string> {
     this._actionLoading.set('create');
-    const create$ = this.workflow.createDraftWithMetadata(draft);
+    const allowTagCreate = this.auth.canReviewDatasets();
+    const create$ = this.workflow.createDraftWithMetadata(
+      draft,
+      allowTagCreate,
+    );
     return new Observable<string>((subscriber) => {
       create$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
         next: (id) => {

@@ -17,9 +17,9 @@
   </output>
   }
 
-  <app-dataset-create-draft [inline]="true" [categories]="categories()" [categoriesLoading]="categoriesLoading()"
-    [categoriesError]="categoriesError()" [creating]="facade.actionLoading() === 'create'"
-    (draftCreate)="onCreateDraft($event)" />
+  <app-dataset-create-draft [inline]="true" [categories]="categories()" [tags]="tags()" [canCreateTags]="canReview()"
+    [categoriesLoading]="categoriesLoading()" [categoriesError]="categoriesError()"
+    [creating]="facade.actionLoading() === 'create'" (draftCreate)="onCreateDraft($event)" />
 
   @if (facade.queueError()) {
   <p class="text-sm text-nbs-danger" role="alert">
@@ -69,14 +69,14 @@
       }
 
       @if (facade.selectedRecord(); as record) {
-      <app-dataset-workflow-detail [record]="record" [categories]="categories()"
-        [categoriesLoading]="categoriesLoading()" [categoriesError]="categoriesError()" [canReview]="canReview()"
-        [canPublish]="canPublish()" [actionLoading]="facade.actionLoading()" [message]="facade.message()"
-        [messageError]="facade.messageError()" [publishedId]="facade.publishedId()"
+      <app-dataset-workflow-detail [record]="record" [categories]="categories()" [tags]="tags()"
+        [canCreateTags]="canReview()" [categoriesLoading]="categoriesLoading()" [categoriesError]="categoriesError()"
+        [canReview]="canReview()" [canPublish]="canPublish()" [actionLoading]="facade.actionLoading()"
+        [message]="facade.message()" [messageError]="facade.messageError()" [publishedId]="facade.publishedId()"
         (submitForReview)="facade.submit($event)" (approve)="facade.approve($event)" (reject)="facade.reject($event)"
         (publish)="facade.publish($event)" (uploadFile)="facade.uploadFile(record.id, $event)"
-        (linkTag)="facade.linkTag(record.id, $event)" (categoryChange)="facade.updateCategory(record.id, $event)"
-        (metadataSaved)="facade.onMetadataSaved(record.id)" (resourcesChanged)="facade.refreshDataset(record.id)"
+        (categoryChange)="facade.updateCategory(record.id, $event)" (metadataSaved)="facade.onMetadataSaved(record.id)"
+        (tagsChanged)="onTagsChanged(record.id)" (resourcesChanged)="onResourcesChanged(record.id)"
         (deleteDataset)="facade.deleteDataset($event)" />
       }
     </div>

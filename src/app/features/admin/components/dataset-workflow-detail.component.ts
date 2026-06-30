@@ -1,20 +1,29 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   ElementRef,
   computed,
   effect,
+  inject,
   input,
   output,
   signal,
   viewChild,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
+import { finalize } from 'rxjs';
+import { ApiError } from '@app/core/models/api-error.model';
+import { fieldErrorsFromApi } from '@app/core/utils/api-field-errors.util';
 import {
   AdminDatasetRecord,
+  AdminDatasetTagLink,
   BackendAdminCategory,
+  BackendAdminTag,
   DatasetWorkflowStatus,
 } from '@app/features/admin/models/admin-dataset.model';
+import { AdminDatasetWorkflowService } from '@app/features/admin/services/admin-dataset-workflow.service';
 import {
   workflowStatusChipClasses,
   workflowStatusLabel,
@@ -41,6 +50,8 @@ import { ButtonComponent, IconComponent } from '@shared/ui';
 export class DatasetWorkflowDetailComponent {
   readonly record = input.required<AdminDatasetRecord>();
   readonly categories = input.required<BackendAdminCategory[]>();
+  readonly tags = input<BackendAdminTag[]>([]);
+  readonly canCreateTags = input(false);
   readonly categoriesLoading = input(false);
   readonly categoriesError = input<string | null>(null);
   readonly canReview = input(false);
@@ -57,11 +68,13 @@ export class DatasetWorkflowDetailComponent {
   readonly publish = output<string>();
   readonly uploadFile = output<File>();
   readonly metadataSaved = output<void>();
-  readonly linkTag = output<string>();
   readonly categoryChange = output<string>();
+  readonly tagsChanged = output<void>();
   readonly resourcesChanged = output<void>();
   readonly deleteDataset = output<string>();
 
+  private readonly workflow = inject(AdminDatasetWorkflowService);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly metadataEditor = viewChild(DatasetMetadataEditorComponent);
   private readonly fileInput =
     viewChild<ElementRef<HTMLInputElement>>('fileInput');
@@ -70,6 +83,13 @@ export class DatasetWorkflowDetailComponent {
 
   protected readonly metadataDirty = signal(false);
   protected readonly tagName = signal('');
+  protected readonly selectedTagId = signal('');
+  protected readonly tagLinks = signal<AdminDatasetTagLink[]>([]);
+  protected readonly tagLinksLoading = signal(false);
+  protected readonly tagLinksError = signal('');
+  protected readonly tagLinkError = signal('');
+  protected readonly tagLinking = signal(false);
+  protected readonly confirmingUnlinkId = signal('');
   protected readonly pendingCategoryId = signal('');
   protected readonly editMode = signal(false);
 
@@ -82,9 +102,14 @@ export class DatasetWorkflowDetailComponent {
   constructor() {
     effect(
       () => {
-        this.record();
+        const record = this.record();
         this.editMode.set(false);
         this.pendingCategoryId.set(this.currentCategoryId());
+        this.tagName.set('');
+        this.selectedTagId.set('');
+        this.tagLinkError.set('');
+        this.confirmingUnlinkId.set('');
+        this.loadTagLinks(record.id);
       },
       { allowSignalWrites: true },
     );
@@ -121,6 +146,27 @@ export class DatasetWorkflowDetailComponent {
     return !this.isFinalizedReadOnly();
   });
 
+  protected readonly availableTags = computed(() => {
+    const linkedIds = this.linkedTagIds();
+    return this.tags().filter((tag) => !linkedIds.has(tag.id));
+  });
+
+  protected readonly tagOptions = computed(() => this.availableTags());
+
+  private readonly linkedTagIds = computed(
+    () => new Set(this.tagLinks().map((link) => link.tagId)),
+  );
+
+  protected readonly canLinkTag = computed(() => {
+    if (this.tagLinking()) {
+      return false;
+    }
+    if (this.canCreateTags()) {
+      return this.tagName().trim().length > 0;
+    }
+    return this.selectedTagId().length > 0;
+  });
+
   protected startEditing(): void {
     this.editMode.set(true);
   }
@@ -131,6 +177,8 @@ export class DatasetWorkflowDetailComponent {
     }
     this.resetCategorySelection();
     this.tagName.set('');
+    this.selectedTagId.set('');
+    this.tagLinkError.set('');
     this.editMode.set(false);
   }
 
@@ -268,15 +316,79 @@ export class DatasetWorkflowDetailComponent {
   }
 
   protected onTagInput(event: Event): void {
+    this.tagLinkError.set('');
     this.tagName.set((event.target as HTMLInputElement).value);
   }
 
+  protected onTagSelect(tagId: string): void {
+    this.tagLinkError.set('');
+    this.selectedTagId.set(tagId);
+  }
+
   protected submitTag(): void {
-    const value = this.tagName().trim();
-    if (value) {
-      this.linkTag.emit(value);
-      this.tagName.set('');
+    this.tagLinkError.set('');
+    if (this.canCreateTags()) {
+      const value = this.tagName().trim();
+      if (!value) {
+        return;
+      }
+      const existingLink = this.findLinkedTagByName(value);
+      if (existingLink) {
+        this.tagLinkError.set(
+          `"${existingLink.tagName}" is already linked to this dataset.`,
+        );
+        return;
+      }
+      this.runTagLink({ tagName: value });
+      return;
     }
+
+    const tagId = this.selectedTagId();
+    if (!tagId) {
+      return;
+    }
+    const existingLink = this.findLinkedTagById(tagId);
+    if (existingLink) {
+      this.tagLinkError.set(
+        `"${existingLink.tagName}" is already linked to this dataset.`,
+      );
+      return;
+    }
+    this.runTagLink({ tagId });
+  }
+
+  protected requestUnlinkTag(linkId: string): void {
+    this.confirmingUnlinkId.set(linkId);
+    this.tagLinkError.set('');
+  }
+
+  protected cancelUnlinkTag(): void {
+    this.confirmingUnlinkId.set('');
+  }
+
+  protected isLastTagLink(linkId: string): boolean {
+    const links = this.tagLinks();
+    return links.length === 1 && links[0]?.linkId === linkId;
+  }
+
+  protected confirmUnlinkTag(link: AdminDatasetTagLink): void {
+    this.confirmingUnlinkId.set('');
+    this.tagLinking.set(true);
+    this.tagLinkError.set('');
+    this.workflow
+      .unlinkTag(link.linkId)
+      .pipe(
+        finalize(() => this.tagLinking.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: () => {
+          this.loadTagLinks(this.record().id);
+          this.tagsChanged.emit();
+        },
+        error: (error: unknown) =>
+          this.tagLinkError.set(this.resolveTagError(error)),
+      });
   }
 
   protected canSubmit(record: AdminDatasetRecord): boolean {
@@ -330,5 +442,99 @@ export class DatasetWorkflowDetailComponent {
 
   protected statusChipClasses(status: DatasetWorkflowStatus): string {
     return workflowStatusChipClasses(status);
+  }
+
+  reloadTagLinks(): void {
+    this.loadTagLinks(this.record().id);
+  }
+
+  private runTagLink(options: { tagId?: string; tagName?: string }): void {
+    const datasetId = this.record().id;
+    const request$ = options.tagId
+      ? this.workflow.linkTagById(datasetId, options.tagId)
+      : this.workflow.linkTagByName(
+          datasetId,
+          options.tagName ?? '',
+          this.canCreateTags(),
+        );
+
+    this.tagLinking.set(true);
+    request$
+      .pipe(
+        finalize(() => this.tagLinking.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: () => {
+          this.tagName.set('');
+          this.selectedTagId.set('');
+          this.loadTagLinks(datasetId);
+          this.tagsChanged.emit();
+        },
+        error: (error: unknown) =>
+          this.tagLinkError.set(this.resolveTagError(error)),
+      });
+  }
+
+  private findLinkedTagById(tagId: string): AdminDatasetTagLink | undefined {
+    return this.tagLinks().find((link) => link.tagId === tagId);
+  }
+
+  private findLinkedTagByName(name: string): AdminDatasetTagLink | undefined {
+    const normalizedName = this.normalizeTagName(name);
+    const normalizedSlug = this.toTagSlug(name);
+    return this.tagLinks().find(
+      (link) =>
+        this.normalizeTagName(link.tagName) === normalizedName ||
+        link.tagSlug === normalizedSlug,
+    );
+  }
+
+  private normalizeTagName(name: string): string {
+    return name.trim().toLowerCase();
+  }
+
+  private toTagSlug(name: string): string {
+    return this.normalizeTagName(name)
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
+  }
+
+  private loadTagLinks(datasetId: string): void {
+    this.tagLinksLoading.set(true);
+    this.tagLinksError.set('');
+    this.workflow
+      .listTagLinks(datasetId)
+      .pipe(
+        finalize(() => this.tagLinksLoading.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (tagLinks) => this.tagLinks.set(tagLinks),
+        error: () =>
+          this.tagLinksError.set(
+            'Could not load linked tags for this dataset.',
+          ),
+      });
+  }
+
+  private resolveTagError(error: unknown): string {
+    const fieldErrors = fieldErrorsFromApi(error);
+    return (
+      fieldErrors['tag_id'] ??
+      fieldErrors['tag_name'] ??
+      fieldErrors['name'] ??
+      this.resolveErrorMessage(error)
+    );
+  }
+
+  private resolveErrorMessage(error: unknown): string {
+    if (error instanceof ApiError) {
+      return error.message;
+    }
+    if (error instanceof Error) {
+      return error.message;
+    }
+    return 'Failed to update tags.';
   }
 }

@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, forkJoin, map, of, switchMap } from 'rxjs';
+import { Observable, forkJoin, map, of, switchMap, throwError } from 'rxjs';
+import { ApiError } from '@app/core/models/api-error.model';
 import { ApiService } from '@app/core/services/api.service';
 import {
   AdminDatasetDraft,
@@ -128,8 +129,35 @@ export class AdminDatasetWorkflowService {
     );
   }
 
-  linkTagByName(datasetId: string, tagName: string): Observable<void> {
-    return this.ensureTagLink(datasetId, tagName);
+  linkTagById(datasetId: string, tagId: string): Observable<void> {
+    return this.api
+      .post('/v1/dataset/tag-links/', {
+        dataset_id: datasetId,
+        tag_id: tagId,
+      })
+      .pipe(map(() => undefined));
+  }
+
+  linkTagByName(
+    datasetId: string,
+    tagName: string,
+    allowCreate = true,
+  ): Observable<void> {
+    return this.ensureTagLink(datasetId, tagName, allowCreate);
+  }
+
+  listTagLinks(datasetId: string): Observable<AdminDatasetTagLink[]> {
+    return this.api
+      .get<BackendDatasetTagLink[]>('/v1/dataset/tag-links/', {
+        dataset: datasetId,
+      })
+      .pipe(
+        map((tagLinks) =>
+          tagLinks
+            .filter((link) => matchesDatasetId(link.dataset, datasetId))
+            .map((link) => this.toTagLink(link)),
+        ),
+      );
   }
 
   listResources(datasetId: string): Observable<AdminDatasetResources> {
@@ -198,6 +226,12 @@ export class AdminDatasetWorkflowService {
       .pipe(map(() => undefined));
   }
 
+  createTag(name: string): Observable<BackendAdminTag> {
+    return this.api.post<BackendAdminTag>('/v1/dataset/tags/', {
+      name: name.trim(),
+    });
+  }
+
   updateTag(id: string, name: string): Observable<BackendAdminTag> {
     return this.api.patch<BackendAdminTag>(`/v1/dataset/tags/${id}/`, {
       name: name.trim(),
@@ -210,11 +244,13 @@ export class AdminDatasetWorkflowService {
       .pipe(map(() => undefined));
   }
 
-  createDraftWithMetadata(draft: AdminDatasetDraft): Observable<string> {
+  createDraftWithMetadata(
+    draft: AdminDatasetDraft,
+    allowTagCreate = true,
+  ): Observable<string> {
     return this.api
       .post<BackendAdminDataset>('/v1/dataset/', {
         category: draft.categoryId,
-        slug: draft.slug.trim() || undefined,
       })
       .pipe(
         switchMap((dataset) =>
@@ -229,7 +265,9 @@ export class AdminDatasetWorkflowService {
               year: draft.year,
             })
             .pipe(
-              switchMap(() => this.ensureTagLink(dataset.id, draft.tagName)),
+              switchMap(() =>
+                this.ensureTagLink(dataset.id, draft.tagName, allowTagCreate),
+              ),
               map(() => dataset.id),
             ),
         ),
@@ -299,42 +337,48 @@ export class AdminDatasetWorkflowService {
       );
   }
 
-  private ensureTagLink(datasetId: string, tagName: string): Observable<void> {
+  private ensureTagLink(
+    datasetId: string,
+    tagName: string,
+    allowCreate: boolean,
+  ): Observable<void> {
     const normalized = tagName.trim();
     if (!normalized) {
       return of(undefined);
     }
 
-    const slug = normalized
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '');
-
     return this.listTags().pipe(
       switchMap((tags) => {
+        const slug = normalized
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-|-$/g, '');
         const existing = tags.find(
           (tag) =>
             tag.slug === slug ||
             tag.name.toLowerCase() === normalized.toLowerCase(),
         );
 
+        if (!existing && !allowCreate) {
+          return throwError(
+            () =>
+              new ApiError(
+                'Choose an existing tag from the list. Only admins can create new tags.',
+                400,
+              ),
+          );
+        }
+
         const tagId$ = existing
           ? of(existing.id)
           : this.api
               .post<BackendAdminTag>('/v1/dataset/tags/', {
                 name: normalized,
-                slug,
               })
               .pipe(map((tag) => tag.id));
 
         return tagId$.pipe(
-          switchMap((tagId) =>
-            this.api.post('/v1/dataset/tag-links/', {
-              dataset_id: datasetId,
-              tag_id: tagId,
-            }),
-          ),
-          map(() => undefined),
+          switchMap((tagId) => this.linkTagById(datasetId, tagId)),
         );
       }),
     );
