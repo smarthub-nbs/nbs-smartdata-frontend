@@ -1,6 +1,12 @@
-<section class="nbs-panel space-y-6">
-  <div class="flex flex-wrap items-center justify-between gap-3">
-    <h2 class="text-sm font-semibold text-slate-900">Publishing queue</h2>
+<section
+  class="space-y-6 rounded-2xl border border-slate-200/80 bg-white p-6 shadow-[0_18px_50px_-36px_rgba(15,23,42,0.45)]">
+  <div class="flex flex-wrap items-center justify-between gap-4">
+    <div>
+      <h2 class="text-sm font-semibold text-slate-900">Publishing queue</h2>
+      <p class="mt-0.5 text-xs text-nbs-muted">
+        Select a dataset to review and publish.
+      </p>
+    </div>
     <app-button variant="outline" size="sm" (clicked)="openCreateDraft()">
       <span class="flex items-center gap-1.5">
         <app-icon name="plus" [size]="16" />
@@ -17,39 +23,59 @@
   </output>
   }
 
-  <app-dataset-create-draft [inline]="true" [categories]="categories()" [categoriesLoading]="categoriesLoading()"
-    [categoriesError]="categoriesError()" [creating]="facade.actionLoading() === 'create'"
-    (draftCreate)="onCreateDraft($event)" />
+  @if (!facade.hasNoDatasets() || facade.queueLoading()) {
+  <nav class="flex flex-wrap items-center gap-2" aria-label="Filter by status">
+    @for (item of statusFilters; track item.key) {
+    <button type="button" [class]="statFilterClasses(item.key)"
+      [attr.aria-current]="facade.statusFilter() === item.key ? 'true' : null" (click)="onFilter(item.key)">
+      {{ item.label }}
+      <span [class]="statCountClasses(item.key)">{{ statCount(item.key) | number }}</span>
+    </button>
+    }
+  </nav>
+  }
 
   @if (facade.queueError()) {
   <p class="text-sm text-nbs-danger" role="alert">
     {{ facade.queueError() }}
   </p>
   } @else if (facade.hasNoDatasets() && !facade.queueLoading()) {
-  <div class="rounded-md border border-dashed border-slate-300 bg-nbs-surface p-4">
-    <p class="text-sm font-medium text-slate-900">No datasets yet</p>
+  <div class="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-6 py-10 text-center">
+    <app-icon name="inbox" [size]="28" class="mx-auto text-slate-300" />
+    <p class="mt-3 text-sm font-medium text-slate-900">No datasets yet</p>
     <p class="mt-1 text-sm text-nbs-muted">
-      Use New draft above to create your first dataset, then upload a primary
-      file and submit for review.
+      Create your first draft, then upload a primary file and submit for review.
     </p>
-    <app-button class="mt-3" variant="primary" size="sm" (clicked)="openCreateDraft()">
+    <app-button class="mt-4" variant="primary" size="sm" (clicked)="openCreateDraft()">
       Create first draft
     </app-button>
   </div>
   } @else {
-  <div class="grid items-start gap-4 lg:grid-cols-[minmax(0,16rem)_minmax(0,1fr)]">
-    <div class="lg:sticky lg:top-6">
+  <div
+    class="border-t border-slate-100 pt-5 grid items-start gap-6 lg:grid-cols-[minmax(0,17rem)_minmax(0,1fr)] lg:gap-0">
+    <aside class="lg:sticky lg:top-6 lg:self-start lg:pr-5" [class.max-lg:hidden]="showDetailOnMobile()">
       <app-dataset-queue-list [items]="facade.items()" [pagination]="facade.pagination()"
-        [statusCounts]="facade.statusCounts()" [statusFilter]="facade.statusFilter()" [searchTerm]="facade.searchTerm()"
-        [selectedId]="facade.selectedId()" [loading]="facade.queueLoading()"
+        [searchTerm]="facade.searchTerm()" [selectedId]="facade.selectedId()" [loading]="facade.queueLoading()"
         [hasActiveSearch]="facade.hasActiveSearch()" [pageRangeLabel]="facade.pageRangeLabel()"
-        (filterChange)="onFilter($event)" (searchInput)="onSearch($event)" (previousPage)="facade.goToPreviousPage()"
-        (nextPage)="facade.goToNextPage()" (selectDataset)="onSelect($event)" />
-    </div>
+        (searchInput)="onSearch($event)" (previousPage)="facade.goToPreviousPage()" (nextPage)="facade.goToNextPage()"
+        (selectDataset)="onSelect($event)" />
+    </aside>
 
-    <div class="space-y-4">
+    <div class="min-w-0 lg:border-l lg:border-slate-200/70 lg:pl-6" [class.max-lg:hidden]="showQueueOnMobile()">
+      @if (facade.selectedRecord(); as record) {
+      <div class="lg:hidden">
+        <button type="button"
+          class="mb-4 inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1.5 text-sm font-medium text-nbs-primary transition-colors hover:bg-nbs-primary/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/40"
+          (click)="backToQueue()">
+          <app-icon name="arrow-right" [size]="15" class="rotate-180" />
+          Back to queue
+        </button>
+        <p class="truncate text-sm font-semibold text-slate-900">{{ record.title }}</p>
+      </div>
+      }
+
       @if (pendingSwitchId()) {
-      <div class="rounded-md border border-amber-200 bg-amber-50 px-3 py-3" role="alert">
+      <div class="rounded-lg border border-amber-200/80 bg-amber-50/80 px-4 py-4" role="alert">
         <p class="flex items-center gap-2 text-sm font-medium text-amber-900">
           <app-icon name="alert-triangle" [size]="15" class="text-amber-600" />
           You have unsaved metadata changes.
@@ -69,17 +95,53 @@
       }
 
       @if (facade.selectedRecord(); as record) {
-      <app-dataset-workflow-detail [record]="record" [categories]="categories()"
-        [categoriesLoading]="categoriesLoading()" [categoriesError]="categoriesError()" [canReview]="canReview()"
-        [canPublish]="canPublish()" [actionLoading]="facade.actionLoading()" [message]="facade.message()"
-        [messageError]="facade.messageError()" [publishedId]="facade.publishedId()"
-        (submitForReview)="facade.submit($event)" (approve)="facade.approve($event)" (reject)="facade.reject($event)"
-        (publish)="facade.publish($event)" (uploadFile)="facade.uploadFile(record.id, $event)"
-        (linkTag)="facade.linkTag(record.id, $event)" (categoryChange)="facade.updateCategory(record.id, $event)"
-        (metadataSaved)="facade.onMetadataSaved(record.id)" (resourcesChanged)="facade.refreshDataset(record.id)"
-        (deleteDataset)="facade.deleteDataset($event)" />
+      <app-dataset-workflow-detail [record]="record" [categories]="categories()" [tags]="tags()"
+        [canCreateTags]="canReview()" [categoriesLoading]="categoriesLoading()" [categoriesError]="categoriesError()"
+        [canReview]="canReview()" [canPublish]="canPublish()" [actionLoading]="facade.actionLoading()"
+        [publishedId]="facade.publishedId()" (submitForReview)="facade.submit($event)"
+        (approve)="facade.approve($event)" (reject)="facade.reject($event)" (publish)="facade.publish($event)"
+        (uploadFile)="facade.uploadFile(record.id, $event)" (categoryChange)="facade.updateCategory(record.id, $event)"
+        (metadataSaved)="facade.onMetadataSaved(record.id)" (tagsChanged)="onTagsChanged(record.id)"
+        (resourcesChanged)="onResourcesChanged(record.id)" (deleteDataset)="facade.deleteDataset($event)" />
+      } @else if (showDetailEmptyState()) {
+      <div class="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-8 py-16 text-center lg:block">
+        <app-icon name="inbox" [size]="32" class="mx-auto text-slate-300" />
+        <p class="mt-4 text-sm font-medium text-slate-900">Select a dataset</p>
+        <p class="mt-1 text-sm text-nbs-muted">
+          Choose a dataset from the queue to review metadata, tags, and workflow actions.
+        </p>
+      </div>
       }
     </div>
   </div>
   }
 </section>
+
+@if (createDraftOpen()) {
+<app-modal size="xl" ariaLabel="Create draft dataset" (closed)="closeCreateDraft()">
+  <div modalHeader class="flex min-w-0 items-center gap-3">
+    <span class="flex size-10 shrink-0 items-center justify-center rounded-full bg-nbs-primary/10 text-nbs-primary">
+      <app-icon name="plus" [size]="20" />
+    </span>
+    <div class="min-w-0">
+      <h2 class="text-base font-semibold text-slate-900">New draft</h2>
+      <p class="text-sm text-nbs-muted">
+        Fill in the details to start a new dataset.
+      </p>
+    </div>
+  </div>
+  <app-dataset-create-draft #createDraft presentation="modal" [categories]="categories()" [tags]="tags()"
+    [canCreateTags]="canReview()" [categoriesLoading]="categoriesLoading()" [categoriesError]="categoriesError()"
+    [creating]="facade.actionLoading() === 'create'" (draftCreate)="onCreateDraft($event)" />
+  <div modalFooter
+    class="flex flex-wrap items-center justify-end gap-2 rounded-b-xl border-t border-nbs-border bg-slate-50/50 px-5 py-4">
+    <app-button variant="ghost" size="sm" (clicked)="closeCreateDraft()">
+      Cancel
+    </app-button>
+    <app-button variant="primary" size="sm" [loading]="facade.actionLoading() === 'create'"
+      (clicked)="createDraft.submit()">
+      Create draft dataset
+    </app-button>
+  </div>
+</app-modal>
+}

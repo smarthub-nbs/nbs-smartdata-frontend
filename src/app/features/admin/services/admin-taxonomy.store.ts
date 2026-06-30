@@ -91,6 +91,25 @@ export class AdminTaxonomyStore {
       );
   }
 
+  createTag(name: string): Observable<BackendAdminTag> {
+    return this.workflow
+      .createTag(name)
+      .pipe(
+        tap((tag) =>
+          this._tags.update((items) => this.sortByName([...items, tag])),
+        ),
+      );
+  }
+
+  registerTag(tag: BackendAdminTag): void {
+    this._tags.update((items) => {
+      if (items.some((item) => item.id === tag.id)) {
+        return items;
+      }
+      return this.sortByName([...items, tag]);
+    });
+  }
+
   updateTag(id: string, name: string): Observable<BackendAdminTag> {
     return this.workflow
       .updateTag(id, name)

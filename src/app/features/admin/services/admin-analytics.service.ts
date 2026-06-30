@@ -47,8 +47,16 @@ export class AdminAnalyticsService {
     [...this.rows()].sort((a, b) => b.apiCalls - a.apiCalls),
   );
 
+  readonly activeDatasetCount = computed(
+    () => this.rows().filter((row) => row.resolved).length,
+  );
+
   readonly datasetCount = computed(
     () => this.datasetService.listDatasets().length,
+  );
+
+  readonly topResolvedRow = computed(
+    () => this.topRows().find((row) => row.resolved) ?? null,
   );
 
   private hasLoaded = false;
@@ -67,6 +75,7 @@ export class AdminAnalyticsService {
     this.hasLoaded = true;
     this.loading.set(true);
     this.loadError.set(null);
+    this.datasetService.refreshCatalog();
     this.developerApi
       .loadUsageLogs()
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -84,11 +93,14 @@ export class AdminAnalyticsService {
   }
 
   private toUsageRow(metrics: DatasetUsageMetrics): DatasetUsageRow {
-    const dataset = this.datasetService.getById(metrics.datasetId);
+    const dataset = metrics.datasetId
+      ? this.datasetService.getById(metrics.datasetId)
+      : undefined;
     return {
       ...metrics,
-      title: dataset?.title ?? metrics.datasetId,
-      topic: dataset?.topicName ?? 'Unknown topic',
+      title: dataset?.title ?? 'Unattributed activity',
+      topic: dataset?.topicName ?? '—',
+      resolved: dataset !== undefined,
     };
   }
 }

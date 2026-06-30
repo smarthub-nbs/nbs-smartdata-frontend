@@ -14,7 +14,9 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
   AdminDatasetDraft,
   BackendAdminCategory,
+  BackendAdminTag,
   DatasetFrequencyValue,
+  METADATA_TITLE_MAX_LENGTH,
 } from '@app/features/admin/models/admin-dataset.model';
 import { FREQUENCY_OPTIONS } from '@app/features/admin/utils/admin-frequency.util';
 import { YEAR_OPTIONS } from '@app/features/admin/utils/admin-year.util';
@@ -48,10 +50,12 @@ export interface CreateDraftPayload {
 })
 export class DatasetCreateDraftComponent {
   readonly categories = input.required<BackendAdminCategory[]>();
+  readonly tags = input<BackendAdminTag[]>([]);
+  readonly canCreateTags = input(false);
   readonly categoriesLoading = input(false);
   readonly categoriesError = input<string | null>(null);
   readonly creating = input(false);
-  readonly inline = input(false);
+  readonly presentation = input<'modal' | 'inline' | 'accordion'>('accordion');
 
   readonly draftCreate = output<CreateDraftPayload>();
 
@@ -70,10 +74,19 @@ export class DatasetCreateDraftComponent {
     })),
   );
 
+  protected readonly tagOptions = computed<SelectOption[]>(() =>
+    this.tags().map((tag) => ({
+      label: tag.name,
+      value: tag.name,
+    })),
+  );
+
   protected readonly form = this.fb.nonNullable.group({
     categoryId: ['', Validators.required],
-    slug: [''],
-    title: ['', Validators.required],
+    title: [
+      '',
+      [Validators.required, Validators.maxLength(METADATA_TITLE_MAX_LENGTH)],
+    ],
     description: ['', Validators.required],
     license: ['Open Government Licence - Tanzania', Validators.required],
     frequency: this.fb.nonNullable.control<DatasetFrequencyValue>(
@@ -124,10 +137,22 @@ export class DatasetCreateDraftComponent {
 
   protected controlError(controlName: keyof typeof this.form.controls): string {
     const control = this.form.controls[controlName];
-    return control.touched && control.invalid ? 'This field is required.' : '';
+    if (!control.touched) {
+      return '';
+    }
+    if (control.hasError('required')) {
+      return 'This field is required.';
+    }
+    if (control.hasError('maxlength')) {
+      const { requiredLength } = control.getError('maxlength') as {
+        requiredLength: number;
+      };
+      return `Must be ${requiredLength} characters or fewer.`;
+    }
+    return '';
   }
 
-  protected submit(): void {
+  submit(): void {
     this.form.markAllAsTouched();
     if (this.form.invalid) {
       return;
@@ -137,7 +162,6 @@ export class DatasetCreateDraftComponent {
     this.draftCreate.emit({
       draft: {
         categoryId: raw.categoryId,
-        slug: raw.slug,
         title: raw.title,
         description: raw.description,
         license: raw.license,
@@ -152,6 +176,18 @@ export class DatasetCreateDraftComponent {
 
   reset(): void {
     this.file.set(null);
+    this.form.reset({
+      categoryId: '',
+      title: '',
+      description: '',
+      license: 'Open Government Licence - Tanzania',
+      frequency: 'annual',
+      region: 'National',
+      year: String(new Date().getFullYear()),
+      tagName: '',
+    });
+    this.form.markAsPristine();
+    this.form.markAsUntouched();
     this.expanded.set(false);
   }
 }

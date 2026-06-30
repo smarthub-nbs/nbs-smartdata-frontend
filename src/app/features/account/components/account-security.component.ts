@@ -9,6 +9,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '@app/core/services/auth.service';
+import { ToastService } from '@app/core/services/toast.service';
 import { ButtonComponent, TextInputComponent } from '@shared/ui';
 
 @Component({
@@ -20,6 +21,7 @@ import { ButtonComponent, TextInputComponent } from '@shared/ui';
 })
 export class AccountSecurityComponent {
   private readonly auth = inject(AuthService);
+  private readonly toast = inject(ToastService);
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly user = this.auth.user;
@@ -82,6 +84,7 @@ export class AccountSecurityComponent {
         if (err) {
           this.passwordError.set(true);
           this.passwordMessage.set(err.message);
+          this.toast.error(err.message);
           if (err.fieldErrors) {
             this.passwordFieldErrors.set(err.fieldErrors);
           }
@@ -92,7 +95,9 @@ export class AccountSecurityComponent {
         this.newPassword.set('');
         this.confirmPassword.set('');
         this.passwordError.set(false);
-        this.passwordMessage.set('Password updated successfully.');
+        const message = 'Password updated successfully.';
+        this.passwordMessage.set(message);
+        this.toast.success(message);
       });
   }
 
@@ -109,13 +114,15 @@ export class AccountSecurityComponent {
         if (err) {
           this.verificationError.set(true);
           this.verificationMessage.set(err.message);
+          this.toast.error(err.message);
           return;
         }
 
         this.verificationError.set(false);
-        this.verificationMessage.set(
-          'Verification email sent. Check your inbox for the link.',
-        );
+        const message =
+          'Verification email sent. Check your inbox for the link.';
+        this.verificationMessage.set(message);
+        this.toast.success(message);
       });
   }
 

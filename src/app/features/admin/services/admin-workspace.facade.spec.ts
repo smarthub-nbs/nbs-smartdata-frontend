@@ -1,5 +1,7 @@
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { AuthService } from '@app/core/services/auth.service';
+import { ToastService } from '@app/core/services/toast.service';
 import {
   AdminDatasetQueueResponse,
   AdminDatasetQueueSummary,
@@ -59,6 +61,7 @@ describe('AdminWorkspaceFacade', () => {
   let facade: AdminWorkspaceFacade;
   let workflow: jasmine.SpyObj<AdminDatasetWorkflowService>;
   let datasetService: jasmine.SpyObj<DatasetService>;
+  let toast: jasmine.SpyObj<ToastService>;
   let auth: {
     canSeeAllDatasets: jasmine.Spy;
   };
@@ -76,6 +79,7 @@ describe('AdminWorkspaceFacade', () => {
     datasetService = jasmine.createSpyObj('DatasetService', [
       'markCatalogStale',
     ]);
+    toast = jasmine.createSpyObj('ToastService', ['success', 'error', 'show']);
     auth = {
       canSeeAllDatasets: jasmine
         .createSpy('canSeeAllDatasets')
@@ -95,9 +99,11 @@ describe('AdminWorkspaceFacade', () => {
     TestBed.configureTestingModule({
       providers: [
         AdminWorkspaceFacade,
+        provideRouter([]),
         { provide: AdminDatasetWorkflowService, useValue: workflow },
         { provide: DatasetService, useValue: datasetService },
         { provide: AuthService, useValue: auth },
+        { provide: ToastService, useValue: toast },
       ],
     });
 
@@ -132,8 +138,9 @@ describe('AdminWorkspaceFacade', () => {
     facade.submit('ds-draft');
 
     expect(workflow.submitForReview).toHaveBeenCalledWith('ds-draft');
-    expect(facade.message()).toContain('Submitted for review');
-    expect(facade.messageError()).toBeFalse();
+    expect(toast.success).toHaveBeenCalledWith(
+      'Submitted for review. An admin will approve or reject it.',
+    );
     expect(workflow.listAdminQueue).toHaveBeenCalled();
     expect(datasetService.markCatalogStale).toHaveBeenCalled();
   });
@@ -143,11 +150,18 @@ describe('AdminWorkspaceFacade', () => {
 
     facade.approve('ds-review');
     expect(workflow.reviewDataset).toHaveBeenCalledWith('ds-review', 'approve');
-    expect(facade.message()).toContain('approved');
+    expect(toast.success).toHaveBeenCalledWith(
+      'Dataset approved. You can now publish it.',
+    );
 
     facade.publish('ds-review');
     expect(workflow.publishDataset).toHaveBeenCalledWith('ds-review');
-    expect(facade.message()).toContain('published');
+    expect(toast.show).toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        message: 'Dataset published. It is now visible in Discovery.',
+        variant: 'success',
+      }),
+    );
     expect(facade.publishedId()).toBe('ds-review');
   });
 
@@ -159,8 +173,7 @@ describe('AdminWorkspaceFacade', () => {
 
     facade.submit('ds-draft');
 
-    expect(facade.messageError()).toBeTrue();
-    expect(facade.message()).toBe('Submit failed');
+    expect(toast.error).toHaveBeenCalledWith('Submit failed');
   });
 
   it('filters and paginates owned datasets for publishers', () => {
@@ -170,9 +183,11 @@ describe('AdminWorkspaceFacade', () => {
     TestBed.configureTestingModule({
       providers: [
         AdminWorkspaceFacade,
+        provideRouter([]),
         { provide: AdminDatasetWorkflowService, useValue: workflow },
         { provide: DatasetService, useValue: datasetService },
         { provide: AuthService, useValue: auth },
+        { provide: ToastService, useValue: toast },
       ],
     });
 

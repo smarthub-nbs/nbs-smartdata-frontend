@@ -9,7 +9,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { AuthService } from '@app/core/services/auth.service';
-import { ButtonComponent, TextInputComponent } from '@shared/ui';
+import { ButtonComponent, IconComponent, TextInputComponent } from '@shared/ui';
 
 @Component({
   selector: 'app-login-page',
@@ -18,6 +18,7 @@ import { ButtonComponent, TextInputComponent } from '@shared/ui';
     ReactiveFormsModule,
     RouterLink,
     ButtonComponent,
+    IconComponent,
     TextInputComponent,
   ],
   templateUrl: './login-page.component.html',
@@ -38,9 +39,11 @@ export class LoginPageComponent {
   protected readonly idleSignOut = signal(
     this.route.snapshot.queryParamMap.get('reason') === 'idle',
   );
-  protected readonly registerQueryParams = {
-    returnUrl: this.route.snapshot.queryParamMap.get('returnUrl') ?? '/',
-  };
+  private readonly returnUrl = this.safeReturnUrl(
+    this.route.snapshot.queryParamMap.get('returnUrl'),
+  );
+
+  protected readonly registerQueryParams = { returnUrl: this.returnUrl };
 
   protected readonly form = this.fb.nonNullable.group({
     username: ['', Validators.required],
@@ -68,10 +71,24 @@ export class LoginPageComponent {
           return;
         }
 
-        const returnUrl =
-          this.route.snapshot.queryParamMap.get('returnUrl') ?? '/';
-        void this.router.navigateByUrl(returnUrl);
+        void this.router.navigateByUrl(this.returnUrl);
       });
+  }
+
+  /** Rejects external URLs and auth pages so sign-in never loops back here. */
+  private safeReturnUrl(value: string | null): string {
+    if (!value || !value.startsWith('/') || value.startsWith('//')) {
+      return '/';
+    }
+    const path = value.split('?')[0];
+    const authPaths = [
+      '/login',
+      '/register',
+      '/forgot-password',
+      '/reset-password',
+      '/verify-email',
+    ];
+    return authPaths.includes(path) ? '/' : value;
   }
 
   protected fieldError(name: 'username' | 'password'): string {

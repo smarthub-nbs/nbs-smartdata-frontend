@@ -5,104 +5,134 @@
       <p class="nbs-page-lead max-w-2xl">
         Create drafts, complete requirements, and publish datasets to Discovery.
       </p>
+      <p class="mt-2 text-xs text-nbs-muted">
+        {{ scopeLabel() }} · {{ facade.statusCounts().all | number }} datasets
+      </p>
     </div>
-    <span class="text-sm text-nbs-muted">
-      {{ facade.statusCounts().all | number }} datasets
-    </span>
   </header>
 
+  <nav class="flex flex-wrap items-center gap-2 border-b border-nbs-border pb-3" aria-label="Admin sections">
+    @for (item of navItems(); track item.key) {
+    <button type="button" [class]="sectionTabClasses(item.key)"
+      [attr.aria-current]="activeSection() === item.key ? 'page' : null" (click)="setSection(item.key)">
+      <app-icon [name]="item.icon" [size]="16" />
+      {{ item.label }}
+    </button>
+    }
+    @if (canManageUsers()) {
+    <a routerLink="/users"
+      class="ml-auto inline-flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-slate-600 transition-colors duration-200 hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/40">
+      <app-icon name="shield" [size]="16" />
+      Manage users
+    </a>
+    }
+  </nav>
+
+  @switch (activeSection()) {
+  @case ('publishing') {
   <app-dataset-workflow-panel />
-
-  @if (canManageTaxonomy()) {
-  <app-taxonomy-manager />
   }
-
-  <section class="nbs-panel" aria-labelledby="platform-activity-heading">
-    <button type="button"
-      class="flex w-full items-center justify-between gap-3 text-left transition-colors hover:text-nbs-primary"
-      [attr.aria-expanded]="activityExpanded()" (click)="toggleActivityExpanded()">
-      <div class="flex items-start gap-2.5">
-        <app-icon name="sliders" [size]="18" class="mt-0.5 text-nbs-muted" />
+  @case ('taxonomy') {
+  <app-taxonomy-manager [embedded]="true" />
+  }
+  @case ('activity') {
+  <section
+    class="space-y-6 rounded-2xl border border-slate-200/80 bg-white p-6 shadow-[0_18px_50px_-36px_rgba(15,23,42,0.45)]"
+    aria-labelledby="platform-activity-heading">
+    <div class="flex flex-wrap items-start justify-between gap-4">
+      <div class="flex items-start gap-3">
+        <span class="flex size-9 shrink-0 items-center justify-center rounded-full bg-nbs-primary/10 text-nbs-primary">
+          <app-icon name="bar-chart" [size]="17" />
+        </span>
         <div>
-          <h2 id="platform-activity-heading" class="text-sm font-semibold text-slate-900">
+          <h2 id="platform-activity-heading" class="text-base font-semibold text-slate-900">
             Platform activity
           </h2>
-          <p class="mt-1 text-xs text-nbs-muted">
-            Usage signals for published datasets — open when you need demand
-            context.
+          <p class="mt-0.5 text-sm text-nbs-muted">
+            Usage signals for published datasets in Discovery.
           </p>
         </div>
       </div>
-      <app-icon name="chevron-down" [size]="18"
-        class="shrink-0 text-nbs-muted transition-transform motion-safe:duration-200"
-        [class.rotate-180]="activityExpanded()" />
-    </button>
+      <button type="button"
+        class="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 transition-colors duration-200 hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/40 disabled:cursor-not-allowed disabled:opacity-60"
+        [disabled]="analytics.analyticsLoading()" (click)="refreshActivity()">
+        <app-icon name="refresh-cw" [size]="15" [class.animate-spin]="analytics.analyticsLoading()" />
+        Refresh
+      </button>
+    </div>
 
-    @if (activityExpanded()) {
-    <div class="mt-5 space-y-5 border-t border-nbs-border pt-5">
-      @if (analytics.analyticsLoading()) {
-      <p class="text-sm text-nbs-muted" aria-live="polite">
-        Loading platform activity…
-      </p>
-      } @else if (analytics.analyticsError()) {
-      <div class="rounded-md border border-red-100 bg-red-50 px-4 py-3" role="alert">
-        <p class="text-sm font-medium text-red-900">
-          Platform activity could not load.
-        </p>
-        <p class="mt-1 text-sm text-red-800">
-          {{ analytics.analyticsError() }}
-        </p>
-      </div>
-      } @else {
-      <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        @for (card of platformCards(); track card.label) {
-        <article class="nbs-panel-compact">
-          <p class="text-xs font-semibold uppercase tracking-wide text-nbs-muted">
-            {{ card.label }}
-          </p>
-          <p class="mt-2 text-2xl font-semibold tabular-nums text-slate-900">
-            {{ card.value }}
-          </p>
-          <p class="mt-1 text-xs text-nbs-muted">{{ card.detail }}</p>
-        </article>
-        }
-      </div>
-
-      <section>
-        <div class="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h3 class="text-sm font-semibold text-slate-900">
-              Dataset demand
-            </h3>
-            <p class="mt-1 text-xs text-nbs-muted">
-              Sorted by API calls. Each metric is reported independently.
-            </p>
-          </div>
-          @if (topDemandDataset(); as row) {
-          <span class="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-800">
-            Leader: {{ row.title }}
-          </span>
-          }
-        </div>
-        <div class="mt-4">
-          @if (analytics.topRows().length === 0) {
-          <div class="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center">
-            <p class="text-sm font-medium text-slate-800">
-              No usage data yet.
-            </p>
-            <p class="mt-1 text-sm text-nbs-muted">
-              Activity appears after published datasets receive API calls,
-              downloads, or views.
-            </p>
-          </div>
-          } @else {
-          <app-data-table [data]="analytics.topRows()" [columns]="usageColumns" [showPagination]="false"
-            trackByKey="datasetId" />
-          }
-        </div>
-      </section>
+    @if (analytics.analyticsLoading()) {
+    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-hidden="true">
+      @for (placeholder of [0, 1, 2, 3]; track placeholder) {
+      <article class="rounded-xl border border-slate-200/70 bg-slate-50/60 p-4">
+        <div class="h-3 w-20 animate-pulse rounded bg-slate-200"></div>
+        <div class="mt-3 h-7 w-16 animate-pulse rounded bg-slate-200"></div>
+        <div class="mt-2 h-3 w-24 animate-pulse rounded bg-slate-200"></div>
+      </article>
       }
     </div>
+    <p class="sr-only" aria-live="polite">Loading platform activity…</p>
+    } @else if (analytics.analyticsError()) {
+    <div class="rounded-md border border-red-100 bg-red-50 px-4 py-3" role="alert">
+      <p class="text-sm font-medium text-red-900">
+        Platform activity could not load.
+      </p>
+      <p class="mt-1 text-sm text-red-800">
+        {{ analytics.analyticsError() }}
+      </p>
+    </div>
+    } @else {
+    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      @for (card of platformCards(); track card.label) {
+      <article class="rounded-xl border border-slate-200/70 bg-slate-50/60 p-4">
+        <p class="text-xs font-semibold uppercase tracking-wide text-nbs-muted">
+          {{ card.label }}
+        </p>
+        <p class="mt-2 text-2xl font-semibold tabular-nums text-slate-900">
+          {{ card.value }}
+        </p>
+        <p class="mt-1 text-xs text-nbs-muted">{{ card.detail }}</p>
+      </article>
+      }
+    </div>
+
+    <section>
+      <div class="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h3 class="text-sm font-semibold text-slate-900">
+            Dataset demand
+          </h3>
+          <p class="mt-1 text-xs text-nbs-muted">
+            Sorted by API calls. API calls, downloads, and views are counted separately.
+          </p>
+        </div>
+        @if (topDemandDataset(); as row) {
+        <span class="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-800">
+          Leader: {{ row.title }}
+        </span>
+        }
+      </div>
+      <div class="mt-4">
+        @if (analytics.topRows().length === 0) {
+        <div class="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center">
+          <p class="text-sm font-medium text-slate-800">
+            No usage data yet.
+          </p>
+          <p class="mt-1 text-sm text-nbs-muted">
+            Activity appears after published datasets receive API calls,
+            downloads, or views.
+          </p>
+        </div>
+        } @else {
+        <div class="overflow-x-auto">
+          <app-data-table [data]="analytics.topRows()" [columns]="usageColumns" [showPagination]="false"
+            [rowClickable]="true" trackByKey="datasetId" (rowClicked)="onUsageRowClick($event)" />
+        </div>
+        }
+      </div>
+    </section>
     }
   </section>
+  }
+  }
 </div>

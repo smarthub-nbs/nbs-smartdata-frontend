@@ -15,10 +15,13 @@ import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
 import { ApiError } from '@app/core/models/api-error.model';
+import { ToastService } from '@app/core/services/toast.service';
+import { fieldErrorsFromApi } from '@app/core/utils/api-field-errors.util';
 import {
   AdminDatasetMetadata,
   AdminDatasetMetadataForm,
   DatasetFrequencyValue,
+  METADATA_TITLE_MAX_LENGTH,
 } from '@app/features/admin/models/admin-dataset.model';
 import { AdminDatasetWorkflowService } from '@app/features/admin/services/admin-dataset-workflow.service';
 import { FREQUENCY_OPTIONS } from '@app/features/admin/utils/admin-frequency.util';
@@ -53,6 +56,7 @@ export class DatasetMetadataEditorComponent {
 
   private readonly workflow = inject(AdminDatasetWorkflowService);
   private readonly fb = inject(FormBuilder);
+  private readonly toast = inject(ToastService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly formSection =
     viewChild<ElementRef<HTMLElement>>('formSection');
@@ -69,7 +73,10 @@ export class DatasetMetadataEditorComponent {
   protected readonly yearOptions: SelectOption[] = [...YEAR_OPTIONS];
 
   protected readonly form = this.fb.nonNullable.group({
-    title: ['', Validators.required],
+    title: [
+      '',
+      [Validators.required, Validators.maxLength(METADATA_TITLE_MAX_LENGTH)],
+    ],
     description: ['', Validators.required],
     license: ['', Validators.required],
     frequency: this.fb.nonNullable.control<DatasetFrequencyValue>(
@@ -139,6 +146,7 @@ export class DatasetMetadataEditorComponent {
     this.form.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
+        this.clearApiFieldErrors();
         this.dirtyChange.emit(this.form.dirty);
         this.saveMessage.set('');
         this.saveError.set(false);
@@ -192,14 +200,24 @@ export class DatasetMetadataEditorComponent {
       )
       .subscribe({
         next: (metadata) => {
+          const message = 'Metadata saved successfully.';
           this.saveError.set(false);
-          this.saveMessage.set('Metadata saved successfully.');
+          this.saveMessage.set(message);
+          this.toast.success(message);
           this.loadForm(metadata);
           this.metadataSaved.emit();
         },
         error: (error: unknown) => {
           this.saveError.set(true);
-          this.saveMessage.set(this.resolveErrorMessage(error));
+          const fieldErrors = fieldErrorsFromApi(error);
+          if (Object.keys(fieldErrors).length > 0) {
+            this.applyApiFieldErrors(fieldErrors);
+            this.saveMessage.set('Fix the highlighted fields before saving.');
+            return;
+          }
+          const message = this.resolveErrorMessage(error);
+          this.saveMessage.set(message);
+          this.toast.error(message);
         },
       });
   }
@@ -209,8 +227,17 @@ export class DatasetMetadataEditorComponent {
     if (!control.touched) {
       return '';
     }
+    if (control.hasError('api')) {
+      return control.getError('api') as string;
+    }
     if (control.hasError('required')) {
       return 'This field is required.';
+    }
+    if (control.hasError('maxlength')) {
+      const { requiredLength } = control.getError('maxlength') as {
+        requiredLength: number;
+      };
+      return `Must be ${requiredLength} characters or fewer.`;
     }
     return '';
   }
@@ -258,6 +285,32 @@ export class DatasetMetadataEditorComponent {
     this.form.reset();
     this.loadError.set('');
     this.dirtyChange.emit(false);
+  }
+
+  private applyApiFieldErrors(errors: Record<string, string>): void {
+    for (const [fieldName, message] of Object.entries(errors)) {
+      const control = this.form.get(fieldName);
+      if (!control) {
+        continue;
+      }
+      const existing = control.errors;
+      control.setErrors(
+        existing ? { ...existing, api: message } : { api: message },
+      );
+      control.markAsTouched();
+    }
+  }
+
+  private clearApiFieldErrors(): void {
+    for (const control of Object.values(this.form.controls)) {
+      const errors = control.errors;
+      if (!errors?.['api']) {
+        continue;
+      }
+      const rest = { ...errors };
+      delete rest['api'];
+      control.setErrors(Object.keys(rest).length > 0 ? rest : null);
+    }
   }
 
   private resolveErrorMessage(error: unknown): string {

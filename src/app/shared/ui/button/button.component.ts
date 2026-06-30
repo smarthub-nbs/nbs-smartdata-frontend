@@ -33,6 +33,10 @@ const SIZE_CLASSES: Record<ButtonSize, string> = {
 @Component({
   selector: 'app-button',
   standalone: true,
+  host: {
+    '[class.block]': 'fullWidth()',
+    '[class.w-full]': 'fullWidth()',
+  },
   template: `
     <button
       [attr.type]="type()"

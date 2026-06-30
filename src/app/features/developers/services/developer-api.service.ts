@@ -326,7 +326,7 @@ export class DeveloperApiService {
     >();
 
     for (const log of logs) {
-      const datasetId = log.dataset_id ?? 'unknown';
+      const datasetId = this.resolveLogDatasetId(log);
       const current = byDataset.get(datasetId) ?? {
         datasetId,
         apiCalls: 0,
@@ -350,5 +350,17 @@ export class DeveloperApiService {
     }
 
     return [...byDataset.values()];
+  }
+
+  /**
+   * Falls back to the dataset id embedded in the request path when the log row
+   * has no explicit `dataset_id`. Unattributable activity buckets under '' so
+   * callers can present a friendly label instead of a literal "unknown".
+   */
+  private resolveLogDatasetId(log: BackendApiUsageLog): string {
+    if (log.dataset_id) {
+      return log.dataset_id;
+    }
+    return log.endpoint.match(/\/datasets\/([^/?#]+)/)?.[1] ?? '';
   }
 }

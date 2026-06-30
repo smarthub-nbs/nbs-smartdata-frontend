@@ -77,6 +77,16 @@ export class DatasetResourceManagerComponent {
     }
   }
 
+  open(): void {
+    if (this.expanded()) {
+      return;
+    }
+    this.expanded.set(true);
+    if (this.loadedId !== this.datasetId()) {
+      this.load();
+    }
+  }
+
   protected requestDeleteFile(fileId: string): void {
     this.confirmingFileId.set(fileId);
     this.confirmingTagLinkId.set('');

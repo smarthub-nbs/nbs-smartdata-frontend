@@ -1,66 +1,52 @@
-<section class="border-t border-nbs-border pt-4">
-  <button
-    type="button"
+<section class="pt-2">
+  <button type="button"
     class="flex w-full cursor-pointer items-center justify-between gap-3 text-left transition-colors hover:text-nbs-primary"
-    [attr.aria-expanded]="expanded()"
-    (click)="toggle()"
-  >
+    [attr.aria-expanded]="expanded()" (click)="toggle()">
     <span class="flex items-center gap-2">
       <app-icon name="clock" [size]="16" class="text-nbs-primary" />
       <span class="text-sm font-semibold text-slate-900">Activity log</span>
       @if (!loading() && entries().length > 0) {
-        <span
-          class="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium tabular-nums text-slate-600"
-        >
-          {{ entries().length }}
-        </span>
+      <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium tabular-nums text-slate-600">
+        {{ entries().length }}
+      </span>
       }
     </span>
-    <app-icon
-      name="chevron-down"
-      [size]="16"
-      class="text-slate-500 transition-transform motion-safe:duration-200"
-      [class.rotate-180]="expanded()"
-    />
+    <app-icon name="chevron-down" [size]="16" class="text-slate-500 transition-transform motion-safe:duration-200"
+      [class.rotate-180]="expanded()" />
   </button>
 
   @if (expanded()) {
-    <div class="mt-4">
-      @if (loading()) {
-        <p class="text-sm text-nbs-muted">Loading activity…</p>
-      } @else if (error()) {
-        <p class="text-sm text-nbs-danger" role="alert">
-          Could not load activity log.
-        </p>
-      } @else if (entries().length === 0) {
-        <p class="text-sm text-nbs-muted">No activity recorded yet.</p>
-      } @else {
-        <ul class="divide-y divide-slate-100">
-          @for (entry of entries(); track entry.key) {
-            <li
-              class="flex flex-col gap-1 py-3 sm:flex-row sm:items-baseline sm:gap-4"
-            >
-              <time
-                class="shrink-0 text-sm font-medium text-slate-900 sm:w-44"
-                [dateTime]="entry.createdAt"
-              >
-                {{ entry.createdAt | date: 'medium' }}
-              </time>
-              <div class="min-w-0">
-                <p class="text-sm text-slate-700">
-                  {{ entry.label }}
-                  <span class="text-nbs-muted">— {{ entry.actor }}</span>
-                </p>
-                @if (entry.details) {
-                  <p class="mt-0.5 break-words text-xs text-nbs-muted">
-                    {{ entry.details }}
-                  </p>
-                }
-              </div>
-            </li>
+  <div class="mt-4">
+    @if (loading()) {
+    <p class="text-sm text-nbs-muted">Loading activity…</p>
+    } @else if (error()) {
+    <p class="text-sm text-nbs-danger" role="alert">
+      Could not load activity log.
+    </p>
+    } @else if (entries().length === 0) {
+    <p class="text-sm text-nbs-muted">No activity recorded yet.</p>
+    } @else {
+    <ul class="divide-y divide-slate-100">
+      @for (entry of entries(); track entry.key) {
+      <li class="flex flex-col gap-1 py-3 sm:flex-row sm:items-baseline sm:gap-4">
+        <time class="shrink-0 text-sm font-medium text-slate-900 sm:w-44" [dateTime]="entry.createdAt">
+          {{ entry.createdAt | date: 'medium' }}
+        </time>
+        <div class="min-w-0">
+          <p class="text-sm text-slate-700">
+            {{ entry.label }}
+            <span class="text-nbs-muted">— {{ entry.actor }}</span>
+          </p>
+          @if (entry.details) {
+          <p class="mt-0.5 break-words text-xs text-nbs-muted">
+            {{ entry.details }}
+          </p>
           }
-        </ul>
+        </div>
+      </li>
       }
-    </div>
+    </ul>
+    }
+  </div>
   }
 </section>

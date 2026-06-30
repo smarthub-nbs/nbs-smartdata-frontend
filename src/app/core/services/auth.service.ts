@@ -12,6 +12,7 @@ import { Observable, catchError, map, of, switchMap, tap } from 'rxjs';
 import { ApiError } from '@app/core/models/api-error.model';
 import { UserProfile, UserRole } from '@app/core/models/user.model';
 import { ApiService } from '@app/core/services/api.service';
+import { ToastService } from '@app/core/services/toast.service';
 import { fieldErrorsFromApi } from '@app/core/utils/api-field-errors.util';
 import { environment } from '@env/environment';
 
@@ -71,6 +72,7 @@ export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly api = inject(ApiService);
   private readonly router = inject(Router);
+  private readonly toast = inject(ToastService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly currentUser = signal<UserProfile | null>(this.readUser());
   private readonly accessToken = signal<string | null>(
@@ -160,6 +162,7 @@ export class AuthService {
         .subscribe({ error: () => undefined });
     }
     this.clearSession();
+    this.toast.dismissAll();
     if (options?.reason === 'idle') {
       void this.router.navigate(['/login'], {
         queryParams: { reason: 'idle' },

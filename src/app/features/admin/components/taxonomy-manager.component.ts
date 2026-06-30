@@ -2,14 +2,18 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  OnInit,
   computed,
   inject,
+  input,
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
 import { ApiError } from '@app/core/models/api-error.model';
+import { ToastService } from '@app/core/services/toast.service';
+import { fieldErrorsFromApi } from '@app/core/utils/api-field-errors.util';
 import { AdminTaxonomyStore } from '@app/features/admin/services/admin-taxonomy.store';
 import { ButtonComponent, IconComponent } from '@shared/ui';
 
@@ -28,9 +32,18 @@ interface EditState {
   templateUrl: './taxonomy-manager.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class TaxonomyManagerComponent {
+export class TaxonomyManagerComponent implements OnInit {
+  readonly embedded = input(false);
+
   private readonly taxonomy = inject(AdminTaxonomyStore);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly toast = inject(ToastService);
+
+  ngOnInit(): void {
+    if (this.embedded()) {
+      this.taxonomy.ensureLoaded();
+    }
+  }
 
   protected readonly expanded = signal(false);
   protected readonly actionId = signal('');
@@ -42,6 +55,7 @@ export class TaxonomyManagerComponent {
   protected readonly categories = this.taxonomy.categories;
   protected readonly tags = this.taxonomy.tags;
   protected readonly newCategoryName = signal('');
+  protected readonly newTagName = signal('');
   protected readonly editing = signal<EditState | null>(null);
   protected readonly confirmingId = signal('');
 
@@ -88,9 +102,41 @@ export class TaxonomyManagerComponent {
       .subscribe({
         next: () => {
           this.newCategoryName.set('');
+          this.toast.success('Category created.');
+        },
+        error: (error: unknown) => this.showError(error),
+      });
+  }
+
+  protected addTag(): void {
+    const name = this.newTagName().trim();
+    if (!name) {
+      return;
+    }
+    const duplicate = this.tags().some(
+      (tag) => tag.name.toLowerCase() === name.toLowerCase(),
+    );
+    if (duplicate) {
+      const message = 'A tag with this name already exists.';
+      this.actionError.set(message);
+      this.toast.warning(message);
+      return;
+    }
+    this.actionError.set('');
+    this.actionId.set('new-tag');
+    this.taxonomy
+      .createTag(name)
+      .pipe(
+        finalize(() => this.actionId.set('')),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: () => {
+          this.newTagName.set('');
+          this.toast.success('Tag created.');
         },
         error: (error: unknown) =>
-          this.actionError.set(this.resolveError(error)),
+          this.showErrorMessage(this.resolveFieldError(error, 'name')),
       });
   }
 
@@ -114,9 +160,11 @@ export class TaxonomyManagerComponent {
       .subscribe({
         next: () => {
           this.editing.set(null);
+          this.toast.success(
+            editing.kind === 'category' ? 'Category renamed.' : 'Tag renamed.',
+          );
         },
-        error: (error: unknown) =>
-          this.actionError.set(this.resolveError(error)),
+        error: (error: unknown) => this.showError(error),
       });
   }
 
@@ -143,10 +191,17 @@ export class TaxonomyManagerComponent {
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
-        next: () => undefined,
-        error: (error: unknown) =>
-          this.actionError.set(this.resolveError(error)),
+        next: () =>
+          this.toast.success(
+            kind === 'category' ? 'Category deleted.' : 'Tag deleted.',
+          ),
+        error: (error: unknown) => this.showError(error),
       });
+  }
+
+  private resolveFieldError(error: unknown, field: string): string {
+    const fieldErrors = fieldErrorsFromApi(error);
+    return fieldErrors[field] ?? this.resolveError(error);
   }
 
   private resolveError(error: unknown): string {
@@ -157,5 +212,14 @@ export class TaxonomyManagerComponent {
       return error.message;
     }
     return 'Request failed.';
+  }
+
+  private showError(error: unknown): void {
+    this.showErrorMessage(this.resolveError(error));
+  }
+
+  private showErrorMessage(message: string): void {
+    this.actionError.set(message);
+    this.toast.error(message);
   }
 }

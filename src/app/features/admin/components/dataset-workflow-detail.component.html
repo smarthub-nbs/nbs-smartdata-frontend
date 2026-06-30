@@ -1,72 +1,84 @@
 @if (record(); as record) {
-<div class="space-y-6">
-  <header class="space-y-3 border-b border-slate-200 pb-4">
+<div class="w-full space-y-8">
+  <div
+    class="sticky top-6 z-10 -mx-1 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-white/95 px-1 py-2 backdrop-blur supports-[backdrop-filter]:bg-white/85">
+    <nav class="flex gap-0.5 overflow-x-auto" aria-label="Dataset sections">
+      @for (item of sectionNavItems(); track item.key) {
+      <button type="button" [class]="sectionTabClasses(item.key)"
+        [attr.aria-current]="activeSectionNav() === item.key ? 'true' : null" (click)="goToSection(item.key)">
+        {{ item.label }}
+      </button>
+      }
+    </nav>
+
+    <div class="flex shrink-0 flex-wrap items-center justify-end gap-2">
+      @if (canEditFinalized()) {
+      <app-button variant="outline" size="sm" (clicked)="startEditing()">
+        Edit
+      </app-button>
+      }
+      @if (!isFinalizedReadOnly() && editMode()) {
+      <app-button variant="ghost" size="sm" (clicked)="stopEditing()">
+        Done editing
+      </app-button>
+      }
+      @if (record.status === 'draft' || record.status === 'rejected') {
+      <app-button variant="primary" size="sm" [loading]="actionLoading() === 'submit'" [disabled]="!canSubmit(record)"
+        (clicked)="submitForReview.emit(record.id)">
+        Submit for review
+      </app-button>
+      }
+      @if (canReviewRecord(record)) {
+      <app-button variant="primary" size="sm" [loading]="actionLoading() === 'approve'"
+        (clicked)="approve.emit(record.id)">
+        Approve
+      </app-button>
+      <app-button variant="outline" size="sm" [loading]="actionLoading() === 'reject'"
+        (clicked)="reject.emit(record.id)">
+        Reject
+      </app-button>
+      }
+      @if (canPublishRecord(record)) {
+      <app-button variant="primary" size="sm" [loading]="actionLoading() === 'publish'"
+        (clicked)="publish.emit(record.id)">
+        Publish
+      </app-button>
+      }
+      @if (record.status === 'published' || publishedId() === record.id) {
+      <a [routerLink]="['/datasets', record.id]"
+        class="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-nbs-primary/30 px-3 py-1.5 text-sm font-medium text-nbs-primary transition-colors duration-200 hover:bg-nbs-primary/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/40 motion-reduce:transition-none">
+        View in Discovery
+        <app-icon name="arrow-right" [size]="15" />
+      </a>
+      }
+    </div>
+  </div>
+
+  <header #overviewAnchor class="scroll-mt-24 space-y-4 border-b border-slate-100 pb-6">
     <div class="flex flex-wrap items-start justify-between gap-3">
-      <div class="min-w-0">
+      <div class="min-w-0 space-y-2">
+        <h3 class="text-2xl font-semibold tracking-tight text-slate-900">
+          {{ record.title }}
+        </h3>
         <div class="flex flex-wrap items-center gap-2">
-          <h3 class="truncate text-base font-semibold text-slate-900">
-            {{ record.title }}
-          </h3>
           <span [class]="statusChipClasses(record.status)">
             {{ statusLabel(record.status) }}
           </span>
           @if (isFinalizedReadOnly() && record.categoryName) {
           <span
-            class="inline-flex items-center gap-1 rounded-full bg-nbs-primary/10 px-2 py-0.5 text-xs font-medium text-nbs-primary">
-            <app-icon name="tag" [size]="11" />
+            class="inline-flex items-center gap-1 rounded-md bg-nbs-primary/10 px-2 py-0.5 text-xs font-medium text-nbs-primary">
+            <app-icon name="layers" [size]="11" />
             {{ record.categoryName }}
           </span>
           }
           @if (metadataDirty()) {
-          <span class="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800">
+          <span class="rounded-md bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800">
             Unsaved
           </span>
           }
         </div>
         @if (nextActionText()) {
-        <p class="mt-1 text-sm text-nbs-muted">{{ nextActionText() }}</p>
-        }
-      </div>
-
-      <div class="flex flex-wrap items-center gap-2">
-        @if (canEditFinalized()) {
-        <app-button variant="outline" size="sm" (clicked)="startEditing()">
-          Edit
-        </app-button>
-        }
-        @if (!isFinalizedReadOnly() && editMode()) {
-        <app-button variant="ghost" size="sm" (clicked)="stopEditing()">
-          Done editing
-        </app-button>
-        }
-        @if (record.status === 'draft' || record.status === 'rejected') {
-        <app-button variant="primary" size="sm" [loading]="actionLoading() === 'submit'" [disabled]="!canSubmit(record)"
-          (clicked)="submitForReview.emit(record.id)">
-          Submit for review
-        </app-button>
-        }
-        @if (canReviewRecord(record)) {
-        <app-button variant="primary" size="sm" [loading]="actionLoading() === 'approve'"
-          (clicked)="approve.emit(record.id)">
-          Approve
-        </app-button>
-        <app-button variant="outline" size="sm" [loading]="actionLoading() === 'reject'"
-          (clicked)="reject.emit(record.id)">
-          Reject
-        </app-button>
-        }
-        @if (canPublishRecord(record)) {
-        <app-button variant="primary" size="sm" [loading]="actionLoading() === 'publish'"
-          (clicked)="publish.emit(record.id)">
-          Publish
-        </app-button>
-        }
-        @if (record.status === 'published' || publishedId() === record.id) {
-        <a [routerLink]="['/datasets', record.id]"
-          class="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-nbs-primary/30 px-3 py-1.5 text-sm font-medium text-nbs-primary transition-colors duration-200 hover:bg-nbs-primary/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/40 motion-reduce:transition-none">
-          View in Discovery
-          <app-icon name="arrow-right" [size]="15" />
-        </a>
+        <p class="text-sm text-nbs-muted">{{ nextActionText() }}</p>
         }
       </div>
     </div>
@@ -75,11 +87,7 @@
     <ul class="flex flex-wrap gap-2" aria-label="Requirements">
       @for (item of requirementItems(record); track item.key) {
       <li>
-        <button type="button"
-          class="inline-flex cursor-pointer items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/40 motion-reduce:transition-none"
-          [class.bg-nbs-accent-soft]="item.complete" [class.text-teal-900]="item.complete"
-          [class.bg-slate-100]="!item.complete" [class.text-slate-700]="!item.complete"
-          [class.hover:bg-slate-200]="!item.complete" (click)="item.focus()">
+        <button type="button" [class]="requirementChipClasses(item.complete)" (click)="item.focus()">
           @if (item.complete) {
           <app-icon name="check" [size]="12" [strokeWidth]="3" />
           } @else {
@@ -134,48 +142,141 @@
   </div>
   }
 
-  @if (contentEditable() && !record.hasTag) {
-  <div #tagSection class="flex flex-wrap items-end gap-2">
-    <label class="min-w-[12rem] flex-1">
-      <span class="mb-1 block text-xs font-medium text-slate-600">Tag</span>
-      <input type="text" placeholder="e.g. Population"
-        class="h-10 w-full rounded-md border border-slate-300 px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-nbs-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/30"
-        [value]="tagName()" (input)="onTagInput($event)" />
-    </label>
-    <app-button variant="outline" size="sm" [loading]="actionLoading() === 'tag'" (clicked)="submitTag()">
-      Link tag
-    </app-button>
+  <section #tagSection class="scroll-mt-24 space-y-3">
+    <div>
+      <h4 class="text-sm font-medium text-slate-900">
+        Tags
+      </h4>
+      <p class="mt-0.5 text-xs text-nbs-muted">
+        Link one or more tags to improve discovery and filtering.
+      </p>
+    </div>
+
+    @if (tagLinksError()) {
+    <p class="text-xs text-nbs-danger" role="alert">{{ tagLinksError() }}</p>
+    } @else if (tagLinksLoading()) {
+    <p class="text-xs text-nbs-muted" aria-live="polite">Loading tags…</p>
+    } @else if (tagLinks().length > 0) {
+    <ul class="flex flex-wrap gap-2" aria-label="Linked tags">
+      @for (link of tagLinks(); track link.linkId) {
+      <li
+        class="inline-flex items-center gap-1.5 rounded-md bg-slate-50 py-0.5 pl-2.5 text-xs font-medium text-slate-700"
+        [class.pr-2.5]="!contentEditable()" [class.pr-1]="contentEditable()">
+        @if (confirmingUnlinkId() === link.linkId) {
+        <span>
+          @if (isLastTagLink(link.linkId)) {
+          Unlink final tag? At least one tag is required before review.
+          } @else {
+          Unlink “{{ link.tagName }}”?
+          }
+        </span>
+        <button type="button"
+          class="rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-medium text-white transition-colors hover:bg-red-700 disabled:opacity-50"
+          [disabled]="tagLinking()" (click)="confirmUnlinkTag(link)">
+          Confirm
+        </button>
+        <button type="button"
+          class="rounded-full px-2 py-0.5 text-[10px] font-medium text-slate-600 transition-colors hover:bg-slate-100"
+          (click)="cancelUnlinkTag()">
+          Cancel
+        </button>
+        } @else {
+        {{ link.tagName }}
+        @if (contentEditable()) {
+        <button type="button"
+          class="inline-flex h-5 w-5 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
+          aria-label="Unlink tag" [disabled]="tagLinking()" (click)="requestUnlinkTag(link.linkId)">
+          <app-icon name="x" [size]="13" />
+        </button>
+        }
+        }
+      </li>
+      }
+    </ul>
+    } @else {
+    <p class="text-xs text-nbs-muted">No tags linked.</p>
+    }
+
+    @if (contentEditable()) {
+    <form class="flex flex-wrap items-end gap-2" (submit)="submitTag(); $event.preventDefault()">
+      @if (canCreateTags()) {
+      <label class="min-w-[12rem] flex-1">
+        <span class="mb-1 block text-xs font-medium text-slate-600">Add tag</span>
+        <input type="text" placeholder="e.g. Population" [attr.list]="'tag-options-' + record.id"
+          class="h-10 w-full rounded-md border border-slate-300 px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-nbs-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/30 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:opacity-60"
+          [class.border-nbs-danger]="tagLinkError()" [disabled]="tagLinking()" [value]="tagName()"
+          (input)="onTagInput($event)" />
+        <datalist id="tag-options-{{ record.id }}">
+          @for (tag of availableTags(); track tag.id) {
+          <option [value]="tag.name"></option>
+          }
+        </datalist>
+      </label>
+      } @else {
+      <label class="min-w-[12rem] flex-1">
+        <span class="mb-1 block text-xs font-medium text-slate-600">Add tag</span>
+        <select
+          class="h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 focus:border-nbs-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/30 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:opacity-60"
+          [class.border-nbs-danger]="tagLinkError()" [disabled]="tagLinking() || tagOptions().length === 0"
+          [value]="selectedTagId()" (change)="onTagSelect($any($event.target).value)">
+          <option value="" disabled>
+            {{ tagOptions().length === 0 ? 'No tags available' : 'Select tag' }}
+          </option>
+          @for (tag of tagOptions(); track tag.id) {
+          <option [value]="tag.id">{{ tag.name }}</option>
+          }
+        </select>
+      </label>
+      }
+      <app-button type="submit" variant="outline" size="sm" [loading]="tagLinking()" [disabled]="!canLinkTag()">
+        Link tag
+      </app-button>
+    </form>
+    @if (tagLinkError()) {
+    <p class="text-xs text-nbs-danger" role="alert">{{ tagLinkError() }}</p>
+    }
+    @if (!canCreateTags() && tagOptions().length === 0 && !tagLinksLoading()) {
+    <p class="text-xs text-nbs-muted">
+      Ask an admin to create tags in Taxonomy before linking them here.
+    </p>
+    }
+    }
+  </section>
+
+  <div #metadataAnchor class="scroll-mt-24 space-y-3">
+    <div>
+      <h4 class="text-sm font-medium text-slate-900">Details</h4>
+      <p class="mt-0.5 text-xs text-nbs-muted">
+        Discovery metadata shown on the public dataset page.
+      </p>
+    </div>
+    <app-dataset-metadata-editor [datasetId]="record.id" [readOnly]="!contentEditable()"
+      (metadataSaved)="metadataSaved.emit()" (dirtyChange)="onMetadataDirtyChange($event)" />
+  </div>
+
+  @if (showFilesSection()) {
+  <div #filesAnchor class="scroll-mt-24 space-y-6">
+    @if (contentEditable() && !record.hasFile) {
+    <div class="space-y-2">
+      <label class="block">
+        <span class="mb-1 block text-sm font-medium text-slate-900">
+          Primary data file
+        </span>
+        <input #fileInput type="file" accept=".csv,.json,.xlsx,.xls,.xml,.sdmx,.pdf,.tsv,.txt,.zip"
+          class="block w-full text-sm" [disabled]="actionLoading() === 'upload'" (change)="onFileSelected($event)" />
+      </label>
+    </div>
+    }
+
+    @if (showResourceManager()) {
+    <app-dataset-resource-manager [datasetId]="record.id" (resourcesChanged)="resourcesChanged.emit()"
+      (deleteDataset)="deleteDataset.emit($event)" />
+    }
   </div>
   }
 
-  <app-dataset-metadata-editor [datasetId]="record.id" [readOnly]="!contentEditable()"
-    (metadataSaved)="metadataSaved.emit()" (dirtyChange)="onMetadataDirtyChange($event)" />
-
-  @if (contentEditable() && !record.hasFile) {
-  <div class="border-t border-nbs-border pt-4">
-    <label class="block">
-      <span class="mb-1 block text-xs font-medium text-slate-600">
-        Primary data file
-      </span>
-      <input #fileInput type="file" accept=".csv,.json,.xlsx,.xls,.xml,.sdmx,.pdf,.tsv,.txt,.zip"
-        class="block w-full text-sm" [disabled]="actionLoading() === 'upload'" (change)="onFileSelected($event)" />
-    </label>
+  <div #activityAnchor class="scroll-mt-24">
+    <app-dataset-activity-log [datasetId]="record.id" />
   </div>
-  }
-
-  @if (showResourceManager()) {
-  <app-dataset-resource-manager [datasetId]="record.id" (resourcesChanged)="resourcesChanged.emit()"
-    (deleteDataset)="deleteDataset.emit($event)" />
-  }
-
-  <app-dataset-activity-log [datasetId]="record.id" />
-
-  @if (message()) {
-  <output class="block rounded-md px-3 py-2 text-sm" [class.bg-emerald-50]="!messageError()"
-    [class.text-emerald-900]="!messageError()" [class.bg-red-50]="messageError()" [class.text-red-900]="messageError()"
-    [attr.aria-live]="messageError() ? 'assertive' : 'polite'">
-    {{ message() }}
-  </output>
-  }
 </div>
 }

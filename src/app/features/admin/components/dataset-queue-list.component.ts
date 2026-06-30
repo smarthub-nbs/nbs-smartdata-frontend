@@ -8,25 +8,9 @@ import {
   AdminDatasetQueuePagination,
   AdminDatasetRecord,
   DatasetWorkflowStatus,
-  StatusCounts,
-  StatusFilter,
 } from '@app/features/admin/models/admin-dataset.model';
 import { workflowStatusLabel } from '@app/features/admin/utils/admin-workflow-status.util';
 import { IconComponent } from '@shared/ui';
-
-interface FilterChip {
-  readonly key: StatusFilter;
-  readonly label: string;
-}
-
-const FILTER_CHIPS: readonly FilterChip[] = [
-  { key: 'all', label: 'All' },
-  { key: 'draft', label: 'Draft' },
-  { key: 'in_review', label: 'In review' },
-  { key: 'approved', label: 'Approved' },
-  { key: 'rejected', label: 'Rejected' },
-  { key: 'published', label: 'Published' },
-];
 
 @Component({
   selector: 'app-dataset-queue-list',
@@ -38,29 +22,69 @@ const FILTER_CHIPS: readonly FilterChip[] = [
 export class DatasetQueueListComponent {
   readonly items = input.required<AdminDatasetRecord[]>();
   readonly pagination = input.required<AdminDatasetQueuePagination>();
-  readonly statusCounts = input.required<StatusCounts>();
-  readonly statusFilter = input.required<StatusFilter>();
   readonly searchTerm = input.required<string>();
   readonly selectedId = input.required<string>();
   readonly loading = input(false);
   readonly hasActiveSearch = input(false);
   readonly pageRangeLabel = input('');
 
-  readonly filterChange = output<StatusFilter>();
   readonly searchInput = output<string>();
   readonly previousPage = output<void>();
   readonly nextPage = output<void>();
   readonly selectDataset = output<string>();
 
-  protected readonly filterChips = FILTER_CHIPS;
   protected readonly skeletonRows = Array.from({ length: 4 });
-
-  protected chipCount(filter: StatusFilter): number {
-    return this.statusCounts()[filter];
-  }
 
   protected onSearch(event: Event): void {
     this.searchInput.emit((event.target as HTMLInputElement).value);
+  }
+
+  protected onListKeydown(event: KeyboardEvent): void {
+    const isNext = event.key === 'ArrowDown' || event.key === 'j';
+    const isPrev = event.key === 'ArrowUp' || event.key === 'k';
+    if (!isNext && !isPrev) {
+      return;
+    }
+
+    const items = this.items();
+    if (items.length === 0) {
+      return;
+    }
+    event.preventDefault();
+
+    const currentIndex = items.findIndex(
+      (item) => item.id === this.selectedId(),
+    );
+    const nextIndex = this.resolveNextIndex(currentIndex, items.length, isNext);
+
+    const next = items[nextIndex];
+    if (!next) {
+      return;
+    }
+    if (next.id !== this.selectedId()) {
+      this.selectDataset.emit(next.id);
+    }
+    this.focusRow(event.currentTarget as HTMLElement, next.id);
+  }
+
+  private resolveNextIndex(
+    currentIndex: number,
+    length: number,
+    isNext: boolean,
+  ): number {
+    if (currentIndex === -1) {
+      return 0;
+    }
+    return isNext
+      ? Math.min(length - 1, currentIndex + 1)
+      : Math.max(0, currentIndex - 1);
+  }
+
+  private focusRow(origin: HTMLElement, id: string): void {
+    origin
+      .closest('ul')
+      ?.querySelector<HTMLElement>(`[data-queue-id="${id}"]`)
+      ?.focus({ preventScroll: false });
   }
 
   protected statusLabel(status: DatasetWorkflowStatus): string {
@@ -72,62 +96,28 @@ export class DatasetQueueListComponent {
       .length;
   }
 
-  protected filterChipClasses(filter: StatusFilter): string {
-    const active = this.statusFilter() === filter;
-    const empty = filter !== 'all' && this.chipCount(filter) === 0;
-    if (active) {
-      return 'bg-nbs-primary text-white';
-    }
-    if (empty) {
-      return 'bg-slate-100 text-slate-400 hover:bg-slate-200';
-    }
-    return 'bg-slate-100 text-slate-700 hover:bg-slate-200';
-  }
-
-  protected chipCountClasses(filter: StatusFilter): string {
-    const active = this.statusFilter() === filter;
-    return active
-      ? 'tabular-nums text-white/80'
-      : 'tabular-nums text-slate-400';
-  }
-
-  protected statusDotClasses(status: DatasetWorkflowStatus): string {
-    switch (status) {
-      case 'published':
-        return 'bg-emerald-500';
-      case 'approved':
-        return 'bg-sky-500';
-      case 'in_review':
-        return 'bg-amber-500';
-      case 'rejected':
-        return 'bg-red-500';
-      default:
-        return 'bg-slate-400';
-    }
-  }
-
   protected statusPillClasses(status: DatasetWorkflowStatus): string {
     const base =
-      'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium';
+      'inline-flex shrink-0 items-center rounded-md px-2 py-0.5 text-[11px] font-medium';
     switch (status) {
       case 'published':
-        return `${base} bg-emerald-50 text-emerald-800`;
-      case 'approved':
-        return `${base} bg-sky-50 text-sky-800`;
-      case 'in_review':
-        return `${base} bg-amber-50 text-amber-900`;
-      case 'rejected':
-        return `${base} bg-red-50 text-red-800`;
-      default:
         return `${base} bg-slate-100 text-slate-700`;
+      case 'approved':
+        return `${base} bg-slate-100 text-slate-700`;
+      case 'in_review':
+        return `${base} bg-nbs-primary/10 text-nbs-primary`;
+      case 'rejected':
+        return `${base} bg-red-50 text-red-700`;
+      default:
+        return `${base} bg-slate-100 text-slate-600`;
     }
   }
 
   protected queueItemClasses(id: string): string {
     const base =
-      'w-full cursor-pointer border-l-2 py-2.5 pl-3 pr-3 text-left transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-nbs-primary/40 motion-reduce:transition-none';
+      'w-full cursor-pointer rounded-lg px-3 py-3.5 text-left transition duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/40 motion-reduce:transition-none';
     return id === this.selectedId()
-      ? `${base} border-l-nbs-primary bg-nbs-primary/5`
-      : `${base} border-l-transparent bg-white hover:bg-slate-50`;
+      ? `${base} bg-nbs-primary/5 shadow-sm ring-1 ring-nbs-primary/20`
+      : `${base} hover:bg-slate-50 hover:shadow-sm`;
   }
 }

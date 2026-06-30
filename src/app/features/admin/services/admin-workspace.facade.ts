@@ -6,6 +6,7 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Router } from '@angular/router';
 import {
   Observable,
   Subject,
@@ -17,6 +18,7 @@ import {
 } from 'rxjs';
 import { ApiError } from '@app/core/models/api-error.model';
 import { AuthService } from '@app/core/services/auth.service';
+import { ToastService } from '@app/core/services/toast.service';
 import {
   ADMIN_QUEUE_PAGE_SIZE,
   AdminDatasetDraft,
@@ -53,6 +55,8 @@ export class AdminWorkspaceFacade {
   private readonly workflow = inject(AdminDatasetWorkflowService);
   private readonly datasetService = inject(DatasetService);
   private readonly auth = inject(AuthService);
+  private readonly toast = inject(ToastService);
+  private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly scope: AdminQueueScope = this.auth.canSeeAllDatasets()
@@ -73,8 +77,6 @@ export class AdminWorkspaceFacade {
   private readonly _queueError = signal<string | null>(null);
   private readonly _summaryError = signal<string | null>(null);
   private readonly _actionLoading = signal('');
-  private readonly _message = signal('');
-  private readonly _messageError = signal(false);
   private readonly _publishedId = signal('');
   private readonly _mutations = signal(0);
 
@@ -89,8 +91,6 @@ export class AdminWorkspaceFacade {
   readonly queueError = this._queueError.asReadonly();
   readonly summaryError = this._summaryError.asReadonly();
   readonly actionLoading = this._actionLoading.asReadonly();
-  readonly message = this._message.asReadonly();
-  readonly messageError = this._messageError.asReadonly();
   readonly publishedId = this._publishedId.asReadonly();
   readonly mutations = this._mutations.asReadonly();
 
@@ -198,7 +198,6 @@ export class AdminWorkspaceFacade {
   }
 
   selectDataset(id: string): void {
-    this.clearMessage();
     this._publishedId.set('');
     const onPage = this._items().find((item) => item.id === id) ?? null;
     if (onPage) {
@@ -212,6 +211,10 @@ export class AdminWorkspaceFacade {
         next: (record) => this._selectedRecord.set(record),
         error: (error: unknown) => this.showError(error),
       });
+  }
+
+  clearSelection(): void {
+    this._selectedRecord.set(null);
   }
 
   submit(id: string): void {
@@ -248,13 +251,29 @@ export class AdminWorkspaceFacade {
   }
 
   linkTag(id: string, tagName: string): void {
-    const value = tagName.trim();
-    if (!value) {
+    this.linkTagWithOptions(id, { tagName });
+  }
+
+  linkTagWithOptions(
+    id: string,
+    options: { tagId?: string; tagName?: string },
+  ): void {
+    const tagId = options.tagId?.trim();
+    const tagName = options.tagName?.trim();
+    if (!tagId && !tagName) {
       return;
     }
+
     this._actionLoading.set('tag');
-    this.workflow
-      .linkTagByName(id, value)
+    const request$ = tagId
+      ? this.workflow.linkTagById(id, tagId)
+      : this.workflow.linkTagByName(
+          id,
+          tagName ?? '',
+          this.auth.canReviewDatasets(),
+        );
+
+    request$
       .pipe(
         finalize(() => this._actionLoading.set('')),
         takeUntilDestroyed(this.destroyRef),
@@ -266,6 +285,10 @@ export class AdminWorkspaceFacade {
         },
         error: (error: unknown) => this.showError(error),
       });
+  }
+
+  onTagsChanged(id: string): void {
+    this.refreshAfterMutation({ datasetId: id });
   }
 
   updateCategory(id: string, categoryId: string): void {
@@ -332,7 +355,11 @@ export class AdminWorkspaceFacade {
 
   createDraft(draft: AdminDatasetDraft, file: File | null): Observable<string> {
     this._actionLoading.set('create');
-    const create$ = this.workflow.createDraftWithMetadata(draft);
+    const allowTagCreate = this.auth.canReviewDatasets();
+    const create$ = this.workflow.createDraftWithMetadata(
+      draft,
+      allowTagCreate,
+    );
     return new Observable<string>((subscriber) => {
       create$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
         next: (id) => {
@@ -416,19 +443,24 @@ export class AdminWorkspaceFacade {
       });
   }
 
-  clearMessage(): void {
-    this._message.set('');
-    this._messageError.set(false);
-  }
-
   showError(error: unknown): void {
-    this._messageError.set(true);
-    this._message.set(this.resolveErrorMessage(error));
+    const message = this.resolveErrorMessage(error);
+    this.toast.error(message);
   }
 
   private setMessage(message: string): void {
-    this._messageError.set(false);
-    this._message.set(message);
+    this.toast.success(message);
+  }
+
+  private setPublishMessage(message: string, datasetId: string): void {
+    this.toast.show({
+      message,
+      variant: 'success',
+      action: {
+        label: 'View in Discovery',
+        handler: () => void this.router.navigate(['/datasets', datasetId]),
+      },
+    });
   }
 
   private runAction(
@@ -448,7 +480,14 @@ export class AdminWorkspaceFacade {
       )
       .subscribe({
         next: () => {
-          this.setMessage(ACTION_SUCCESS_MESSAGES[key]);
+          if (key === 'publish' && refresh.publishedId) {
+            this.setPublishMessage(
+              ACTION_SUCCESS_MESSAGES[key],
+              refresh.publishedId,
+            );
+          } else {
+            this.setMessage(ACTION_SUCCESS_MESSAGES[key]);
+          }
           this.refreshAfterMutation(refresh);
         },
         error: (error: unknown) => this.showError(error),
