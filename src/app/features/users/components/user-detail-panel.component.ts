@@ -15,12 +15,22 @@ import {
 } from '@app/features/users/models/user-management.model';
 import { UsersWorkspaceFacade } from '@app/features/users/services/users-workspace.facade';
 import { formatGroupLabel } from '@app/features/users/utils/user-display.util';
-import { ButtonComponent, TextInputComponent } from '@shared/ui';
+import {
+  ButtonComponent,
+  BadgeComponent,
+  TextInputComponent,
+} from '@shared/ui';
 
 @Component({
   selector: 'app-user-detail-panel',
   standalone: true,
-  imports: [DatePipe, FormsModule, ButtonComponent, TextInputComponent],
+  imports: [
+    DatePipe,
+    FormsModule,
+    ButtonComponent,
+    BadgeComponent,
+    TextInputComponent,
+  ],
   templateUrl: './user-detail-panel.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

@@ -19,7 +19,12 @@ import {
   CreateDraftPayload,
   DatasetCreateDraftComponent,
 } from '@app/features/admin/components/dataset-create-draft.component';
-import { ButtonComponent, IconComponent, ModalComponent } from '@shared/ui';
+import {
+  ButtonComponent,
+  AlertComponent,
+  IconComponent,
+  ModalComponent,
+} from '@shared/ui';
 
 interface StatusFilterItem {
   key: StatusFilter;
@@ -41,6 +46,7 @@ const STATUS_FILTERS: readonly StatusFilterItem[] = [
   imports: [
     DecimalPipe,
     ButtonComponent,
+    AlertComponent,
     IconComponent,
     DatasetQueueListComponent,
     DatasetWorkflowDetailComponent,

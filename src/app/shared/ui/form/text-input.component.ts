@@ -13,6 +13,7 @@ import {
 } from '@angular/forms';
 import { FormFieldComponent } from '@shared/ui/form/form-field.component';
 import { IconComponent } from '@shared/ui/icon/icon.component';
+import { formControlClasses } from '@shared/ui/utils/form-control-styles';
 
 @Component({
   selector: 'app-text-input',
@@ -90,13 +91,10 @@ export class TextInputComponent implements ControlValueAccessor {
   );
 
   protected readonly inputClasses = computed(() => {
-    const base =
-      'h-10 w-full rounded-md border bg-white text-sm text-slate-900 placeholder:text-slate-400 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-0 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:opacity-60 read-only:cursor-not-allowed read-only:bg-slate-50 read-only:text-slate-500 read-only:focus:ring-0';
-    const state = this.error()
-      ? 'border-nbs-danger focus:border-nbs-danger focus:ring-nbs-danger/30'
-      : 'border-slate-300 focus:border-nbs-primary focus:ring-nbs-primary/30';
     const padding = this.isPassword() ? 'pl-3 pr-10' : 'px-3';
-    return `${base} ${padding} ${state}`;
+    const readOnly =
+      'read-only:cursor-not-allowed read-only:bg-slate-50 read-only:text-slate-500 read-only:focus:ring-0';
+    return `${formControlClasses({ error: !!this.error(), padding })} ${readOnly}`;
   });
 
   protected readonly describedBy = computed(() => {

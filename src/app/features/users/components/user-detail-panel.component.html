@@ -3,30 +3,14 @@
   <div class="space-y-6">
     <div class="flex flex-wrap gap-1.5">
       @if (user.isActive) {
-      <span
-        class="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-800">
-        <span class="size-1.5 rounded-full bg-emerald-500" aria-hidden="true"></span>
-        Active
-      </span>
+      <app-badge variant="success" [dot]="true">Active</app-badge>
       } @else {
-      <span
-        class="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
-        <span class="size-1.5 rounded-full bg-slate-500" aria-hidden="true"></span>
-        Inactive
-      </span>
+      <app-badge variant="neutral" [dot]="true">Inactive</app-badge>
       }
       @if (user.isVerified) {
-      <span
-        class="inline-flex items-center gap-1 rounded-md border border-sky-200 bg-sky-50 px-2 py-0.5 text-xs font-medium text-sky-800">
-        <span class="size-1.5 rounded-full bg-sky-500" aria-hidden="true"></span>
-        Verified
-      </span>
+      <app-badge variant="info" [dot]="true">Verified</app-badge>
       } @else {
-      <span
-        class="inline-flex items-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-900">
-        <span class="size-1.5 rounded-full bg-amber-500" aria-hidden="true"></span>
-        Unverified
-      </span>
+      <app-badge variant="warning" [dot]="true">Unverified</app-badge>
       }
       @if (user.isSuperuser) {
       <span

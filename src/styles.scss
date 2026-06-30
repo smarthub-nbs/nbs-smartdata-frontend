@@ -112,6 +112,14 @@
     @apply rounded-xl border border-nbs-border bg-white p-4 shadow-nbs-card;
   }
 
+  .nbs-surface-elevated {
+    @apply rounded-2xl border border-slate-200/80 bg-white p-6 shadow-[0_18px_50px_-36px_rgba(15,23,42,0.45)];
+  }
+
+  .nbs-surface-elevated-compact {
+    @apply nbs-surface-elevated sm:p-7;
+  }
+
   .nbs-page-title {
     @apply text-2xl font-semibold text-slate-900;
   }

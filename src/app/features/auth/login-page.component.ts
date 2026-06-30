@@ -9,7 +9,12 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { AuthService } from '@app/core/services/auth.service';
-import { ButtonComponent, IconComponent, TextInputComponent } from '@shared/ui';
+import {
+  ButtonComponent,
+  AlertComponent,
+  IconComponent,
+  TextInputComponent,
+} from '@shared/ui';
 
 @Component({
   selector: 'app-login-page',
@@ -18,6 +23,7 @@ import { ButtonComponent, IconComponent, TextInputComponent } from '@shared/ui';
     ReactiveFormsModule,
     RouterLink,
     ButtonComponent,
+    AlertComponent,
     IconComponent,
     TextInputComponent,
   ],

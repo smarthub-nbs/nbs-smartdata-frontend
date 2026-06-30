@@ -23,7 +23,12 @@ import {
   parseAdminSection,
 } from '@app/features/admin/utils/admin-section.util';
 import { DatasetService } from '@app/features/discovery';
-import { DataTableColumn, DataTableComponent, IconComponent } from '@shared/ui';
+import {
+  DataTableColumn,
+  DataTableComponent,
+  BadgeComponent,
+  IconComponent,
+} from '@shared/ui';
 
 interface PlatformMetricCard {
   label: string;
@@ -61,6 +66,7 @@ const ADMIN_NAV_ITEMS: readonly AdminNavItem[] = [
     DataTableComponent,
     DatasetWorkflowPanelComponent,
     TaxonomyManagerComponent,
+    BadgeComponent,
     IconComponent,
   ],
   templateUrl: './admin-page.component.html',

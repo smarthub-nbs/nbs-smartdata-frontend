@@ -12,6 +12,7 @@ import {
   NG_VALUE_ACCESSOR,
 } from '@angular/forms';
 import { FormFieldComponent } from '@shared/ui/form/form-field.component';
+import { formControlClasses } from '@shared/ui/utils/form-control-styles';
 
 export interface SelectOption<T extends string = string> {
   label: string;
@@ -73,14 +74,9 @@ export class SelectInputComponent implements ControlValueAccessor {
   protected readonly value = signal('');
   protected readonly isDisabled = signal(false);
 
-  protected readonly selectClasses = computed(() => {
-    const base =
-      'h-10 w-full rounded-md border bg-white px-3 text-sm text-slate-900 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-0 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:opacity-60';
-    const state = this.error()
-      ? 'border-nbs-danger focus:border-nbs-danger focus:ring-nbs-danger/30'
-      : 'border-slate-300 focus:border-nbs-primary focus:ring-nbs-primary/30';
-    return `${base} ${state}`;
-  });
+  protected readonly selectClasses = computed(() =>
+    formControlClasses({ error: !!this.error() }),
+  );
 
   private onChange: (value: string) => void = () => undefined;
   private onTouchedCallback: () => void = () => undefined;

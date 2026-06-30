@@ -1,4 +1,6 @@
 export { ButtonComponent } from '@shared/ui/button/button.component';
+export { AlertComponent } from '@shared/ui/alert/alert.component';
+export { BadgeComponent } from '@shared/ui/badge/badge.component';
 export {
   CopyButtonComponent,
   type CopyButtonSize,
@@ -25,6 +27,11 @@ export type {
   ButtonSize,
   ButtonType,
 } from '@shared/ui/models/button-variant.model';
+export type { AlertVariant } from '@shared/ui/models/alert-variant.model';
+export type {
+  BadgeVariant,
+  BadgeShape,
+} from '@shared/ui/models/badge-variant.model';
 export type {
   DataTableColumn,
   DataTableSortState,
