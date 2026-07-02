@@ -8,6 +8,8 @@ export interface SmartSearchResult {
 
 export interface SmartSearchResponse {
   query: string;
+  answer: string;
+  answerFacts: string[];
   interpretation: string;
   results: SmartSearchResult[];
   suggestedIndicators: string[];

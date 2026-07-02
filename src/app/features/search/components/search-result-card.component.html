@@ -10,12 +10,23 @@
           {{ result().relevanceScore }}% match
         </span>
       </div>
-      <a
-        [routerLink]="['/datasets', result().dataset.id]"
-        class="mt-2 block text-base font-semibold text-slate-900 transition-colors after:absolute after:inset-0 group-hover:text-nbs-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary focus-visible:ring-offset-2"
-      >
-        {{ result().dataset.title }}
-      </a>
+      @if (result().dataset.sourceUrl) {
+        <a
+          [href]="result().dataset.sourceUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="mt-2 block text-base font-semibold text-slate-900 transition-colors after:absolute after:inset-0 group-hover:text-nbs-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary focus-visible:ring-offset-2"
+        >
+          {{ result().dataset.title }}
+        </a>
+      } @else {
+        <a
+          [routerLink]="['/datasets', result().dataset.id]"
+          class="mt-2 block text-base font-semibold text-slate-900 transition-colors after:absolute after:inset-0 group-hover:text-nbs-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary focus-visible:ring-offset-2"
+        >
+          {{ result().dataset.title }}
+        </a>
+      }
       <p class="mt-1 line-clamp-2 text-sm text-nbs-muted">
         {{ result().dataset.description }}
       </p>
@@ -27,7 +38,7 @@
   <span
     class="relative z-10 mt-3 inline-flex items-center gap-1 text-sm font-medium text-nbs-primary transition-transform group-hover:gap-1.5"
   >
-    View dataset
+    {{ result().dataset.sourceUrl ? 'Open source data' : 'View dataset' }}
     <app-icon name="arrow-right" [size]="15" />
   </span>
 </article>

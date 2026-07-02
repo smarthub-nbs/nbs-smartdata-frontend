@@ -51,6 +51,8 @@ export interface Dataset {
   updatedAt: string;
   recordCount: number;
   license: string;
+  sourceUrl?: string;
+  dataSummary?: string;
 }
 
 export interface DatasetTopic {

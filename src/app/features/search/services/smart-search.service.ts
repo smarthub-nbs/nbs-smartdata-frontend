@@ -1,10 +1,11 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, map } from 'rxjs';
+import { Observable, forkJoin, map } from 'rxjs';
 import { Dataset, DatasetService } from '@app/features/discovery';
 import {
   SmartSearchResponse,
   SmartSearchResult,
 } from '@app/features/search/models/smart-search.model';
+import { TispSearchService } from '@app/features/search/services/tisp-search.service';
 
 interface ParsedQuery {
   tokens: string[];
@@ -50,16 +51,24 @@ const TOPIC_KEYWORDS: Record<string, string[]> = {
 @Injectable({ providedIn: 'root' })
 export class SmartSearchService {
   private readonly datasetService = inject(DatasetService);
+  private readonly tispSearch = inject(TispSearchService);
 
   smartSearch(query: string): Observable<SmartSearchResponse> {
     const trimmed = query.trim();
     const parsed = this.parseQuery(trimmed);
 
-    return this.datasetService.searchCatalog(trimmed).pipe(
-      map((datasets) => {
+    return forkJoin({
+      catalog: this.datasetService.searchCatalog(trimmed),
+      tisp: this.tispSearch.search(trimmed),
+    }).pipe(
+      map(({ catalog, tisp }) => {
+        const datasets = this.mergeDatasets(catalog, tisp);
         const results = this.scoreDatasets(datasets, parsed, trimmed);
+        const answerFacts = this.buildAnswerFacts(results);
         return {
           query: trimmed,
+          answer: this.buildAnswer(trimmed, results, answerFacts),
+          answerFacts,
           interpretation: this.buildInterpretation(parsed, results.length),
           results,
           suggestedIndicators: this.suggestIndicators(parsed),
@@ -256,6 +265,67 @@ export class SmartSearchService {
     }
 
     return indicators.slice(0, 4);
+  }
+
+  private buildAnswer(
+    query: string,
+    results: SmartSearchResult[],
+    facts: string[],
+  ): string {
+    if (results.length === 0) {
+      return `I could not find a matching NBS/TISP data record for "${query}". Try a broader topic, area, or year.`;
+    }
+
+    const externalResults = results.filter(
+      (result) => result.dataset.sourceUrl,
+    );
+    const primary = externalResults[0] ?? results[0];
+
+    if (facts.length > 0) {
+      const additionalFacts = facts.slice(1, 3);
+      return [
+        `Based on the NBS/TISP data I found, ${facts[0]}`,
+        additionalFacts.length
+          ? `I also found ${additionalFacts.join(' ')}`
+          : '',
+      ]
+        .filter(Boolean)
+        .join(' ');
+    }
+
+    return `Based on the NBS/TISP sources, the closest match is "${primary.dataset.title}". ${primary.dataset.description}`;
+  }
+
+  private buildAnswerFacts(results: SmartSearchResult[]): string[] {
+    const dataFacts = results
+      .map((result) => result.dataset.dataSummary)
+      .filter((fact): fact is string => Boolean(fact))
+      .filter((fact, index, facts) => facts.indexOf(fact) === index);
+
+    if (dataFacts.length > 0) {
+      return dataFacts.slice(0, 4);
+    }
+
+    return results
+      .filter(
+        (result) => result.dataset.sourceUrl || result.dataset.dataSummary,
+      )
+      .map((result) => {
+        if (result.dataset.dataSummary) {
+          return result.dataset.dataSummary;
+        }
+        return `${result.dataset.title}: ${result.dataset.description}`;
+      })
+      .filter((fact, index, facts) => facts.indexOf(fact) === index)
+      .slice(0, 4);
+  }
+
+  private mergeDatasets(catalog: Dataset[], external: Dataset[]): Dataset[] {
+    return [
+      ...new Map(
+        [...external, ...catalog].map((dataset) => [dataset.id, dataset]),
+      ).values(),
+    ];
   }
 
   private recommendationScore(source: Dataset, candidate: Dataset): number {
