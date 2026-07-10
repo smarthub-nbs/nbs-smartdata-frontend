@@ -53,9 +53,17 @@ export class DatasetsPageComponent {
 
   protected readonly hasActiveFilters = computed(() => {
     const f = this.datasetService.activeFilters();
-    return [f.query, f.topicSlug, f.format, f.frequency, f.region].some(
-      (value) => !!value,
-    );
+    return [
+      f.query,
+      f.topicSlug,
+      f.format,
+      f.frequency,
+      f.region,
+      f.tag,
+      f.license,
+      f.publisher,
+      f.year,
+    ].some((value) => !!value);
   });
 
   protected readonly tableColumns: DataTableColumn<Dataset>[] = [

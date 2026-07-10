@@ -10,8 +10,11 @@ import { forkJoin } from 'rxjs';
 import { ApiError } from '@app/core/models/api-error.model';
 import { ApiService } from '@app/core/services/api.service';
 import {
+  AdminActivityEntry,
+  AdminActivityListPayload,
   AdminApiCallsSummary,
   AdminDashboardSummary,
+  AdminDatasetActivitySummary,
   AdminDownloadsSummary,
   AdminViewsSummary,
   DatasetUsageMetrics,
@@ -30,6 +33,10 @@ export class AdminAnalyticsService {
 
   private readonly usageMetrics = signal<DatasetUsageMetrics[]>([]);
   private readonly dashboardSummary = signal<AdminDashboardSummary | null>(
+    null,
+  );
+  private readonly activityFeed = signal<AdminActivityEntry[]>([]);
+  private readonly datasetActivity = signal<AdminDatasetActivitySummary | null>(
     null,
   );
   private readonly analyticsDays = signal(ANALYTICS_DAYS);
@@ -77,6 +84,8 @@ export class AdminAnalyticsService {
 
   readonly days = this.analyticsDays.asReadonly();
   readonly platformDashboard = this.dashboardSummary.asReadonly();
+  readonly recentActivity = this.activityFeed.asReadonly();
+  readonly datasetActivitySummary = this.datasetActivity.asReadonly();
 
   private hasLoaded = false;
 
@@ -114,10 +123,24 @@ export class AdminAnalyticsService {
         '/v1/admin/dashboard/views/summary/',
         { days },
       ),
+      activity: this.api.get<AdminActivityListPayload>('/v1/admin/activity/', {
+        page_size: '20',
+      }),
+      datasetActivity: this.api.get<AdminDatasetActivitySummary>(
+        '/v1/admin/dashboard/datasets/activity/summary/',
+        { days },
+      ),
     })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: ({ summary, apiCalls, downloads, views }) => {
+        next: ({
+          summary,
+          apiCalls,
+          downloads,
+          views,
+          activity,
+          datasetActivity,
+        }) => {
           this.dashboardSummary.set(summary);
           this.analyticsDays.set(apiCalls.days);
           this.windowTotals.set({
@@ -131,6 +154,8 @@ export class AdminAnalyticsService {
               views.top_datasets,
             ),
           );
+          this.activityFeed.set(activity.items);
+          this.datasetActivity.set(datasetActivity);
           this.loading.set(false);
           this.loaded.set(true);
         },
@@ -142,6 +167,8 @@ export class AdminAnalyticsService {
             totalViews: 0,
           });
           this.dashboardSummary.set(null);
+          this.activityFeed.set([]);
+          this.datasetActivity.set(null);
           this.loading.set(false);
           this.loaded.set(true);
           this.loadError.set(this.resolveErrorMessage(error));

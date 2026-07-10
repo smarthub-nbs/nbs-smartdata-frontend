@@ -1,4 +1,4 @@
-import { DecimalPipe } from '@angular/common';
+import { DatePipe, DecimalPipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -9,7 +9,11 @@ import {
 } from '@angular/core';
 import { ActivatedRoute, Params, Router, RouterLink } from '@angular/router';
 import { AuthService } from '@app/core/services/auth.service';
-import { DatasetUsageRow, AdminAnalyticsService } from '@app/features/admin';
+import {
+  AdminActivityEntry,
+  DatasetUsageRow,
+  AdminAnalyticsService,
+} from '@app/features/admin';
 import { DatasetWorkflowPanelComponent } from '@app/features/admin/components/dataset-workflow-panel.component';
 import { TaxonomyManagerComponent } from '@app/features/admin/components/taxonomy-manager.component';
 import {
@@ -62,6 +66,7 @@ const ADMIN_NAV_ITEMS: readonly AdminNavItem[] = [
   selector: 'app-admin-page',
   standalone: true,
   imports: [
+    DatePipe,
     DecimalPipe,
     RouterLink,
     DataTableComponent,
@@ -151,6 +156,29 @@ export class AdminPageComponent {
   }
 
   protected readonly topDemandDataset = this.analytics.topResolvedRow;
+
+  protected readonly workflowEventCards = computed(() => {
+    const summary = this.analytics.datasetActivitySummary();
+    if (!summary) {
+      return [];
+    }
+    const totals = summary.totals;
+    return [
+      { label: 'Workflow events', value: totals.workflow_events },
+      { label: 'File events', value: totals.file_events },
+      { label: 'Metadata events', value: totals.metadata_events },
+      { label: 'Version events', value: totals.version_events },
+    ];
+  });
+
+  protected activityLabel(entry: AdminActivityEntry): string {
+    if (entry.activity_type === 'api_usage') {
+      return entry.method
+        ? `${entry.method} ${entry.endpoint ?? 'API request'}`
+        : entry.summary;
+    }
+    return entry.summary || entry.action;
+  }
 
   protected onUsageRowClick(row: DatasetUsageRow): void {
     if (!row.resolved) {

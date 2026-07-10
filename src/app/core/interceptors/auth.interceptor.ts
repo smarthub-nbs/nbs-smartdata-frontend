@@ -8,6 +8,7 @@ const SKIP_BEARER_PATHS = [
   '/v1/auth/register/',
   '/v1/auth/refresh/',
   '/v1/auth/csrf/',
+  '/v1/auth/social/',
 ];
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {

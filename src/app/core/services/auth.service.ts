@@ -147,6 +147,50 @@ export class AuthService {
       );
   }
 
+  signInWithGoogle(accessToken: string): Observable<AuthError | null> {
+    return this.http
+      .post<ApiEnvelope<LoginResponse>>(
+        `${environment.apiBaseUrl}/v1/auth/social/google/`,
+        { access_token: accessToken },
+      )
+      .pipe(
+        tap((response) => this.saveTokens(response.data)),
+        switchMap(() => this.fetchCurrentUser()),
+        map(() => null),
+        catchError((error: unknown) =>
+          of({
+            message: this.resolveErrorMessage(error, 'Google sign-in failed.'),
+          }),
+        ),
+      );
+  }
+
+  signInWithGitHub(payload: {
+    code: string;
+    redirectUri: string;
+    codeVerifier: string;
+  }): Observable<AuthError | null> {
+    return this.http
+      .post<ApiEnvelope<LoginResponse>>(
+        `${environment.apiBaseUrl}/v1/auth/social/github/`,
+        {
+          code: payload.code,
+          redirect_uri: payload.redirectUri,
+          code_verifier: payload.codeVerifier,
+        },
+      )
+      .pipe(
+        tap((response) => this.saveTokens(response.data)),
+        switchMap(() => this.fetchCurrentUser()),
+        map(() => null),
+        catchError((error: unknown) =>
+          of({
+            message: this.resolveErrorMessage(error, 'GitHub sign-in failed.'),
+          }),
+        ),
+      );
+  }
+
   register(request: RegisterRequest): Observable<AuthError | null> {
     return this.http
       .post<ApiEnvelope<RegisterResponse>>(

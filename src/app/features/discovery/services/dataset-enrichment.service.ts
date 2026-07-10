@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { ApiService } from '@app/core/services/api.service';
 import {
+  DatasetChartPreview,
   DatasetFilePreview,
   DatasetIndexingStatus,
   DatasetUpdateRecord,
@@ -41,6 +42,23 @@ interface BackendIndexingStatus {
   details: string;
 }
 
+interface BackendChartPoint {
+  label?: string | number | null;
+  x?: string | number | null;
+  y?: string | number | null;
+  value?: string | number | null;
+}
+
+interface BackendChartSeries {
+  name?: string;
+  points: BackendChartPoint[];
+}
+
+interface BackendChartResponse {
+  chart_type?: string;
+  series: BackendChartSeries[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class DatasetEnrichmentService {
   private readonly api = inject(ApiService);
@@ -52,6 +70,18 @@ export class DatasetEnrichmentService {
         limit: String(limit),
       })
       .pipe(map((response) => this.toFilePreview(response)));
+  }
+
+  getFileChart(
+    fileId: string,
+    chartType: 'line' | 'bar' = 'line',
+  ): Observable<DatasetChartPreview> {
+    return this.api
+      .get<BackendChartResponse>(`/v1/dataset/files/${fileId}/chart/`, {
+        chart_type: chartType,
+        limit: '12',
+      })
+      .pipe(map((response) => this.toChartPreview(response, chartType)));
   }
 
   getUpdateHistory(datasetId: string): Observable<DatasetUpdateRecord[]> {
@@ -99,6 +129,35 @@ export class DatasetEnrichmentService {
           };
         }),
       );
+  }
+
+  private toChartPreview(
+    response: BackendChartResponse,
+    fallbackType: string,
+  ): DatasetChartPreview {
+    const series = response.series[0];
+    const points = (series?.points ?? [])
+      .map((point) => {
+        const rawValue = point.y ?? point.value;
+        const value =
+          typeof rawValue === 'number'
+            ? rawValue
+            : Number.parseFloat(String(rawValue ?? ''));
+        if (!Number.isFinite(value)) {
+          return null;
+        }
+        const label = String(point.label ?? point.x ?? '');
+        return { label: label || String(value), value };
+      })
+      .filter(
+        (point): point is { label: string; value: number } => point !== null,
+      );
+
+    return {
+      chartType: response.chart_type ?? fallbackType,
+      label: series?.name?.trim() || 'Trend',
+      points,
+    };
   }
 
   private toFilePreview(response: BackendFileDataResponse): DatasetFilePreview {

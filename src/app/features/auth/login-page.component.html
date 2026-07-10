@@ -48,6 +48,30 @@
         </app-button>
       </form>
 
+      @if (socialEnabled) {
+      <div class="mt-5 space-y-3">
+        <div class="flex items-center gap-3 text-xs uppercase tracking-wide text-nbs-muted">
+          <span class="h-px flex-1 bg-slate-200"></span>
+          Or continue with
+          <span class="h-px flex-1 bg-slate-200"></span>
+        </div>
+        @if (googleEnabled) {
+        <app-button type="button" variant="outline" size="lg" [fullWidth]="true"
+          [loading]="socialSubmitting() === 'google'" [disabled]="socialSubmitting() !== null"
+          (clicked)="signInWithGoogle()">
+          Continue with Google
+        </app-button>
+        }
+        @if (githubEnabled) {
+        <app-button type="button" variant="outline" size="lg" [fullWidth]="true"
+          [loading]="socialSubmitting() === 'github'" [disabled]="socialSubmitting() !== null"
+          (clicked)="signInWithGitHub()">
+          Continue with GitHub
+        </app-button>
+        }
+      </div>
+      }
+
       <div class="mt-6 border-t border-slate-100 pt-5 text-center text-sm text-slate-600">
         New to SmartData Hub?
         <a routerLink="/register" [queryParams]="registerQueryParams"

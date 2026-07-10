@@ -26,6 +26,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'auth/github/callback',
+        loadComponent: () =>
+          import('@app/features/auth/github-callback-page.component').then(
+            (m) => m.GitHubCallbackPageComponent,
+          ),
+      },
+      {
         path: 'register',
         loadComponent: () =>
           import('@app/features/auth/register-page.component').then(

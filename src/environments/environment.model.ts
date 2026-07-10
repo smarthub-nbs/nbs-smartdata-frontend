@@ -9,4 +9,8 @@ export interface Environment {
   sessionIdleTimeoutMs: number;
   /** Show a countdown warning this many ms before idle sign-out; 0 skips the warning. */
   sessionIdleWarningMs: number;
+  /** Google OAuth client ID for GIS token login; empty disables the button. */
+  googleClientId: string;
+  /** GitHub OAuth app client ID; empty disables the button. */
+  githubClientId: string;
 }
