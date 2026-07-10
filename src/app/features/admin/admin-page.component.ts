@@ -28,6 +28,7 @@ import {
   DataTableComponent,
   BadgeComponent,
   IconComponent,
+  NbsSwapEnterDirective,
 } from '@shared/ui';
 
 interface PlatformMetricCard {
@@ -68,6 +69,7 @@ const ADMIN_NAV_ITEMS: readonly AdminNavItem[] = [
     TaxonomyManagerComponent,
     BadgeComponent,
     IconComponent,
+    NbsSwapEnterDirective,
   ],
   templateUrl: './admin-page.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -99,16 +101,8 @@ export class AdminPageComponent {
   protected readonly usageColumns: DataTableColumn<DatasetUsageRow>[] = [
     { key: 'title', header: 'Dataset', sortable: true },
     { key: 'topic', header: 'Topic', sortable: true },
-    { key: 'apiCalls', header: 'API calls', sortable: true, align: 'right' },
     { key: 'downloads', header: 'Downloads', sortable: true, align: 'right' },
     { key: 'views', header: 'Views', sortable: true, align: 'right' },
-    {
-      key: 'lastAccessed',
-      header: 'Last accessed',
-      sortable: true,
-      align: 'right',
-      format: (row) => this.formatLastAccessed(row.lastAccessed),
-    },
   ];
 
   protected readonly platformCards = computed<PlatformMetricCard[]>(() => {
@@ -116,22 +110,24 @@ export class AdminPageComponent {
     const datasetCount = this.analytics.datasetCount();
     const activeCount = this.analytics.activeDatasetCount();
     const topDataset = this.analytics.topResolvedRow();
+    const days = this.analytics.days();
+    const windowLabel = `Last ${days} days`;
 
     return [
       {
         label: 'API calls',
         value: summary.totalApiCalls.toLocaleString(),
-        detail: 'Developer API demand',
+        detail: windowLabel,
       },
       {
         label: 'Downloads',
         value: summary.totalDownloads.toLocaleString(),
-        detail: 'Dataset file downloads',
+        detail: windowLabel,
       },
       {
         label: 'Views',
         value: summary.totalViews.toLocaleString(),
-        detail: 'Discovery page views',
+        detail: windowLabel,
       },
       {
         label: 'Datasets with activity',
@@ -249,17 +245,5 @@ export class AdminPageComponent {
   private toPage(value: string | null): number | undefined {
     const page = Number(value);
     return Number.isInteger(page) && page > 0 ? page : undefined;
-  }
-
-  private formatLastAccessed(value: string): string {
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) {
-      return value;
-    }
-    return new Intl.DateTimeFormat(undefined, {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    }).format(date);
   }
 }

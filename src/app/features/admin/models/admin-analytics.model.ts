@@ -17,3 +17,97 @@ export interface UsageSummary {
   totalDownloads: number;
   totalViews: number;
 }
+
+export interface AdminDashboardUserSummary {
+  total: number;
+  active: number;
+  inactive: number;
+  verified: number;
+  staff: number;
+  superusers: number;
+}
+
+export interface AdminDashboardDatasetSummary {
+  total: number;
+  active: number;
+  deleted: number;
+  draft: number;
+  in_review: number;
+  approved: number;
+  rejected: number;
+  published: number;
+}
+
+export interface AdminDashboardApiSummary {
+  consumers_total: number;
+  consumers_active: number;
+  api_keys_total: number;
+  api_keys_active: number;
+  api_keys_revoked: number;
+  api_keys_expired: number;
+  requests_total: number;
+  requests_last_24h: number;
+  error_requests_last_24h: number;
+}
+
+export interface AdminDashboardActivitySummary {
+  dataset_audit_logs_total: number;
+  api_usage_logs_total: number;
+  last_24h_total: number;
+}
+
+export interface AdminDashboardSummary {
+  users: AdminDashboardUserSummary;
+  datasets: AdminDashboardDatasetSummary;
+  api: AdminDashboardApiSummary;
+  activity: AdminDashboardActivitySummary;
+}
+
+export interface AdminAnalyticsDatasetCount {
+  dataset_id: string;
+  dataset_slug: string | null;
+  count: number;
+}
+
+export interface AdminApiCallsSummary {
+  days: number;
+  totals: {
+    total_requests: number;
+    success_requests: number;
+    error_requests: number;
+    unique_consumers: number;
+    unique_api_keys: number;
+    average_response_time_ms: number | null;
+  };
+  top_endpoints: {
+    endpoint: string;
+    method: string;
+    request_count: number;
+    error_count: number;
+  }[];
+}
+
+export interface AdminDownloadsSummary {
+  days: number;
+  totals: {
+    total_downloads: number;
+    unique_datasets: number;
+    unique_files: number;
+    authenticated_downloads: number;
+    anonymous_downloads: number;
+  };
+  top_datasets: AdminAnalyticsDatasetCount[];
+}
+
+export interface AdminViewsSummary {
+  days: number;
+  totals: {
+    total_views: number;
+    unique_datasets: number;
+    unique_files: number;
+    preview_views: number;
+    data_views: number;
+    schema_views: number;
+  };
+  top_datasets: AdminAnalyticsDatasetCount[];
+}

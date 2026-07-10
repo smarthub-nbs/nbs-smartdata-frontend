@@ -4,7 +4,22 @@
 
 @layer base {
   html {
+    font-size: 16px;
     scroll-behavior: smooth;
+  }
+
+  // Comfortable, slightly larger type that also lets rem-based layout fill
+  // wider screens. All rem sizing (text, spacing, max-widths) scales with this.
+  @media (min-width: 1024px) {
+    html {
+      font-size: 16.5px;
+    }
+  }
+
+  @media (min-width: 1536px) {
+    html {
+      font-size: 17.5px;
+    }
   }
 
   body {
@@ -41,7 +56,6 @@
     }
     to {
       opacity: 1;
-      transform: translateY(0);
     }
   }
 
@@ -88,6 +102,10 @@
 }
 
 @layer components {
+  .nbs-container {
+    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 2xl:max-w-[92rem];
+  }
+
   .nbs-panel {
     @apply rounded-lg border border-nbs-border bg-white p-6 shadow-sm;
   }

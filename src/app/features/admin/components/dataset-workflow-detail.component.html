@@ -1,5 +1,5 @@
 @if (record(); as record) {
-<div class="nbs-enter w-full space-y-8">
+<div class="w-full space-y-8" [nbsSwapEnter]="record.id">
   <div
     class="sticky top-6 z-10 -mx-1 flex flex-wrap items-center justify-between gap-3 border-b border-nbs-border bg-white/95 px-1 py-2 backdrop-blur supports-[backdrop-filter]:bg-white/85">
     <nav class="flex gap-0.5 overflow-x-auto" aria-label="Dataset sections">

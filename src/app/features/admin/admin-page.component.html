@@ -1,4 +1,4 @@
-<div class="nbs-enter space-y-6">
+<div class="space-y-6">
   <header class="nbs-page-header flex flex-wrap items-start justify-between gap-3">
     <div>
       <h1 class="nbs-page-title">Publishing workspace</h1>
@@ -30,13 +30,18 @@
 
   @switch (activeSection()) {
   @case ('publishing') {
-  <app-dataset-workflow-panel />
+  <div [nbsSwapEnter]="'publishing'" nbsSwapEnterMode="fade">
+    <app-dataset-workflow-panel />
+  </div>
   }
   @case ('taxonomy') {
-  <app-taxonomy-manager [embedded]="true" />
+  <div [nbsSwapEnter]="'taxonomy'" nbsSwapEnterMode="fade">
+    <app-taxonomy-manager [embedded]="true" />
+  </div>
   }
   @case ('activity') {
-  <section class="space-y-6 nbs-surface-elevated" aria-labelledby="platform-activity-heading">
+  <section class="space-y-6 nbs-surface-elevated" aria-labelledby="platform-activity-heading"
+    [nbsSwapEnter]="'activity'" nbsSwapEnterMode="fade">
     <div class="flex flex-wrap items-start justify-between gap-4">
       <div class="flex items-start gap-3">
         <span class="flex size-9 shrink-0 items-center justify-center rounded-full bg-nbs-primary/10 text-nbs-primary">
@@ -47,7 +52,7 @@
             Platform activity
           </h2>
           <p class="mt-0.5 text-sm text-nbs-muted">
-            Usage signals for published datasets in Discovery.
+            Admin dashboard totals for API calls, downloads, and views.
           </p>
         </div>
       </div>
@@ -59,7 +64,7 @@
       </button>
     </div>
 
-    @if (analytics.analyticsLoading()) {
+    @if (analytics.analyticsLoading() && !analytics.analyticsLoaded()) {
     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-hidden="true">
       @for (placeholder of [0, 1, 2, 3]; track placeholder) {
       <article class="rounded-xl border border-slate-200/70 bg-slate-50/60 p-4">
@@ -101,7 +106,7 @@
             Dataset demand
           </h3>
           <p class="mt-1 text-xs text-nbs-muted">
-            Sorted by API calls. API calls, downloads, and views are counted separately.
+            Sorted by combined downloads and views from the admin analytics window.
           </p>
         </div>
         @if (topDemandDataset(); as row) {
