@@ -32,11 +32,14 @@ import {
 import { DatasetMetadataEditorComponent } from '@app/features/admin/components/dataset-metadata-editor.component';
 import { DatasetResourceManagerComponent } from '@app/features/admin/components/dataset-resource-manager.component';
 import { DatasetActivityLogComponent } from '@app/features/admin/components/dataset-activity-log.component';
+import { UserManagementService } from '@app/features/users/services/user-management.service';
+import { ManagedUser } from '@app/features/users/models/user-management.model';
 import {
   AlertComponent,
   BadgeComponent,
   ButtonComponent,
   IconComponent,
+  ModalComponent,
   NbsSwapEnterDirective,
   SelectInputComponent,
   SelectOption,
@@ -60,6 +63,7 @@ import { BadgeVariant } from '@shared/ui/models/badge-variant.model';
     DatasetMetadataEditorComponent,
     DatasetResourceManagerComponent,
     DatasetActivityLogComponent,
+    ModalComponent,
   ],
   templateUrl: './dataset-workflow-detail.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -81,6 +85,8 @@ export class DatasetWorkflowDetailComponent {
   readonly approve = output<string>();
   readonly reject = output<string>();
   readonly publish = output<string>();
+  readonly unpublish = output<string>();
+  readonly transferOwner = output<{ datasetId: string; newOwnerId: string }>();
   readonly uploadFile = output<File>();
   readonly metadataSaved = output<void>();
   readonly categoryChange = output<string>();
@@ -89,6 +95,7 @@ export class DatasetWorkflowDetailComponent {
   readonly deleteDataset = output<string>();
 
   private readonly workflow = inject(AdminDatasetWorkflowService);
+  private readonly usersApi = inject(UserManagementService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly metadataEditor = viewChild(DatasetMetadataEditorComponent);
   private readonly activityLog = viewChild(DatasetActivityLogComponent);
@@ -118,6 +125,11 @@ export class DatasetWorkflowDetailComponent {
   protected readonly pendingCategoryId = signal('');
   protected readonly editMode = signal(false);
   protected readonly activeSectionNav = signal('overview');
+  protected readonly transferOpen = signal(false);
+  protected readonly transferQuery = signal('');
+  protected readonly transferUsers = signal<ManagedUser[]>([]);
+  protected readonly transferLoading = signal(false);
+  protected readonly selectedOwnerId = signal('');
 
   protected readonly categoryDirty = computed(
     () =>
@@ -534,6 +546,63 @@ export class DatasetWorkflowDetailComponent {
 
   protected canPublishRecord(record: AdminDatasetRecord): boolean {
     return record.status === 'approved' && this.canPublish();
+  }
+
+  protected canUnpublishRecord(record: AdminDatasetRecord): boolean {
+    return record.status === 'published' && this.canPublish();
+  }
+
+  protected canTransferOwner(): boolean {
+    return this.canReview();
+  }
+
+  protected searchTransferUsers(): void {
+    const q = this.transferQuery().trim();
+    if (!q) {
+      this.transferUsers.set([]);
+      return;
+    }
+    this.transferLoading.set(true);
+    this.usersApi
+      .listUsers({ q, isActive: true, page: 1, pageSize: 10 })
+      .pipe(
+        finalize(() => this.transferLoading.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (response) => this.transferUsers.set(response.items),
+        error: () => this.transferUsers.set([]),
+      });
+  }
+
+  protected confirmTransfer(): void {
+    const ownerId = this.selectedOwnerId();
+    if (!ownerId) {
+      return;
+    }
+    this.transferOwner.emit({
+      datasetId: this.record().id,
+      newOwnerId: ownerId,
+    });
+    this.transferOpen.set(false);
+    this.selectedOwnerId.set('');
+    this.transferQuery.set('');
+    this.transferUsers.set([]);
+  }
+
+  protected closeTransfer(): void {
+    this.transferOpen.set(false);
+    this.selectedOwnerId.set('');
+    this.transferQuery.set('');
+    this.transferUsers.set([]);
+  }
+
+  protected ownerRowClasses(userId: string): string {
+    const base =
+      'flex w-full cursor-pointer items-center justify-between rounded-md px-3 py-2 text-left text-sm hover:bg-slate-50';
+    return this.selectedOwnerId() === userId
+      ? `${base} bg-nbs-primary/5`
+      : base;
   }
 
   protected missingRequirements(record: AdminDatasetRecord): string[] {

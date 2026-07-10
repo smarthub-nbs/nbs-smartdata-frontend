@@ -14,7 +14,10 @@ import {
   distinctUntilChanged,
   finalize,
   of,
+  switchMap,
+  takeWhile,
   tap,
+  timer,
 } from 'rxjs';
 import { ApiError } from '@app/core/models/api-error.model';
 import { AuthService } from '@app/core/services/auth.service';
@@ -28,6 +31,8 @@ import {
   AdminDatasetQueueSummary,
   AdminDatasetRecord,
   AdminQueueScope,
+  DatasetBulkAction,
+  DatasetBulkUploadItemInput,
   EMPTY_QUEUE_PAGINATION,
   EMPTY_QUEUE_SUMMARY,
   StatusCounts,
@@ -48,6 +53,11 @@ const ACTION_SUCCESS_MESSAGES: Record<string, string> = {
   approve: 'Dataset approved. You can now publish it.',
   reject: 'Dataset rejected. Update requirements and resubmit.',
   publish: 'Dataset published. It is now visible in Discovery.',
+  unpublish: 'Dataset unpublished. It is no longer visible in Discovery.',
+  restore: 'Dataset restored to the workspace.',
+  transfer: 'Dataset ownership transferred.',
+  bulk: 'Bulk action queued.',
+  'bulk-upload': 'Bulk upload queued.',
 };
 
 @Injectable()
@@ -79,6 +89,9 @@ export class AdminWorkspaceFacade {
   private readonly _actionLoading = signal('');
   private readonly _publishedId = signal('');
   private readonly _mutations = signal(0);
+  private readonly _checkedIds = signal<string[]>([]);
+  private readonly _restorableId = signal<string | null>(null);
+  private readonly _bulkJobMessage = signal<string | null>(null);
 
   readonly items = this._items.asReadonly();
   readonly pagination = this._pagination.asReadonly();
@@ -93,8 +106,20 @@ export class AdminWorkspaceFacade {
   readonly actionLoading = this._actionLoading.asReadonly();
   readonly publishedId = this._publishedId.asReadonly();
   readonly mutations = this._mutations.asReadonly();
+  readonly checkedIds = this._checkedIds.asReadonly();
+  readonly restorableId = this._restorableId.asReadonly();
+  readonly bulkJobMessage = this._bulkJobMessage.asReadonly();
 
   readonly selectedId = computed(() => this._selectedRecord()?.id ?? '');
+  readonly checkedCount = computed(() => this._checkedIds().length);
+  readonly allPageChecked = computed(() => {
+    const items = this._items();
+    if (items.length === 0) {
+      return false;
+    }
+    const checked = new Set(this._checkedIds());
+    return items.every((item) => checked.has(item.id));
+  });
 
   readonly statusCounts = computed<StatusCounts>(() => {
     const summary = this._summary();
@@ -250,6 +275,111 @@ export class AdminWorkspaceFacade {
     });
   }
 
+  unpublish(id: string): void {
+    this.runAction('unpublish', () => this.workflow.unpublishDataset(id), {
+      datasetId: id,
+      statusChanged: true,
+    });
+  }
+
+  restore(id: string): void {
+    this.runAction('restore', () => this.workflow.restoreDataset(id), {
+      datasetId: id,
+      statusChanged: true,
+      resetToAll: true,
+    });
+    this._restorableId.set(null);
+  }
+
+  transferOwner(id: string, newOwnerId: string): void {
+    this.runAction(
+      'transfer',
+      () => this.workflow.transferOwner(id, newOwnerId),
+      {
+        datasetId: id,
+      },
+    );
+  }
+
+  toggleChecked(id: string): void {
+    this._checkedIds.update((ids) =>
+      ids.includes(id) ? ids.filter((item) => item !== id) : [...ids, id],
+    );
+  }
+
+  toggleCheckAllOnPage(): void {
+    const pageIds = this._items().map((item) => item.id);
+    if (this.allPageChecked()) {
+      this._checkedIds.update((ids) =>
+        ids.filter((id) => !pageIds.includes(id)),
+      );
+      return;
+    }
+    this._checkedIds.update((ids) => [...new Set([...ids, ...pageIds])]);
+  }
+
+  clearChecked(): void {
+    this._checkedIds.set([]);
+  }
+
+  runBulkAction(action: DatasetBulkAction, reason?: string): void {
+    const datasetIds = this._checkedIds();
+    if (datasetIds.length === 0) {
+      return;
+    }
+    if (action === 'reject' && !reason?.trim()) {
+      this.toast.error('A reason is required when rejecting datasets.');
+      return;
+    }
+
+    this._actionLoading.set('bulk');
+    this._bulkJobMessage.set(null);
+    this.workflow
+      .runBulkAction(action, datasetIds, reason)
+      .pipe(
+        finalize(() => this._actionLoading.set('')),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (job) => {
+          this.clearChecked();
+          this.setMessage(
+            `Bulk ${action} queued for ${job.requested_count} dataset(s).`,
+          );
+          this.pollBulkActionJob(job.id);
+        },
+        error: (error: unknown) => this.showError(error),
+      });
+  }
+
+  runBulkUpload(
+    items: DatasetBulkUploadItemInput[],
+    options?: { publishAfterUpload?: boolean; reason?: string },
+  ): void {
+    if (items.length === 0) {
+      return;
+    }
+    this._actionLoading.set('bulk-upload');
+    this._bulkJobMessage.set(null);
+    this.workflow
+      .runBulkUpload(items, options)
+      .pipe(
+        finalize(() => this._actionLoading.set('')),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (job) => {
+          this.setMessage(`Bulk upload queued for ${job.total_count} file(s).`);
+          this.pollBulkUploadJob(job.id);
+        },
+        error: (error: unknown) => this.showError(error),
+      });
+  }
+
+  dismissRestorable(): void {
+    this._restorableId.set(null);
+  }
+
   linkTag(id: string, tagName: string): void {
     this.linkTagWithOptions(id, { tagName });
   }
@@ -323,7 +453,16 @@ export class AdminWorkspaceFacade {
       .subscribe({
         next: () => {
           this._selectedRecord.set(null);
-          this.setMessage('Dataset deleted.');
+          this._restorableId.set(id);
+          this._checkedIds.update((ids) => ids.filter((item) => item !== id));
+          this.toast.show({
+            message: 'Dataset deleted.',
+            variant: 'success',
+            action: {
+              label: 'Restore',
+              handler: () => this.restore(id),
+            },
+          });
           this.refreshAfterMutation({ datasetId: '', statusChanged: true });
         },
         error: (error: unknown) => this.showError(error),
@@ -470,6 +609,7 @@ export class AdminWorkspaceFacade {
       datasetId: string;
       statusChanged?: boolean;
       publishedId?: string;
+      resetToAll?: boolean;
     },
   ): void {
     this._actionLoading.set(key);
@@ -491,6 +631,84 @@ export class AdminWorkspaceFacade {
           this.refreshAfterMutation(refresh);
         },
         error: (error: unknown) => this.showError(error),
+      });
+  }
+
+  private pollBulkActionJob(jobId: string): void {
+    timer(0, 2000)
+      .pipe(
+        switchMap(() => this.workflow.getBulkActionJob(jobId)),
+        tap((job) => {
+          if (job.status === 'queued' || job.status === 'running') {
+            this._bulkJobMessage.set(
+              `Bulk ${job.action}: ${job.status} (${job.processed_count}/${job.requested_count})`,
+            );
+          }
+        }),
+        takeWhile(
+          (job) => job.status === 'queued' || job.status === 'running',
+          true,
+        ),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (job) => {
+          if (job.status === 'queued' || job.status === 'running') {
+            return;
+          }
+          this._bulkJobMessage.set(null);
+          if (job.status === 'completed') {
+            this.setMessage(
+              `Bulk ${job.action} finished: ${job.processed_count} processed, ${job.failed_count} failed.`,
+            );
+          } else {
+            this.toast.error(job.error || `Bulk ${job.action} failed.`);
+          }
+          this.refreshAfterMutation({ datasetId: '', statusChanged: true });
+        },
+        error: (error: unknown) => {
+          this._bulkJobMessage.set(null);
+          this.showError(error);
+        },
+      });
+  }
+
+  private pollBulkUploadJob(jobId: string): void {
+    timer(0, 2000)
+      .pipe(
+        switchMap(() => this.workflow.getBulkUploadJob(jobId)),
+        tap((job) => {
+          if (job.status === 'queued' || job.status === 'running') {
+            this._bulkJobMessage.set(
+              `Bulk upload: ${job.status} (${job.processed_count}/${job.total_count})`,
+            );
+          }
+        }),
+        takeWhile(
+          (job) => job.status === 'queued' || job.status === 'running',
+          true,
+        ),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (job) => {
+          if (job.status === 'queued' || job.status === 'running') {
+            return;
+          }
+          this._bulkJobMessage.set(null);
+          if (job.status === 'completed') {
+            this.setMessage(
+              `Bulk upload finished: ${job.processed_count} processed, ${job.failed_count} failed.`,
+            );
+          } else {
+            this.toast.error(job.error || 'Bulk upload failed.');
+          }
+          this.refreshAfterMutation({ datasetId: '', statusChanged: true });
+        },
+        error: (error: unknown) => {
+          this._bulkJobMessage.set(null);
+          this.showError(error);
+        },
       });
   }
 

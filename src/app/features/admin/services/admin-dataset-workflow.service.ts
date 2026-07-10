@@ -17,12 +17,18 @@ import {
   BackendAdminCategory,
   BackendAdminDataset,
   BackendAdminQueueResponse,
+  BackendAdminRegion,
   BackendAdminTag,
   BackendAuditLog,
   BackendDatasetFile,
   BackendDatasetTagLink,
   BackendDatasetVersion,
   BackendStatusHistory,
+  DatasetBulkAction,
+  DatasetBulkActionJob,
+  DatasetBulkActionJobDetail,
+  DatasetBulkUploadItemInput,
+  DatasetBulkUploadJob,
   DatasetFrequencyValue,
 } from '@app/features/admin/models/admin-dataset.model';
 import {
@@ -41,6 +47,28 @@ export class AdminDatasetWorkflowService {
 
   listTags(): Observable<BackendAdminTag[]> {
     return this.api.get<BackendAdminTag[]>('/v1/dataset/tags/');
+  }
+
+  listRegions(): Observable<BackendAdminRegion[]> {
+    return this.api.get<BackendAdminRegion[]>('/v1/dataset/regions/');
+  }
+
+  createRegion(name: string): Observable<BackendAdminRegion> {
+    return this.api.post<BackendAdminRegion>('/v1/dataset/regions/', {
+      name: name.trim(),
+    });
+  }
+
+  updateRegion(id: string, name: string): Observable<BackendAdminRegion> {
+    return this.api.patch<BackendAdminRegion>(`/v1/dataset/regions/${id}/`, {
+      name: name.trim(),
+    });
+  }
+
+  deleteRegion(id: string): Observable<void> {
+    return this.api
+      .delete(`/v1/dataset/regions/${id}/`)
+      .pipe(map(() => undefined));
   }
 
   listAdminQueue(
@@ -317,6 +345,117 @@ export class AdminDatasetWorkflowService {
         reason: reason ?? 'Publishing approved dataset.',
       })
       .pipe(map(() => undefined));
+  }
+
+  unpublishDataset(datasetId: string, reason?: string): Observable<void> {
+    return this.api
+      .post(`/v1/dataset/${datasetId}/unpublish/`, {
+        reason: reason ?? 'Temporarily withdrawing dataset.',
+      })
+      .pipe(map(() => undefined));
+  }
+
+  restoreDataset(datasetId: string, reason?: string): Observable<void> {
+    return this.api
+      .post(`/v1/dataset/${datasetId}/restore/`, {
+        reason: reason ?? 'Restoring deleted dataset.',
+      })
+      .pipe(map(() => undefined));
+  }
+
+  transferOwner(
+    datasetId: string,
+    newOwnerId: string,
+    reason?: string,
+  ): Observable<void> {
+    return this.api
+      .post(`/v1/dataset/${datasetId}/transfer-owner/`, {
+        new_owner_id: newOwnerId,
+        reason: reason ?? 'Reassigning dataset ownership.',
+      })
+      .pipe(map(() => undefined));
+  }
+
+  validateFile(fileId: string, validationNotes?: string): Observable<void> {
+    return this.api
+      .post(`/v1/dataset/files/${fileId}/validate/`, {
+        validation_notes: validationNotes ?? 'Admin revalidated file.',
+      })
+      .pipe(map(() => undefined));
+  }
+
+  createVersion(
+    datasetId: string,
+    versionNumber: string,
+    changelog?: string,
+  ): Observable<void> {
+    return this.api
+      .post('/v1/dataset/versions/', {
+        dataset_id: datasetId,
+        version_number: versionNumber.trim(),
+        changelog: changelog?.trim() ?? '',
+      })
+      .pipe(map(() => undefined));
+  }
+
+  runBulkAction(
+    action: DatasetBulkAction,
+    datasetIds: string[],
+    reason?: string,
+  ): Observable<DatasetBulkActionJob> {
+    return this.api.post<DatasetBulkActionJob>(
+      '/v1/dataset/admin-queue/bulk-action/',
+      {
+        action,
+        dataset_ids: datasetIds,
+        reason: reason ?? '',
+      },
+    );
+  }
+
+  getBulkActionJob(jobId: string): Observable<DatasetBulkActionJobDetail> {
+    return this.api.get<DatasetBulkActionJobDetail>(
+      `/v1/dataset/admin-queue/bulk-action/jobs/${jobId}/`,
+    );
+  }
+
+  runBulkUpload(
+    items: DatasetBulkUploadItemInput[],
+    options?: { publishAfterUpload?: boolean; reason?: string },
+  ): Observable<DatasetBulkUploadJob> {
+    const formData = new FormData();
+    formData.append(
+      'items',
+      JSON.stringify(
+        items.map((item) => ({
+          dataset_id: item.datasetId,
+          ...(item.datasetVersionId
+            ? { dataset_version_id: item.datasetVersionId }
+            : {}),
+          is_primary: item.isPrimary ?? true,
+        })),
+      ),
+    );
+    for (const item of items) {
+      formData.append('files', item.file, item.file.name);
+    }
+    formData.append(
+      'publish_after_upload',
+      String(options?.publishAfterUpload ?? false),
+    );
+    if (options?.reason) {
+      formData.append('reason', options.reason);
+    }
+    return this.api.postMultipart<DatasetBulkUploadJob>(
+      '/v1/dataset/admin-queue/bulk-upload/',
+      formData,
+    );
+  }
+
+  getBulkUploadJob(jobId: string): Observable<DatasetBulkUploadJob> {
+    return this.api.get<DatasetBulkUploadJob>(
+      `/v1/dataset/admin-queue/bulk-upload/jobs/${jobId}/`,
+    );
   }
 
   listStatusHistory(datasetId: string): Observable<BackendStatusHistory[]> {

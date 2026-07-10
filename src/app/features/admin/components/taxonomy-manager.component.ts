@@ -17,7 +17,7 @@ import { fieldErrorsFromApi } from '@app/core/utils/api-field-errors.util';
 import { AdminTaxonomyStore } from '@app/features/admin/services/admin-taxonomy.store';
 import { ButtonComponent, IconComponent } from '@shared/ui';
 
-type TaxonomyKind = 'category' | 'tag';
+type TaxonomyKind = 'category' | 'tag' | 'region';
 
 interface EditState {
   kind: TaxonomyKind;
@@ -54,8 +54,10 @@ export class TaxonomyManagerComponent implements OnInit {
   protected readonly loading = this.taxonomy.loading;
   protected readonly categories = this.taxonomy.categories;
   protected readonly tags = this.taxonomy.tags;
+  protected readonly regions = this.taxonomy.regions;
   protected readonly newCategoryName = signal('');
   protected readonly newTagName = signal('');
+  protected readonly newRegionName = signal('');
   protected readonly editing = signal<EditState | null>(null);
   protected readonly confirmingId = signal('');
 
@@ -140,6 +142,28 @@ export class TaxonomyManagerComponent implements OnInit {
       });
   }
 
+  protected addRegion(): void {
+    const name = this.newRegionName().trim();
+    if (!name) {
+      return;
+    }
+    this.actionError.set('');
+    this.actionId.set('new-region');
+    this.taxonomy
+      .createRegion(name)
+      .pipe(
+        finalize(() => this.actionId.set('')),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: () => {
+          this.newRegionName.set('');
+          this.toast.success('Region created.');
+        },
+        error: (error: unknown) => this.showError(error),
+      });
+  }
+
   protected saveEdit(): void {
     const editing = this.editing();
     if (!editing?.name.trim()) {
@@ -150,7 +174,9 @@ export class TaxonomyManagerComponent implements OnInit {
     const request$ =
       editing.kind === 'category'
         ? this.taxonomy.updateCategory(editing.id, editing.name)
-        : this.taxonomy.updateTag(editing.id, editing.name);
+        : editing.kind === 'tag'
+          ? this.taxonomy.updateTag(editing.id, editing.name)
+          : this.taxonomy.updateRegion(editing.id, editing.name);
 
     request$
       .pipe(
@@ -161,7 +187,11 @@ export class TaxonomyManagerComponent implements OnInit {
         next: () => {
           this.editing.set(null);
           this.toast.success(
-            editing.kind === 'category' ? 'Category renamed.' : 'Tag renamed.',
+            editing.kind === 'category'
+              ? 'Category renamed.'
+              : editing.kind === 'tag'
+                ? 'Tag renamed.'
+                : 'Region renamed.',
           );
         },
         error: (error: unknown) => this.showError(error),
@@ -183,7 +213,9 @@ export class TaxonomyManagerComponent implements OnInit {
     const request$ =
       kind === 'category'
         ? this.taxonomy.deleteCategory(id)
-        : this.taxonomy.deleteTag(id);
+        : kind === 'tag'
+          ? this.taxonomy.deleteTag(id)
+          : this.taxonomy.deleteRegion(id);
 
     request$
       .pipe(
@@ -193,7 +225,11 @@ export class TaxonomyManagerComponent implements OnInit {
       .subscribe({
         next: () =>
           this.toast.success(
-            kind === 'category' ? 'Category deleted.' : 'Tag deleted.',
+            kind === 'category'
+              ? 'Category deleted.'
+              : kind === 'tag'
+                ? 'Tag deleted.'
+                : 'Region deleted.',
           ),
         error: (error: unknown) => this.showError(error),
       });
