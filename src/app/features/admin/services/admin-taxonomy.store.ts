@@ -4,6 +4,7 @@ import { Observable, finalize, forkJoin, tap } from 'rxjs';
 import { ApiError } from '@app/core/models/api-error.model';
 import {
   BackendAdminCategory,
+  BackendAdminRegion,
   BackendAdminTag,
 } from '@app/features/admin/models/admin-dataset.model';
 import { AdminDatasetWorkflowService } from '@app/features/admin/services/admin-dataset-workflow.service';
@@ -16,11 +17,13 @@ export class AdminTaxonomyStore {
   private readonly loaded = signal(false);
   private readonly _categories = signal<BackendAdminCategory[]>([]);
   private readonly _tags = signal<BackendAdminTag[]>([]);
+  private readonly _regions = signal<BackendAdminRegion[]>([]);
   private readonly _loading = signal(false);
   private readonly _error = signal<string | null>(null);
 
   readonly categories = this._categories.asReadonly();
   readonly tags = this._tags.asReadonly();
+  readonly regions = this._regions.asReadonly();
   readonly loading = this._loading.asReadonly();
   readonly error = this._error.asReadonly();
 
@@ -38,16 +41,18 @@ export class AdminTaxonomyStore {
     forkJoin({
       categories: this.workflow.listCategories(),
       tags: this.workflow.listTags(),
+      regions: this.workflow.listRegions(),
     })
       .pipe(
         finalize(() => this._loading.set(false)),
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
-        next: ({ categories, tags }) => {
+        next: ({ categories, tags, regions }) => {
           this.loaded.set(true);
           this._categories.set(categories);
           this._tags.set(tags);
+          this._regions.set(this.sortByName(regions));
         },
         error: (error: unknown) => this._error.set(this.resolveError(error)),
       });
@@ -130,6 +135,42 @@ export class AdminTaxonomyStore {
       .pipe(
         tap(() =>
           this._tags.update((items) => items.filter((item) => item.id !== id)),
+        ),
+      );
+  }
+
+  createRegion(name: string): Observable<BackendAdminRegion> {
+    return this.workflow
+      .createRegion(name)
+      .pipe(
+        tap((region) =>
+          this._regions.update((items) => this.sortByName([...items, region])),
+        ),
+      );
+  }
+
+  updateRegion(id: string, name: string): Observable<BackendAdminRegion> {
+    return this.workflow
+      .updateRegion(id, name)
+      .pipe(
+        tap((region) =>
+          this._regions.update((items) =>
+            this.sortByName(
+              items.map((item) => (item.id === region.id ? region : item)),
+            ),
+          ),
+        ),
+      );
+  }
+
+  deleteRegion(id: string): Observable<void> {
+    return this.workflow
+      .deleteRegion(id)
+      .pipe(
+        tap(() =>
+          this._regions.update((items) =>
+            items.filter((item) => item.id !== id),
+          ),
         ),
       );
   }

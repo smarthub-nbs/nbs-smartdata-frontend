@@ -2,6 +2,7 @@ export { AdminAnalyticsService } from './services/admin-analytics.service';
 export { AdminDatasetWorkflowService } from './services/admin-dataset-workflow.service';
 export { DatasetWorkflowPanelComponent } from './components/dataset-workflow-panel.component';
 export type {
+  AdminDashboardSummary,
   DatasetUsageMetrics,
   DatasetUsageRow,
   UsageSummary,

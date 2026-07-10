@@ -13,6 +13,12 @@ import {
 import { Chart, ChartConfiguration, Chart as ChartInstance } from 'chart.js';
 import { ExploreIndicator } from '@app/features/explore/models/explore.model';
 import { ensureChartJsRegistered } from '@app/features/explore/utils/chart-js.util';
+import {
+  CHART_COLORS,
+  chartAxisTicksColor,
+  chartGridColor,
+  chartTooltipOptions,
+} from '@app/features/explore/utils/chart-colors.util';
 
 @Component({
   selector: 'app-regional-comparison-chart',
@@ -86,7 +92,7 @@ export class RegionalComparisonChartComponent implements AfterViewInit {
           {
             label: `${indicator.name} by region (${indicator.unit})`,
             data: values,
-            backgroundColor: '#0d9488',
+            backgroundColor: CHART_COLORS.accent,
             borderRadius: 4,
           },
         ],
@@ -95,10 +101,23 @@ export class RegionalComparisonChartComponent implements AfterViewInit {
         indexAxis: 'y',
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
+        plugins: {
+          legend: { display: false },
+          tooltip: chartTooltipOptions(),
+        },
         scales: {
           x: {
-            title: { display: true, text: indicator.unit },
+            ticks: { color: chartAxisTicksColor() },
+            grid: { color: chartGridColor() },
+            title: {
+              display: true,
+              text: indicator.unit,
+              color: CHART_COLORS.muted,
+            },
+          },
+          y: {
+            ticks: { color: chartAxisTicksColor() },
+            grid: { color: chartGridColor() },
           },
         },
       },

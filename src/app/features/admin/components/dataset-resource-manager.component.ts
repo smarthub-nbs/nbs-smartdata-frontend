@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { UpperCasePipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
 import { ApiError } from '@app/core/models/api-error.model';
 import {
@@ -28,7 +29,7 @@ const EMPTY_RESOURCES: AdminDatasetResources = {
 @Component({
   selector: 'app-dataset-resource-manager',
   standalone: true,
-  imports: [ButtonComponent, IconComponent, UpperCasePipe],
+  imports: [FormsModule, ButtonComponent, IconComponent, UpperCasePipe],
   templateUrl: './dataset-resource-manager.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -49,6 +50,8 @@ export class DatasetResourceManagerComponent {
   protected readonly confirmingDelete = signal(false);
   protected readonly confirmingFileId = signal('');
   protected readonly confirmingTagLinkId = signal('');
+  protected readonly newVersionNumber = signal('');
+  protected readonly newVersionChangelog = signal('');
 
   private loadedId = '';
 
@@ -108,6 +111,50 @@ export class DatasetResourceManagerComponent {
       )
       .subscribe({
         next: () => this.afterMutation(),
+        error: (error: unknown) => this.error.set(this.resolveError(error)),
+      });
+  }
+
+  protected validateFile(fileId: string): void {
+    this.actionId.set(`validate-${fileId}`);
+    this.workflow
+      .validateFile(fileId)
+      .pipe(
+        finalize(() => this.actionId.set('')),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: () => this.afterMutation(),
+        error: (error: unknown) => this.error.set(this.resolveError(error)),
+      });
+  }
+
+  protected isValidating(fileId: string): boolean {
+    return this.actionId() === `validate-${fileId}`;
+  }
+
+  protected createVersion(): void {
+    const versionNumber = this.newVersionNumber().trim();
+    if (!versionNumber) {
+      return;
+    }
+    this.actionId.set('create-version');
+    this.workflow
+      .createVersion(
+        this.datasetId(),
+        versionNumber,
+        this.newVersionChangelog(),
+      )
+      .pipe(
+        finalize(() => this.actionId.set('')),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: () => {
+          this.newVersionNumber.set('');
+          this.newVersionChangelog.set('');
+          this.afterMutation();
+        },
         error: (error: unknown) => this.error.set(this.resolveError(error)),
       });
   }

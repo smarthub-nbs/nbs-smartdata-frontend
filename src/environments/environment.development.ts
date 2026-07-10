@@ -3,7 +3,7 @@ import { Environment } from './environment.model';
 export const environment: Environment = {
   production: false,
   useMockApi: false,
-  useMockExploreApi: true,
+  useMockExploreApi: false,
   apiBaseUrl: '/api',
   appName: 'NBS SmartData Hub',
   sessionIdleTimeoutMs: 5 * 60 * 1000,

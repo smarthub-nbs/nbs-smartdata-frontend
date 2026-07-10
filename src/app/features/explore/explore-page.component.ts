@@ -3,6 +3,7 @@ import {
   Component,
   computed,
   DestroyRef,
+  effect,
   inject,
   signal,
   viewChild,
@@ -71,6 +72,34 @@ export class ExplorePageComponent {
           this.applyIndicator(indicatorParam);
         }
       });
+
+    effect(
+      () => {
+        const state = this.exploreData.catalogLoadState();
+        if (state.status !== 'success') {
+          return;
+        }
+
+        const requested = this.route.snapshot.queryParamMap.get('indicator');
+        if (requested && this.exploreData.getIndicator(requested)) {
+          this.applyIndicator(requested);
+          return;
+        }
+
+        const byTopic = requested
+          ? state.data.find((item) => item.topicSlug === requested)
+          : undefined;
+        if (byTopic) {
+          this.applyIndicator(byTopic.id);
+          return;
+        }
+
+        if (!this.exploreData.getIndicator(this.selectedId())) {
+          this.applyIndicator(this.exploreData.getDefaultIndicatorId());
+        }
+      },
+      { allowSignalWrites: true },
+    );
   }
 
   protected onIndicatorChange(id: string): void {

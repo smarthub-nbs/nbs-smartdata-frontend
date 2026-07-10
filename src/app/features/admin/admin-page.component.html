@@ -1,5 +1,5 @@
-<div class="nbs-enter space-y-6">
-  <header class="flex flex-wrap items-start justify-between gap-3">
+<div class="space-y-6">
+  <header class="nbs-page-header flex flex-wrap items-start justify-between gap-3">
     <div>
       <h1 class="nbs-page-title">Publishing workspace</h1>
       <p class="nbs-page-lead max-w-2xl">
@@ -30,15 +30,18 @@
 
   @switch (activeSection()) {
   @case ('publishing') {
-  <app-dataset-workflow-panel />
+  <div [nbsSwapEnter]="'publishing'" nbsSwapEnterMode="fade">
+    <app-dataset-workflow-panel />
+  </div>
   }
   @case ('taxonomy') {
-  <app-taxonomy-manager [embedded]="true" />
+  <div [nbsSwapEnter]="'taxonomy'" nbsSwapEnterMode="fade">
+    <app-taxonomy-manager [embedded]="true" />
+  </div>
   }
   @case ('activity') {
-  <section
-    class="space-y-6 rounded-2xl border border-slate-200/80 bg-white p-6 shadow-[0_18px_50px_-36px_rgba(15,23,42,0.45)]"
-    aria-labelledby="platform-activity-heading">
+  <section class="space-y-6 nbs-surface-elevated" aria-labelledby="platform-activity-heading"
+    [nbsSwapEnter]="'activity'" nbsSwapEnterMode="fade">
     <div class="flex flex-wrap items-start justify-between gap-4">
       <div class="flex items-start gap-3">
         <span class="flex size-9 shrink-0 items-center justify-center rounded-full bg-nbs-primary/10 text-nbs-primary">
@@ -49,7 +52,7 @@
             Platform activity
           </h2>
           <p class="mt-0.5 text-sm text-nbs-muted">
-            Usage signals for published datasets in Discovery.
+            Admin dashboard totals for API calls, downloads, and views.
           </p>
         </div>
       </div>
@@ -61,7 +64,7 @@
       </button>
     </div>
 
-    @if (analytics.analyticsLoading()) {
+    @if (analytics.analyticsLoading() && !analytics.analyticsLoaded()) {
     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-hidden="true">
       @for (placeholder of [0, 1, 2, 3]; track placeholder) {
       <article class="rounded-xl border border-slate-200/70 bg-slate-50/60 p-4">
@@ -73,11 +76,11 @@
     </div>
     <p class="sr-only" aria-live="polite">Loading platform activity…</p>
     } @else if (analytics.analyticsError()) {
-    <div class="rounded-md border border-red-100 bg-red-50 px-4 py-3" role="alert">
-      <p class="text-sm font-medium text-red-900">
+    <div class="rounded-md border border-nbs-danger-border bg-nbs-danger-soft px-4 py-3" role="alert">
+      <p class="text-sm font-medium text-nbs-danger">
         Platform activity could not load.
       </p>
-      <p class="mt-1 text-sm text-red-800">
+      <p class="mt-1 text-sm text-nbs-danger">
         {{ analytics.analyticsError() }}
       </p>
     </div>
@@ -103,13 +106,13 @@
             Dataset demand
           </h3>
           <p class="mt-1 text-xs text-nbs-muted">
-            Sorted by API calls. API calls, downloads, and views are counted separately.
+            Sorted by combined downloads and views from the admin analytics window.
           </p>
         </div>
         @if (topDemandDataset(); as row) {
-        <span class="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-800">
+        <app-badge variant="success" shape="pill" [bordered]="false">
           Leader: {{ row.title }}
-        </span>
+        </app-badge>
         }
       </div>
       <div class="mt-4">

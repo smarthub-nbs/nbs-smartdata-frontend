@@ -9,8 +9,13 @@ import {
   viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormsModule } from '@angular/forms';
 import { AuthService } from '@app/core/services/auth.service';
-import { StatusFilter } from '@app/features/admin/models/admin-dataset.model';
+import {
+  DatasetBulkAction,
+  DatasetBulkUploadItemInput,
+  StatusFilter,
+} from '@app/features/admin/models/admin-dataset.model';
 import { AdminTaxonomyStore } from '@app/features/admin/services/admin-taxonomy.store';
 import { AdminWorkspaceFacade } from '@app/features/admin/services/admin-workspace.facade';
 import { DatasetQueueListComponent } from '@app/features/admin/components/dataset-queue-list.component';
@@ -19,11 +24,22 @@ import {
   CreateDraftPayload,
   DatasetCreateDraftComponent,
 } from '@app/features/admin/components/dataset-create-draft.component';
-import { ButtonComponent, IconComponent, ModalComponent } from '@shared/ui';
+import {
+  ButtonComponent,
+  AlertComponent,
+  EmptyStateComponent,
+  IconComponent,
+  ModalComponent,
+} from '@shared/ui';
 
 interface StatusFilterItem {
   key: StatusFilter;
   label: string;
+}
+
+interface BulkUploadRow {
+  file: File;
+  datasetId: string;
 }
 
 const STATUS_FILTERS: readonly StatusFilterItem[] = [
@@ -40,7 +56,10 @@ const STATUS_FILTERS: readonly StatusFilterItem[] = [
   standalone: true,
   imports: [
     DecimalPipe,
+    FormsModule,
     ButtonComponent,
+    AlertComponent,
+    EmptyStateComponent,
     IconComponent,
     DatasetQueueListComponent,
     DatasetWorkflowDetailComponent,
@@ -66,6 +85,10 @@ export class DatasetWorkflowPanelComponent {
   protected readonly pendingSwitchId = signal('');
   protected readonly mobileDetailOpen = signal(false);
   protected readonly createDraftOpen = signal(false);
+  protected readonly bulkUploadOpen = signal(false);
+  protected readonly bulkRejectReason = signal('');
+  protected readonly bulkUploadRows = signal<BulkUploadRow[]>([]);
+  protected readonly bulkPublishAfter = signal(false);
 
   protected readonly canReview = this.auth.canReviewDatasets;
   protected readonly canPublish = this.auth.canPublishDatasets;
@@ -102,12 +125,66 @@ export class DatasetWorkflowPanelComponent {
     this.createDraft()?.reset();
   }
 
+  protected openBulkUpload(): void {
+    this.bulkUploadRows.set([]);
+    this.bulkPublishAfter.set(false);
+    this.bulkUploadOpen.set(true);
+  }
+
+  protected closeBulkUpload(): void {
+    this.bulkUploadOpen.set(false);
+    this.bulkUploadRows.set([]);
+  }
+
+  protected onBulkFilesSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const files = Array.from(input.files ?? []);
+    const defaultDatasetId =
+      this.facade.selectedId() || this.facade.items()[0]?.id || '';
+    this.bulkUploadRows.set(
+      files.map((file) => ({ file, datasetId: defaultDatasetId })),
+    );
+    input.value = '';
+  }
+
+  protected setBulkUploadDataset(index: number, datasetId: string): void {
+    this.bulkUploadRows.update((rows) =>
+      rows.map((row, i) => (i === index ? { ...row, datasetId } : row)),
+    );
+  }
+
+  protected submitBulkUpload(): void {
+    const items: DatasetBulkUploadItemInput[] = this.bulkUploadRows()
+      .filter((row) => row.datasetId)
+      .map((row) => ({
+        datasetId: row.datasetId,
+        file: row.file,
+        isPrimary: true,
+      }));
+    if (items.length === 0) {
+      return;
+    }
+    this.facade.runBulkUpload(items, {
+      publishAfterUpload: this.bulkPublishAfter(),
+    });
+    this.closeBulkUpload();
+  }
+
+  protected runBulk(action: DatasetBulkAction): void {
+    const reason =
+      action === 'reject' ? this.bulkRejectReason().trim() : undefined;
+    this.facade.runBulkAction(action, reason);
+    if (action === 'reject') {
+      this.bulkRejectReason.set('');
+    }
+  }
+
   protected onSelect(id: string): void {
     if (id === this.facade.selectedId()) {
       this.mobileDetailOpen.set(true);
       return;
     }
-    if (this.detail()?.isMetadataDirty()) {
+    if (this.detail()?.hasUnsavedChanges()) {
       this.pendingSwitchId.set(id);
       return;
     }
@@ -124,7 +201,7 @@ export class DatasetWorkflowPanelComponent {
     if (!nextId) {
       return;
     }
-    this.detail()?.discardMetadata();
+    this.detail()?.discardUnsavedChanges();
     this.pendingSwitchId.set('');
     this.facade.selectDataset(nextId);
     this.mobileDetailOpen.set(true);
@@ -166,6 +243,13 @@ export class DatasetWorkflowPanelComponent {
   protected onResourcesChanged(datasetId: string): void {
     this.facade.refreshDataset(datasetId);
     this.detail()?.reloadTagLinks();
+  }
+
+  protected onTransferOwner(event: {
+    datasetId: string;
+    newOwnerId: string;
+  }): void {
+    this.facade.transferOwner(event.datasetId, event.newOwnerId);
   }
 
   protected statCount(filter: StatusFilter): number {

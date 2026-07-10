@@ -81,9 +81,9 @@ export function methodBadgeClasses(method: ApiEndpointDoc['method']): string {
   const base =
     'inline-flex shrink-0 rounded px-1.5 py-0.5 text-xs font-semibold';
   if (method === 'GET') {
-    return `${base} bg-emerald-100 text-emerald-800`;
+    return `${base} bg-nbs-success-soft text-nbs-success`;
   }
-  return `${base} bg-blue-100 text-blue-800`;
+  return `${base} bg-nbs-info-soft text-nbs-info`;
 }
 
 export function apiRefGroupPanelId(groupId: ApiEndpointGroup): string {

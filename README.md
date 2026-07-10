@@ -70,6 +70,12 @@ src/app/
 
 Path aliases: `@app/*`, `@shared/*`, `@env/*`
 
+## Design system
+
+UI tokens, primitives, and patterns: [`docs/design-system/README.md`](docs/design-system/README.md).
+
+Full notes live in the Obsidian vault under `NBS/SmartData/` (linked from that README). Cursor applies [`.cursor/rules/nbs-design-system.mdc`](../.cursor/rules/nbs-design-system.mdc) when editing `src/**`.
+
 ## Auth note
 
 JWT tokens are stored in `localStorage`. See [`docs/auth-storage.md`](docs/auth-storage.md) for the threat model and HttpOnly cookie migration path.

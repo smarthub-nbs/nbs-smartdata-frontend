@@ -1,5 +1,4 @@
-<section
-  class="space-y-6 rounded-2xl border border-slate-200/80 bg-white p-6 shadow-[0_18px_50px_-36px_rgba(15,23,42,0.45)]">
+<section class="space-y-6 nbs-surface-elevated">
   <div class="flex flex-wrap items-center justify-between gap-4">
     <div>
       <h2 class="text-sm font-semibold text-slate-900">Publishing queue</h2>
@@ -7,20 +6,77 @@
         Select a dataset to review and publish.
       </p>
     </div>
-    <app-button variant="outline" size="sm" (clicked)="openCreateDraft()">
-      <span class="flex items-center gap-1.5">
-        <app-icon name="plus" [size]="16" />
-        New draft
-      </span>
-    </app-button>
+    <div class="flex flex-wrap gap-2">
+      @if (canReview()) {
+      <app-button variant="outline" size="sm" (clicked)="openBulkUpload()">
+        Bulk upload
+      </app-button>
+      }
+      <app-button variant="outline" size="sm" (clicked)="openCreateDraft()">
+        <span class="flex items-center gap-1.5">
+          <app-icon name="plus" [size]="16" />
+          New draft
+        </span>
+      </app-button>
+    </div>
   </div>
 
+  @if (facade.bulkJobMessage()) {
+  <app-alert variant="info" role="status" class="text-xs">
+    {{ facade.bulkJobMessage() }}
+  </app-alert>
+  }
+
+  @if (facade.restorableId(); as restorableId) {
+  <app-alert variant="warning" role="status" class="text-xs">
+    <div class="flex flex-wrap items-center justify-between gap-2">
+      <span>A dataset was deleted and can still be restored.</span>
+      <div class="flex gap-2">
+        <app-button variant="outline" size="sm" [loading]="facade.actionLoading() === 'restore'"
+          (clicked)="facade.restore(restorableId)">
+          Restore
+        </app-button>
+        <app-button variant="ghost" size="sm" (clicked)="facade.dismissRestorable()">
+          Dismiss
+        </app-button>
+      </div>
+    </div>
+  </app-alert>
+  }
+
+  @if (canReview() && facade.checkedCount() > 0) {
+  <div class="flex flex-wrap items-end gap-2 rounded-lg border border-slate-200 bg-slate-50/80 p-3">
+    <p class="mr-auto text-sm text-slate-700">
+      {{ facade.checkedCount() }} selected
+    </p>
+    <app-button variant="outline" size="sm" [loading]="facade.actionLoading() === 'bulk'"
+      (clicked)="runBulk('approve')">
+      Approve
+    </app-button>
+    <label class="flex min-w-[12rem] flex-1 flex-col gap-1">
+      <span class="text-[11px] font-medium text-nbs-muted">Reject reason</span>
+      <input type="text" class="h-9 rounded-md border border-slate-200 px-2 text-sm" [ngModel]="bulkRejectReason()"
+        (ngModelChange)="bulkRejectReason.set($event)" placeholder="Required for reject" />
+    </label>
+    <app-button variant="outline" size="sm" [loading]="facade.actionLoading() === 'bulk'" (clicked)="runBulk('reject')">
+      Reject
+    </app-button>
+    @if (canPublish()) {
+    <app-button variant="primary" size="sm" [loading]="facade.actionLoading() === 'bulk'"
+      (clicked)="runBulk('publish')">
+      Publish
+    </app-button>
+    }
+    <app-button variant="ghost" size="sm" (clicked)="facade.clearChecked()">
+      Clear
+    </app-button>
+  </div>
+  }
+
   @if (facade.summaryError()) {
-  <output
-    class="flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-    <app-icon name="alert-triangle" [size]="14" class="text-amber-600" />
+  <app-alert variant="warning" role="status" class="text-xs">
     Status counts could not refresh. Showing the most recent values.
-  </output>
+  </app-alert>
   }
 
   @if (!facade.hasNoDatasets() || facade.queueLoading()) {
@@ -40,25 +96,23 @@
     {{ facade.queueError() }}
   </p>
   } @else if (facade.hasNoDatasets() && !facade.queueLoading()) {
-  <div class="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-6 py-10 text-center">
-    <app-icon name="inbox" [size]="28" class="mx-auto text-slate-300" />
-    <p class="mt-3 text-sm font-medium text-slate-900">No datasets yet</p>
-    <p class="mt-1 text-sm text-nbs-muted">
-      Create your first draft, then upload a primary file and submit for review.
-    </p>
-    <app-button class="mt-4" variant="primary" size="sm" (clicked)="openCreateDraft()">
+  <app-empty-state icon="inbox" title="No datasets yet"
+    message="Create your first draft, then upload a primary file and submit for review.">
+    <app-button class="mt-4 block" variant="primary" size="sm" (clicked)="openCreateDraft()">
       Create first draft
     </app-button>
-  </div>
+  </app-empty-state>
   } @else {
   <div
     class="border-t border-slate-100 pt-5 grid items-start gap-6 lg:grid-cols-[minmax(0,17rem)_minmax(0,1fr)] lg:gap-0">
     <aside class="lg:sticky lg:top-6 lg:self-start lg:pr-5" [class.max-lg:hidden]="showDetailOnMobile()">
       <app-dataset-queue-list [items]="facade.items()" [pagination]="facade.pagination()"
-        [searchTerm]="facade.searchTerm()" [selectedId]="facade.selectedId()" [loading]="facade.queueLoading()"
+        [searchTerm]="facade.searchTerm()" [selectedId]="facade.selectedId()" [checkedIds]="facade.checkedIds()"
+        [canBulkSelect]="canReview()" [allPageChecked]="facade.allPageChecked()" [loading]="facade.queueLoading()"
         [hasActiveSearch]="facade.hasActiveSearch()" [pageRangeLabel]="facade.pageRangeLabel()"
         (searchInput)="onSearch($event)" (previousPage)="facade.goToPreviousPage()" (nextPage)="facade.goToNextPage()"
-        (selectDataset)="onSelect($event)" />
+        (selectDataset)="onSelect($event)" (toggleChecked)="facade.toggleChecked($event)"
+        (toggleCheckAll)="facade.toggleCheckAllOnPage()" />
     </aside>
 
     <div class="min-w-0 lg:border-l lg:border-slate-200/70 lg:pl-6" [class.max-lg:hidden]="showQueueOnMobile()">
@@ -75,12 +129,12 @@
       }
 
       @if (pendingSwitchId()) {
-      <div class="rounded-lg border border-amber-200/80 bg-amber-50/80 px-4 py-4" role="alert">
-        <p class="flex items-center gap-2 text-sm font-medium text-amber-900">
-          <app-icon name="alert-triangle" [size]="15" class="text-amber-600" />
-          You have unsaved metadata changes.
+      <div class="rounded-lg border border-nbs-warning-border bg-nbs-warning-soft px-4 py-4" role="alert">
+        <p class="flex items-center gap-2 text-sm font-medium text-nbs-warning">
+          <app-icon name="alert-triangle" [size]="15" class="text-nbs-warning" />
+          You have unsaved changes.
         </p>
-        <p class="mt-1 text-xs text-amber-800">
+        <p class="mt-1 text-xs text-nbs-warning">
           Switch datasets and discard them, or keep editing the current one.
         </p>
         <div class="mt-3 flex flex-wrap gap-2">
@@ -100,17 +154,13 @@
         [canReview]="canReview()" [canPublish]="canPublish()" [actionLoading]="facade.actionLoading()"
         [publishedId]="facade.publishedId()" (submitForReview)="facade.submit($event)"
         (approve)="facade.approve($event)" (reject)="facade.reject($event)" (publish)="facade.publish($event)"
+        (unpublish)="facade.unpublish($event)" (transferOwner)="onTransferOwner($event)"
         (uploadFile)="facade.uploadFile(record.id, $event)" (categoryChange)="facade.updateCategory(record.id, $event)"
         (metadataSaved)="facade.onMetadataSaved(record.id)" (tagsChanged)="onTagsChanged(record.id)"
         (resourcesChanged)="onResourcesChanged(record.id)" (deleteDataset)="facade.deleteDataset($event)" />
       } @else if (showDetailEmptyState()) {
-      <div class="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-8 py-16 text-center lg:block">
-        <app-icon name="inbox" [size]="32" class="mx-auto text-slate-300" />
-        <p class="mt-4 text-sm font-medium text-slate-900">Select a dataset</p>
-        <p class="mt-1 text-sm text-nbs-muted">
-          Choose a dataset from the queue to review metadata, tags, and workflow actions.
-        </p>
-      </div>
+      <app-empty-state icon="inbox" [iconSize]="32" title="Select a dataset"
+        message="Choose a dataset from the queue to review metadata, tags, and workflow actions." />
       }
     </div>
   </div>
@@ -141,6 +191,55 @@
     <app-button variant="primary" size="sm" [loading]="facade.actionLoading() === 'create'"
       (clicked)="createDraft.submit()">
       Create draft dataset
+    </app-button>
+  </div>
+</app-modal>
+}
+
+@if (bulkUploadOpen()) {
+<app-modal size="xl" ariaLabel="Bulk upload dataset files" (closed)="closeBulkUpload()">
+  <div modalHeader>
+    <h2 class="text-base font-semibold text-slate-900">Bulk upload</h2>
+    <p class="mt-1 text-sm text-nbs-muted">
+      Upload files to existing datasets. Map each file to a dataset on this page.
+    </p>
+  </div>
+  <div class="space-y-4 px-1">
+    <label class="block">
+      <span class="mb-1 block text-sm font-medium text-slate-900">Files</span>
+      <input type="file" multiple accept=".csv,.json,.xlsx,.xls,.xml,.sdmx,.pdf,.tsv,.txt,.zip"
+        class="block w-full text-sm" (change)="onBulkFilesSelected($event)" />
+    </label>
+    @if (bulkUploadRows().length > 0) {
+    <ul class="space-y-2">
+      @for (row of bulkUploadRows(); track $index) {
+      <li class="flex flex-wrap items-center gap-2 rounded-md border border-slate-200 px-3 py-2">
+        <span class="min-w-0 flex-1 truncate text-sm text-slate-900">{{ row.file.name }}</span>
+        <label class="min-w-[14rem]">
+          <span class="sr-only">Dataset for {{ row.file.name }}</span>
+          <select class="h-9 w-full rounded-md border border-slate-200 px-2 text-sm" [ngModel]="row.datasetId"
+            (ngModelChange)="setBulkUploadDataset($index, $event)">
+            <option value="">Select dataset</option>
+            @for (item of facade.items(); track item.id) {
+            <option [value]="item.id">{{ item.title }}</option>
+            }
+          </select>
+        </label>
+      </li>
+      }
+    </ul>
+    <label class="inline-flex items-center gap-2 text-sm text-slate-700">
+      <input type="checkbox" class="size-3.5 rounded border-slate-300 text-nbs-primary" [ngModel]="bulkPublishAfter()"
+        (ngModelChange)="bulkPublishAfter.set($event)" />
+      Publish after upload
+    </label>
+    }
+  </div>
+  <div modalFooter class="flex justify-end gap-2">
+    <app-button variant="ghost" size="sm" (clicked)="closeBulkUpload()">Cancel</app-button>
+    <app-button variant="primary" size="sm" [loading]="facade.actionLoading() === 'bulk-upload'"
+      [disabled]="bulkUploadRows().length === 0" (clicked)="submitBulkUpload()">
+      Queue upload
     </app-button>
   </div>
 </app-modal>

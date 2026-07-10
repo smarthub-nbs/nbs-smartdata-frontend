@@ -1,6 +1,17 @@
-import { effect, Injectable, computed, inject, signal } from '@angular/core';
-import { Observable } from 'rxjs';
+import {
+  DestroyRef,
+  Injectable,
+  computed,
+  effect,
+  inject,
+  signal,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Observable, catchError, of, tap } from 'rxjs';
+import { ApiError } from '@app/core/models/api-error.model';
 import { AuthError, AuthService } from '@app/core/services/auth.service';
+import { ApiService } from '@app/core/services/api.service';
+import { ToastService } from '@app/core/services/toast.service';
 import {
   AccountPreferences,
   AccountSnapshot,
@@ -15,42 +26,50 @@ const DEFAULT_PREFERENCES: AccountPreferences = {
   emailNotifications: true,
 };
 
-const SAVED_DATASETS_STORAGE_PREFIX = 'nbs_saved_datasets_';
-
-function savedDatasetsStorageKey(userId: string): string {
-  return `${SAVED_DATASETS_STORAGE_PREFIX}${userId}`;
+interface BackendCategory {
+  id: string;
+  name: string;
+  slug: string;
 }
 
-function readSavedDatasets(userId: string): SavedDatasetItem[] {
-  const raw = localStorage.getItem(savedDatasetsStorageKey(userId));
-  if (!raw) {
-    return [];
-  }
-
-  try {
-    const parsed = JSON.parse(raw) as SavedDatasetItem[];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
+interface BackendDatasetMetadata {
+  title?: string;
+  region?: string;
 }
 
-function writeSavedDatasets(userId: string, items: SavedDatasetItem[]): void {
-  localStorage.setItem(savedDatasetsStorageKey(userId), JSON.stringify(items));
+interface BackendBookmarkDataset {
+  id: string;
+  slug: string;
+  category: BackendCategory | null;
+  metadata?: BackendDatasetMetadata[];
 }
 
-function todayIsoDate(): string {
-  return new Date().toISOString().slice(0, 10);
+interface BackendBookmark {
+  id: string;
+  created_at: string;
+  dataset: BackendBookmarkDataset;
+}
+
+interface BackendBookmarkList {
+  items: BackendBookmark[];
+  pagination: {
+    page: number;
+    page_size: number;
+    total_pages: number;
+    total_items: number;
+  };
 }
 
 @Injectable({ providedIn: 'root' })
 export class AccountService {
   private readonly auth = inject(AuthService);
+  private readonly api = inject(ApiService);
   private readonly datasetService = inject(DatasetService);
+  private readonly toast = inject(ToastService);
+  private readonly destroyRef = inject(DestroyRef);
 
-  private readonly savedDatasets = signal<SavedDatasetItem[]>(
-    this.loadSavedDatasetsForCurrentUser(),
-  );
+  private readonly savedDatasets = signal<SavedDatasetItem[]>([]);
+  private readonly bookmarksLoading = signal(false);
   private readonly savedQueries = signal<SavedQueryItem[]>([]);
   private readonly preferences =
     signal<AccountPreferences>(DEFAULT_PREFERENCES);
@@ -60,6 +79,7 @@ export class AccountService {
   readonly savedDatasetIds = computed(
     () => new Set(this.savedDatasets().map((item) => item.datasetId)),
   );
+  readonly bookmarksLoadingState = this.bookmarksLoading.asReadonly();
 
   private readonly savedDatasetsForDisplay = computed(() =>
     this.savedDatasets().map((item) => this.enrichSavedDataset(item)),
@@ -87,15 +107,14 @@ export class AccountService {
     effect(
       () => {
         const user = this.auth.user();
-        this.savedDatasets.set(user ? readSavedDatasets(user.id) : []);
+        if (!user) {
+          this.savedDatasets.set([]);
+          return;
+        }
+        this.refreshBookmarks();
       },
       { allowSignalWrites: true },
     );
-  }
-
-  private loadSavedDatasetsForCurrentUser(): SavedDatasetItem[] {
-    const user = this.auth.user();
-    return user ? readSavedDatasets(user.id) : [];
   }
 
   isDatasetSaved(datasetId: string): boolean {
@@ -103,8 +122,7 @@ export class AccountService {
   }
 
   addSavedDataset(dataset: Dataset): void {
-    const user = this.auth.user();
-    if (!user || this.isDatasetSaved(dataset.id)) {
+    if (!this.auth.user() || this.isDatasetSaved(dataset.id)) {
       return;
     }
 
@@ -112,11 +130,25 @@ export class AccountService {
       datasetId: dataset.id,
       title: dataset.title,
       topic: dataset.topicName,
-      savedAt: todayIsoDate(),
+      savedAt: new Date().toISOString().slice(0, 10),
     };
+    this.savedDatasets.update((items) => [item, ...items]);
 
-    this.savedDatasets.update((items) => [...items, item]);
-    this.persistSavedDatasets();
+    this.api
+      .post<BackendBookmark>(`/v1/dataset/${dataset.id}/bookmark/`, {})
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        catchError((error: unknown) => {
+          this.savedDatasets.update((items) =>
+            items.filter((entry) => entry.datasetId !== dataset.id),
+          );
+          this.toast.error(
+            this.resolveErrorMessage(error, 'Could not save dataset.'),
+          );
+          return of(null);
+        }),
+      )
+      .subscribe();
   }
 
   toggleSavedDataset(dataset: Dataset): void {
@@ -136,22 +168,81 @@ export class AccountService {
   }
 
   removeSavedDataset(datasetId: string): void {
+    const previous = this.savedDatasets();
+    if (!previous.some((item) => item.datasetId === datasetId)) {
+      return;
+    }
+
     this.savedDatasets.update((items) =>
       items.filter((item) => item.datasetId !== datasetId),
     );
-    this.persistSavedDatasets();
+
+    this.api
+      .delete<unknown>(`/v1/dataset/${datasetId}/bookmark/`)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        catchError((error: unknown) => {
+          this.savedDatasets.set(previous);
+          this.toast.error(
+            this.resolveErrorMessage(error, 'Could not remove saved dataset.'),
+          );
+          return of(null);
+        }),
+      )
+      .subscribe();
   }
 
   removeSavedQuery(id: string): void {
     this.savedQueries.update((items) => items.filter((item) => item.id !== id));
   }
 
-  private persistSavedDatasets(): void {
-    const user = this.auth.user();
-    if (!user) {
+  refreshBookmarks(): void {
+    if (!this.auth.user()) {
+      this.savedDatasets.set([]);
       return;
     }
-    writeSavedDatasets(user.id, this.savedDatasets());
+
+    this.bookmarksLoading.set(true);
+    this.api
+      .get<BackendBookmarkList>('/v1/dataset/bookmarks/', {
+        page: '1',
+        page_size: '100',
+      })
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        tap((response) => {
+          this.savedDatasets.set(
+            response.items.map((bookmark) => this.toSavedDataset(bookmark)),
+          );
+          this.bookmarksLoading.set(false);
+        }),
+        catchError((error: unknown) => {
+          this.bookmarksLoading.set(false);
+          this.toast.error(
+            this.resolveErrorMessage(error, 'Could not load saved datasets.'),
+          );
+          return of(null);
+        }),
+      )
+      .subscribe();
+  }
+
+  private toSavedDataset(bookmark: BackendBookmark): SavedDatasetItem {
+    const metadata = bookmark.dataset.metadata?.find((record) =>
+      record.title?.trim(),
+    );
+    const fromSlug = bookmark.dataset.slug
+      .split(/[-_]+/)
+      .filter(Boolean)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' ');
+
+    return {
+      datasetId: bookmark.dataset.id,
+      title: metadata?.title?.trim() || fromSlug || bookmark.dataset.slug,
+      topic: bookmark.dataset.category?.name ?? 'Uncategorized',
+      savedAt: bookmark.created_at.slice(0, 10),
+    };
   }
 
   private enrichSavedDataset(item: SavedDatasetItem): SavedDatasetItem {
@@ -165,5 +256,15 @@ export class AccountService {
       title: dataset.title,
       topic: dataset.topicName,
     };
+  }
+
+  private resolveErrorMessage(error: unknown, fallback: string): string {
+    if (error instanceof ApiError) {
+      return error.message || fallback;
+    }
+    if (error instanceof Error) {
+      return error.message || fallback;
+    }
+    return fallback;
   }
 }

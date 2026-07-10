@@ -4,7 +4,22 @@
 
 @layer base {
   html {
+    font-size: 16px;
     scroll-behavior: smooth;
+  }
+
+  // Comfortable, slightly larger type that also lets rem-based layout fill
+  // wider screens. All rem sizing (text, spacing, max-widths) scales with this.
+  @media (min-width: 1024px) {
+    html {
+      font-size: 16.5px;
+    }
+  }
+
+  @media (min-width: 1536px) {
+    html {
+      font-size: 17.5px;
+    }
   }
 
   body {
@@ -41,7 +56,6 @@
     }
     to {
       opacity: 1;
-      transform: translateY(0);
     }
   }
 
@@ -88,6 +102,10 @@
 }
 
 @layer components {
+  .nbs-container {
+    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 2xl:max-w-[92rem];
+  }
+
   .nbs-panel {
     @apply rounded-lg border border-nbs-border bg-white p-6 shadow-sm;
   }
@@ -112,8 +130,38 @@
     @apply rounded-xl border border-nbs-border bg-white p-4 shadow-nbs-card;
   }
 
+  .nbs-surface-elevated {
+    @apply rounded-2xl border border-nbs-border bg-white p-6 shadow-[0_18px_50px_-36px_rgba(15,23,42,0.45)];
+  }
+
+  .nbs-surface-elevated-compact {
+    @apply nbs-surface-elevated sm:p-7;
+  }
+
+  .nbs-page-header {
+    @apply mb-6 space-y-1;
+  }
+
   .nbs-page-title {
-    @apply text-2xl font-semibold text-slate-900;
+    @apply relative inline-block pb-2 text-2xl font-semibold text-nbs-primary;
+
+    &::after {
+      content: '';
+      @apply absolute bottom-0 left-0 h-0.5 w-10 rounded-full bg-nbs-highlight;
+    }
+  }
+
+  .nbs-section-title {
+    @apply text-sm font-semibold text-slate-900;
+  }
+
+  .nbs-section-title-accent {
+    @apply nbs-section-title relative inline-block pb-1.5;
+
+    &::after {
+      content: '';
+      @apply absolute bottom-0 left-0 h-0.5 w-6 rounded-full bg-nbs-highlight;
+    }
   }
 
   .nbs-page-lead {

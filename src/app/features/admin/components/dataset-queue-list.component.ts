@@ -9,13 +9,16 @@ import {
   AdminDatasetRecord,
   DatasetWorkflowStatus,
 } from '@app/features/admin/models/admin-dataset.model';
-import { workflowStatusLabel } from '@app/features/admin/utils/admin-workflow-status.util';
-import { IconComponent } from '@shared/ui';
+import {
+  workflowStatusChipClasses,
+  workflowStatusLabel,
+} from '@app/features/admin/utils/admin-workflow-status.util';
+import { EmptyStateComponent, IconComponent } from '@shared/ui';
 
 @Component({
   selector: 'app-dataset-queue-list',
   standalone: true,
-  imports: [IconComponent],
+  imports: [EmptyStateComponent, IconComponent],
   templateUrl: './dataset-queue-list.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -24,6 +27,9 @@ export class DatasetQueueListComponent {
   readonly pagination = input.required<AdminDatasetQueuePagination>();
   readonly searchTerm = input.required<string>();
   readonly selectedId = input.required<string>();
+  readonly checkedIds = input<string[]>([]);
+  readonly canBulkSelect = input(false);
+  readonly allPageChecked = input(false);
   readonly loading = input(false);
   readonly hasActiveSearch = input(false);
   readonly pageRangeLabel = input('');
@@ -32,8 +38,24 @@ export class DatasetQueueListComponent {
   readonly previousPage = output<void>();
   readonly nextPage = output<void>();
   readonly selectDataset = output<string>();
+  readonly toggleChecked = output<string>();
+  readonly toggleCheckAll = output<void>();
 
   protected readonly skeletonRows = Array.from({ length: 4 });
+
+  protected isChecked(id: string): boolean {
+    return this.checkedIds().includes(id);
+  }
+
+  protected onToggleChecked(event: Event, id: string): void {
+    event.stopPropagation();
+    this.toggleChecked.emit(id);
+  }
+
+  protected onToggleCheckAll(event: Event): void {
+    event.stopPropagation();
+    this.toggleCheckAll.emit();
+  }
 
   protected onSearch(event: Event): void {
     this.searchInput.emit((event.target as HTMLInputElement).value);
@@ -97,25 +119,12 @@ export class DatasetQueueListComponent {
   }
 
   protected statusPillClasses(status: DatasetWorkflowStatus): string {
-    const base =
-      'inline-flex shrink-0 items-center rounded-md px-2 py-0.5 text-[11px] font-medium';
-    switch (status) {
-      case 'published':
-        return `${base} bg-slate-100 text-slate-700`;
-      case 'approved':
-        return `${base} bg-slate-100 text-slate-700`;
-      case 'in_review':
-        return `${base} bg-nbs-primary/10 text-nbs-primary`;
-      case 'rejected':
-        return `${base} bg-red-50 text-red-700`;
-      default:
-        return `${base} bg-slate-100 text-slate-600`;
-    }
+    return workflowStatusChipClasses(status, 'sm');
   }
 
   protected queueItemClasses(id: string): string {
     const base =
-      'w-full cursor-pointer rounded-lg px-3 py-3.5 text-left transition duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/40 motion-reduce:transition-none';
+      'min-w-0 flex-1 cursor-pointer rounded-lg px-3 py-3.5 text-left transition duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/40 motion-reduce:transition-none';
     return id === this.selectedId()
       ? `${base} bg-nbs-primary/5 shadow-sm ring-1 ring-nbs-primary/20`
       : `${base} hover:bg-slate-50 hover:shadow-sm`;

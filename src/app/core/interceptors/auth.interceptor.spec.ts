@@ -56,4 +56,14 @@ describe('authInterceptor', () => {
     );
     request.flush([]);
   });
+
+  it('omits Bearer on cookie-auth endpoints', () => {
+    auth.getAccessToken.and.returnValue('expired-access-token');
+
+    http.post('/api/v1/auth/refresh/', {}).subscribe();
+
+    const request = httpMock.expectOne('/api/v1/auth/refresh/');
+    expect(request.request.headers.has('Authorization')).toBeFalse();
+    request.flush({ success: true, data: { access: 'new' } });
+  });
 });

@@ -12,6 +12,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 import { ApiError } from '@app/core/models/api-error.model';
@@ -25,24 +26,44 @@ import {
 } from '@app/features/admin/models/admin-dataset.model';
 import { AdminDatasetWorkflowService } from '@app/features/admin/services/admin-dataset-workflow.service';
 import {
-  workflowStatusChipClasses,
+  workflowStatusBadgeVariant,
   workflowStatusLabel,
 } from '@app/features/admin/utils/admin-workflow-status.util';
 import { DatasetMetadataEditorComponent } from '@app/features/admin/components/dataset-metadata-editor.component';
 import { DatasetResourceManagerComponent } from '@app/features/admin/components/dataset-resource-manager.component';
 import { DatasetActivityLogComponent } from '@app/features/admin/components/dataset-activity-log.component';
-import { ButtonComponent, IconComponent } from '@shared/ui';
+import { UserManagementService } from '@app/features/users/services/user-management.service';
+import { ManagedUser } from '@app/features/users/models/user-management.model';
+import {
+  AlertComponent,
+  BadgeComponent,
+  ButtonComponent,
+  IconComponent,
+  ModalComponent,
+  NbsSwapEnterDirective,
+  SelectInputComponent,
+  SelectOption,
+  TextInputComponent,
+} from '@shared/ui';
+import { BadgeVariant } from '@shared/ui/models/badge-variant.model';
 
 @Component({
   selector: 'app-dataset-workflow-detail',
   standalone: true,
   imports: [
+    FormsModule,
     RouterLink,
+    AlertComponent,
+    BadgeComponent,
     ButtonComponent,
     IconComponent,
+    NbsSwapEnterDirective,
+    SelectInputComponent,
+    TextInputComponent,
     DatasetMetadataEditorComponent,
     DatasetResourceManagerComponent,
     DatasetActivityLogComponent,
+    ModalComponent,
   ],
   templateUrl: './dataset-workflow-detail.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -64,6 +85,8 @@ export class DatasetWorkflowDetailComponent {
   readonly approve = output<string>();
   readonly reject = output<string>();
   readonly publish = output<string>();
+  readonly unpublish = output<string>();
+  readonly transferOwner = output<{ datasetId: string; newOwnerId: string }>();
   readonly uploadFile = output<File>();
   readonly metadataSaved = output<void>();
   readonly categoryChange = output<string>();
@@ -72,6 +95,7 @@ export class DatasetWorkflowDetailComponent {
   readonly deleteDataset = output<string>();
 
   private readonly workflow = inject(AdminDatasetWorkflowService);
+  private readonly usersApi = inject(UserManagementService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly metadataEditor = viewChild(DatasetMetadataEditorComponent);
   private readonly activityLog = viewChild(DatasetActivityLogComponent);
@@ -101,6 +125,11 @@ export class DatasetWorkflowDetailComponent {
   protected readonly pendingCategoryId = signal('');
   protected readonly editMode = signal(false);
   protected readonly activeSectionNav = signal('overview');
+  protected readonly transferOpen = signal(false);
+  protected readonly transferQuery = signal('');
+  protected readonly transferUsers = signal<ManagedUser[]>([]);
+  protected readonly transferLoading = signal(false);
+  protected readonly selectedOwnerId = signal('');
 
   protected readonly categoryDirty = computed(
     () =>
@@ -123,6 +152,11 @@ export class DatasetWorkflowDetailComponent {
       },
       { allowSignalWrites: true },
     );
+
+    effect(() => {
+      const dirty = this.metadataDirty() || this.categoryDirty();
+      this.dirtyChange.emit(dirty);
+    });
   }
 
   protected readonly canModifyFinalized = computed(
@@ -164,19 +198,36 @@ export class DatasetWorkflowDetailComponent {
   });
 
   protected readonly sectionNavItems = computed(() => {
-    return [
+    const items = [
       { key: 'overview', label: 'Overview' },
       { key: 'tags', label: 'Tags' },
-      { key: 'metadata', label: 'Metadata' },
+      { key: 'metadata', label: 'Details' },
     ];
+    if (this.showFilesSection()) {
+      items.push({ key: 'files', label: 'Files' });
+    }
+    items.push({ key: 'activity', label: 'Activity' });
+    return items;
   });
+
+  protected readonly categorySelectOptions = computed<SelectOption[]>(() =>
+    this.categories().map((category) => ({
+      label: category.name,
+      value: category.id,
+    })),
+  );
+
+  protected readonly tagSelectOptions = computed<SelectOption[]>(() =>
+    this.availableTags().map((tag) => ({
+      label: tag.name,
+      value: tag.id,
+    })),
+  );
 
   protected readonly availableTags = computed(() => {
     const linkedIds = this.linkedTagIds();
     return this.tags().filter((tag) => !linkedIds.has(tag.id));
   });
-
-  protected readonly tagOptions = computed(() => this.availableTags());
 
   private readonly linkedTagIds = computed(
     () => new Set(this.tagLinks().map((link) => link.tagId)),
@@ -293,9 +344,13 @@ export class DatasetWorkflowDetailComponent {
     this.metadataEditor()?.discardChanges();
   }
 
+  discardUnsavedChanges(): void {
+    this.discardMetadata();
+    this.resetCategorySelection();
+  }
+
   protected onMetadataDirtyChange(dirty: boolean): void {
     this.metadataDirty.set(dirty);
-    this.dirtyChange.emit(dirty);
   }
 
   protected focusMetadata(): void {
@@ -304,9 +359,11 @@ export class DatasetWorkflowDetailComponent {
   }
 
   protected focusFileUpload(): void {
-    this.fileInput()?.nativeElement.scrollIntoView({
+    this.activeSectionNav.set('files');
+    this.resourceManager()?.open();
+    this.filesAnchor()?.nativeElement.scrollIntoView({
       behavior: 'smooth',
-      block: 'nearest',
+      block: 'start',
     });
     this.fileInput()?.nativeElement.click();
   }
@@ -359,6 +416,20 @@ export class DatasetWorkflowDetailComponent {
       default:
         return undefined;
     }
+  }
+
+  protected onCategoryModelChange(value: string): void {
+    this.pendingCategoryId.set(value);
+  }
+
+  protected onTagNameModelChange(value: string): void {
+    this.tagLinkError.set('');
+    this.tagName.set(value);
+  }
+
+  protected onTagSelectModelChange(tagId: string): void {
+    this.tagLinkError.set('');
+    this.selectedTagId.set(tagId);
   }
 
   protected onCategoryChange(event: Event): void {
@@ -477,6 +548,63 @@ export class DatasetWorkflowDetailComponent {
     return record.status === 'approved' && this.canPublish();
   }
 
+  protected canUnpublishRecord(record: AdminDatasetRecord): boolean {
+    return record.status === 'published' && this.canPublish();
+  }
+
+  protected canTransferOwner(): boolean {
+    return this.canReview();
+  }
+
+  protected searchTransferUsers(): void {
+    const q = this.transferQuery().trim();
+    if (!q) {
+      this.transferUsers.set([]);
+      return;
+    }
+    this.transferLoading.set(true);
+    this.usersApi
+      .listUsers({ q, isActive: true, page: 1, pageSize: 10 })
+      .pipe(
+        finalize(() => this.transferLoading.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (response) => this.transferUsers.set(response.items),
+        error: () => this.transferUsers.set([]),
+      });
+  }
+
+  protected confirmTransfer(): void {
+    const ownerId = this.selectedOwnerId();
+    if (!ownerId) {
+      return;
+    }
+    this.transferOwner.emit({
+      datasetId: this.record().id,
+      newOwnerId: ownerId,
+    });
+    this.transferOpen.set(false);
+    this.selectedOwnerId.set('');
+    this.transferQuery.set('');
+    this.transferUsers.set([]);
+  }
+
+  protected closeTransfer(): void {
+    this.transferOpen.set(false);
+    this.selectedOwnerId.set('');
+    this.transferQuery.set('');
+    this.transferUsers.set([]);
+  }
+
+  protected ownerRowClasses(userId: string): string {
+    const base =
+      'flex w-full cursor-pointer items-center justify-between rounded-md px-3 py-2 text-left text-sm hover:bg-slate-50';
+    return this.selectedOwnerId() === userId
+      ? `${base} bg-nbs-primary/5`
+      : base;
+  }
+
   protected missingRequirements(record: AdminDatasetRecord): string[] {
     const missing: string[] = [];
     if (!record.hasMetadata) {
@@ -505,12 +633,16 @@ export class DatasetWorkflowDetailComponent {
     return '';
   }
 
-  protected statusLabel(status: DatasetWorkflowStatus): string {
-    return workflowStatusLabel(status);
+  protected statusBadgeVariant(status: DatasetWorkflowStatus): BadgeVariant {
+    return workflowStatusBadgeVariant(status);
   }
 
-  protected statusChipClasses(status: DatasetWorkflowStatus): string {
-    return workflowStatusChipClasses(status);
+  hasUnsavedChanges(): boolean {
+    return this.isMetadataDirty() || this.categoryDirty();
+  }
+
+  protected statusLabel(status: DatasetWorkflowStatus): string {
+    return workflowStatusLabel(status);
   }
 
   reloadTagLinks(): void {

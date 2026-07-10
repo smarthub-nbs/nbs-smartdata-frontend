@@ -8,10 +8,20 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
-import { Observable, catchError, map, of, switchMap, tap } from 'rxjs';
+import {
+  Observable,
+  catchError,
+  finalize,
+  map,
+  of,
+  shareReplay,
+  switchMap,
+  tap,
+} from 'rxjs';
 import { ApiError } from '@app/core/models/api-error.model';
 import { UserProfile, UserRole } from '@app/core/models/user.model';
 import { ApiService } from '@app/core/services/api.service';
+import { CsrfService } from '@app/core/services/csrf.service';
 import { ToastService } from '@app/core/services/toast.service';
 import { fieldErrorsFromApi } from '@app/core/utils/api-field-errors.util';
 import { environment } from '@env/environment';
@@ -33,7 +43,8 @@ interface ApiEnvelope<T> {
 
 interface LoginResponse {
   access: string;
-  refresh: string;
+  /** Present only for legacy clients; refresh is HttpOnly-cookie based. */
+  refresh?: string;
 }
 
 interface RefreshResponse {
@@ -49,7 +60,7 @@ interface RegisterRequest {
 
 interface RegisterResponse {
   access: string;
-  refresh: string;
+  refresh?: string;
 }
 
 interface CurrentUserResponse {
@@ -73,6 +84,7 @@ export class AuthService {
   private readonly api = inject(ApiService);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
+  private readonly csrf = inject(CsrfService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly currentUser = signal<UserProfile | null>(this.readUser());
   private readonly accessToken = signal<string | null>(
@@ -154,10 +166,13 @@ export class AuthService {
   }
 
   signOut(options?: SignOutOptions): void {
-    const refresh = localStorage.getItem(REFRESH_TOKEN_KEY);
-    if (refresh) {
+    const hadAccess =
+      this.accessToken() !== null ||
+      localStorage.getItem(ACCESS_TOKEN_KEY) !== null;
+    if (hadAccess) {
+      // Refresh token is HttpOnly; logout clears it via cookie + CSRF.
       this.http
-        .post(`${environment.apiBaseUrl}/v1/auth/logout/`, { refresh })
+        .post(`${environment.apiBaseUrl}/v1/auth/logout/`, {})
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({ error: () => undefined });
     }
@@ -173,19 +188,15 @@ export class AuthService {
   }
 
   refreshAccessToken(): Observable<string | null> {
-    const refresh = localStorage.getItem(REFRESH_TOKEN_KEY);
-    if (!refresh) {
-      return of(null);
-    }
-
     if (this.refreshInFlight) {
       return this.refreshInFlight;
     }
 
+    // Backend reads refresh from the HttpOnly cookie (withCredentials).
     this.refreshInFlight = this.http
       .post<ApiEnvelope<RefreshResponse>>(
         `${environment.apiBaseUrl}/v1/auth/refresh/`,
-        { refresh },
+        {},
       )
       .pipe(
         map((response) => {
@@ -197,9 +208,10 @@ export class AuthService {
           this.clearSession();
           return of(null);
         }),
-        tap(() => {
+        finalize(() => {
           this.refreshInFlight = null;
         }),
+        shareReplay({ bufferSize: 1, refCount: true }),
       );
 
     return this.refreshInFlight;
@@ -392,6 +404,7 @@ export class AuthService {
   private clearSession(): void {
     this.currentUser.set(null);
     this.accessToken.set(null);
+    this.csrf.clearToken();
     localStorage.removeItem(ACCESS_TOKEN_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
@@ -411,7 +424,11 @@ export class AuthService {
   private saveTokens(tokens: LoginResponse): void {
     this.accessToken.set(tokens.access);
     localStorage.setItem(ACCESS_TOKEN_KEY, tokens.access);
-    localStorage.setItem(REFRESH_TOKEN_KEY, tokens.refresh);
+    if (tokens.refresh) {
+      localStorage.setItem(REFRESH_TOKEN_KEY, tokens.refresh);
+    } else {
+      localStorage.removeItem(REFRESH_TOKEN_KEY);
+    }
   }
 
   private saveUser(user: UserProfile): void {

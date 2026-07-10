@@ -24,9 +24,9 @@ export class QualityBadgeComponent {
     const base = 'inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium';
     switch (qualityLevel(this.score())) {
       case 'high':
-        return `${base} bg-emerald-50 text-emerald-700`;
+        return `${base} bg-nbs-success-soft text-nbs-success`;
       case 'medium':
-        return `${base} bg-amber-50 text-amber-700`;
+        return `${base} bg-nbs-warning-soft text-nbs-warning`;
       default:
         return `${base} bg-slate-100 text-slate-600`;
     }

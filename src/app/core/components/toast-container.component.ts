@@ -19,27 +19,27 @@ const TOAST_STYLES: Record<
   }
 > = {
   success: {
-    container: 'border-emerald-200 bg-white text-emerald-900',
-    icon: 'text-emerald-600',
-    progress: 'bg-emerald-500/70',
+    container: 'border-nbs-success-border bg-white text-nbs-success',
+    icon: 'text-nbs-success',
+    progress: 'bg-nbs-success/70',
     iconName: 'check',
   },
   error: {
-    container: 'border-red-200 bg-white text-red-900',
-    icon: 'text-red-600',
-    progress: 'bg-red-500/70',
+    container: 'border-nbs-danger-border bg-white text-nbs-danger',
+    icon: 'text-nbs-danger',
+    progress: 'bg-nbs-danger/70',
     iconName: 'alert-triangle',
   },
   info: {
-    container: 'border-slate-200 bg-white text-slate-900',
-    icon: 'text-nbs-primary',
-    progress: 'bg-nbs-primary/70',
+    container: 'border-nbs-info-border bg-white text-nbs-info',
+    icon: 'text-nbs-info',
+    progress: 'bg-nbs-info/70',
     iconName: 'info',
   },
   warning: {
-    container: 'border-amber-200 bg-white text-amber-900',
-    icon: 'text-amber-600',
-    progress: 'bg-amber-500/70',
+    container: 'border-nbs-warning-border bg-white text-nbs-warning',
+    icon: 'text-nbs-warning',
+    progress: 'bg-nbs-warning/70',
     iconName: 'alert-triangle',
   },
 };

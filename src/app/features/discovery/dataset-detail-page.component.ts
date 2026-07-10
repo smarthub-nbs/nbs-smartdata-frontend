@@ -18,7 +18,6 @@ import { DatasetService } from '@app/features/discovery';
 import { DatasetDownloadMenuComponent } from '@app/features/developers';
 import { RecommendedDatasetsComponent } from '@app/features/search';
 import { PageStateComponent } from '@app/shared/components/page-state/page-state.component';
-import { resolveIndicatorForTopic } from '@app/features/explore';
 import { DatasetDetailFacadeService } from '@app/features/discovery/services/dataset-detail-facade.service';
 
 @Component({
@@ -103,12 +102,8 @@ export class DatasetDetailPageComponent {
 
   protected goToExplore(): void {
     const dataset = this.dataset();
-    const indicator = dataset
-      ? resolveIndicatorForTopic(dataset.topicSlug)
-      : resolveIndicatorForTopic('');
-
     void this.router.navigate(['/explore'], {
-      queryParams: { indicator },
+      queryParams: dataset ? { indicator: dataset.id } : undefined,
     });
   }
 

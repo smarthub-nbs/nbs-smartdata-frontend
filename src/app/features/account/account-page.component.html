@@ -1,744 +1,450 @@
 @if (!account()) {
-  <section
-    class="nbs-enter mx-auto max-w-md rounded-2xl border border-nbs-border bg-white p-8 text-center shadow-nbs-card"
-  >
-    <span
-      class="mx-auto flex size-12 items-center justify-center rounded-xl bg-nbs-primary-soft text-nbs-primary"
-    >
-      <app-icon name="lock" [size]="24" />
-    </span>
-    <h1 class="mt-4 text-xl font-semibold text-slate-900">My hub</h1>
-    <p class="mt-2 text-sm text-nbs-muted">
-      Sign in to save datasets, store queries, and pick up where you left off.
-    </p>
-    <div class="mt-5">
-      <app-button variant="primary" size="md" (clicked)="goTo('/login')">
-        Sign in
-      </app-button>
+<section class="mx-auto max-w-md rounded-2xl border border-nbs-border bg-white p-8 text-center shadow-nbs-card">
+  <span class="mx-auto flex size-12 items-center justify-center rounded-xl bg-nbs-primary-soft text-nbs-primary">
+    <app-icon name="lock" [size]="24" />
+  </span>
+  <h1 class="mt-4 text-xl font-semibold text-slate-900">My hub</h1>
+  <p class="mt-2 text-sm text-nbs-muted">
+    Sign in to save datasets, store queries, and pick up where you left off.
+  </p>
+  <div class="mt-5">
+    <app-button variant="primary" size="md" (clicked)="goTo('/login')">
+      Sign in
+    </app-button>
+  </div>
+</section>
+} @else {
+<div class="space-y-6">
+  <section class="rounded-2xl border border-nbs-border bg-white p-5 shadow-nbs-card sm:p-6">
+    <div class="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex items-center gap-4">
+        <span
+          class="flex size-14 shrink-0 items-center justify-center rounded-full bg-nbs-primary-soft text-lg font-semibold text-nbs-primary">
+          {{ account()?.initials }}
+        </span>
+        <div class="min-w-0">
+          <h1 class="text-2xl font-semibold tracking-tight text-slate-900">
+            {{ greeting() }}
+          </h1>
+          <p class="mt-1 truncate text-sm text-nbs-muted">
+            {{ account()?.email }}
+          </p>
+          <div class="mt-2 flex flex-wrap items-center gap-2">
+            @if (showRoleInHero()) {
+            <span
+              class="inline-flex items-center gap-1.5 rounded-full bg-nbs-primary-soft px-3 py-1 text-xs font-semibold text-nbs-primary">
+              <span class="size-1.5 rounded-full bg-nbs-primary" aria-hidden="true"></span>
+              {{ roleLabel() }}
+            </span>
+            }
+            @if (account()?.isVerified) {
+            <span
+              class="inline-flex items-center gap-1.5 rounded-full bg-nbs-success-soft px-3 py-1 text-xs font-medium text-nbs-success">
+              <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                aria-hidden="true">
+                <path d="m5 13 4 4L19 7" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              Verified
+            </span>
+            } @else {
+            <span
+              class="inline-flex items-center gap-1.5 rounded-full bg-nbs-warning-soft px-3 py-1 text-xs font-medium text-nbs-warning">
+              <span class="size-1.5 rounded-full bg-nbs-warning" aria-hidden="true"></span>
+              Unverified
+            </span>
+            }
+          </div>
+        </div>
+      </div>
+
+      <dl class="grid gap-3 sm:w-auto" [class.grid-cols-2]="stats().length === 2"
+        [class.grid-cols-3]="stats().length === 3">
+        @for (stat of stats(); track stat.label) {
+        <div class="rounded-xl bg-nbs-surface px-4 py-3 text-center sm:px-6">
+          <dt class="text-[11px] font-medium uppercase tracking-wide text-nbs-muted">
+            {{ stat.label }}
+          </dt>
+          <dd class="mt-1 text-xl font-semibold tabular-nums text-slate-900">
+            {{ stat.value }}
+          </dd>
+        </div>
+        }
+      </dl>
     </div>
   </section>
-} @else {
-  <div class="nbs-enter space-y-6">
-    <section
-      class="rounded-2xl border border-nbs-border bg-white p-5 shadow-nbs-card sm:p-6"
-    >
-      <div
-        class="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between"
-      >
-        <div class="flex items-center gap-4">
-          <span
-            class="flex size-14 shrink-0 items-center justify-center rounded-full bg-nbs-primary-soft text-lg font-semibold text-nbs-primary"
-          >
-            {{ account()?.initials }}
-          </span>
-          <div class="min-w-0">
-            <h1 class="text-2xl font-semibold tracking-tight text-slate-900">
-              {{ greeting() }}
-            </h1>
-            <p class="mt-1 truncate text-sm text-nbs-muted">
-              {{ account()?.email }}
+
+  <nav aria-label="Hub sections" class="flex gap-1 rounded-xl border border-nbs-border bg-nbs-surface p-1 shadow-sm">
+    <button type="button"
+      class="flex-1 cursor-pointer rounded-lg px-4 py-2.5 text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/40"
+      [class.bg-white]="hubSection() === 'saved'" [class.text-slate-900]="hubSection() === 'saved'"
+      [class.shadow-nbs-card]="hubSection() === 'saved'" [class.text-nbs-muted]="hubSection() !== 'saved'"
+      [class.hover:text-slate-700]="hubSection() !== 'saved'" (click)="setHubSection('saved')">
+      Saved items
+    </button>
+    <button type="button"
+      class="flex-1 cursor-pointer rounded-lg px-4 py-2.5 text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/40"
+      [class.bg-white]="hubSection() === 'settings'" [class.text-slate-900]="hubSection() === 'settings'"
+      [class.shadow-nbs-card]="hubSection() === 'settings'" [class.text-nbs-muted]="hubSection() !== 'settings'"
+      [class.hover:text-slate-700]="hubSection() !== 'settings'" (click)="setHubSection('settings')">
+      Account settings
+    </button>
+  </nav>
+
+  @if (hubSection() === 'saved') {
+  <div class="grid gap-6" [class.lg:grid-cols-3]="showQuickActionsSidebar()">
+    <div class="space-y-6" [class.lg:col-span-2]="showQuickActionsSidebar()">
+      <section class="rounded-2xl border border-nbs-border bg-white p-5 shadow-nbs-card sm:p-6">
+        <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 class="text-base font-semibold tracking-tight text-slate-900">
+              Saved datasets
+            </h2>
+            <p class="mt-1 text-sm text-nbs-muted">
+              Your bookmarked datasets for quick return.
             </p>
-            <div class="mt-2 flex flex-wrap items-center gap-2">
-              @if (showRoleInHero()) {
-                <span
-                  class="inline-flex items-center gap-1.5 rounded-full bg-nbs-primary-soft px-3 py-1 text-xs font-semibold text-nbs-primary"
-                >
-                  <span
-                    class="size-1.5 rounded-full bg-nbs-primary"
-                    aria-hidden="true"
-                  ></span>
-                  {{ roleLabel() }}
-                </span>
-              }
-              @if (account()?.isVerified) {
-                <span
-                  class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700"
-                >
-                  <svg
-                    class="size-3.5"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="m5 13 4 4L19 7"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
-                  Verified
-                </span>
-              } @else {
-                <span
-                  class="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700"
-                >
-                  <span
-                    class="size-1.5 rounded-full bg-amber-500"
-                    aria-hidden="true"
-                  ></span>
-                  Unverified
-                </span>
-              }
-            </div>
           </div>
+          @if (savedDatasets().length > 0) {
+          <span
+            class="inline-flex w-fit items-center rounded-full bg-nbs-primary-soft px-3 py-1 text-xs font-semibold text-nbs-primary">
+            {{ savedDatasets().length }} saved
+          </span>
+          }
         </div>
 
-        <dl
-          class="grid gap-3 sm:w-auto"
-          [class.grid-cols-2]="stats().length === 2"
-          [class.grid-cols-3]="stats().length === 3"
-        >
-          @for (stat of stats(); track stat.label) {
-            <div
-              class="rounded-xl bg-nbs-surface px-4 py-3 text-center sm:px-6"
-            >
-              <dt
-                class="text-[11px] font-medium uppercase tracking-wide text-nbs-muted"
-              >
-                {{ stat.label }}
-              </dt>
-              <dd
-                class="mt-1 text-xl font-semibold tabular-nums text-slate-900"
-              >
-                {{ stat.value }}
-              </dd>
-            </div>
-          }
-        </dl>
-      </div>
-    </section>
-
-    <nav
-      aria-label="Hub sections"
-      class="flex gap-1 rounded-xl border border-nbs-border bg-nbs-surface p-1 shadow-sm"
-    >
-      <button
-        type="button"
-        class="flex-1 cursor-pointer rounded-lg px-4 py-2.5 text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/40"
-        [class.bg-white]="hubSection() === 'saved'"
-        [class.text-slate-900]="hubSection() === 'saved'"
-        [class.shadow-nbs-card]="hubSection() === 'saved'"
-        [class.text-nbs-muted]="hubSection() !== 'saved'"
-        [class.hover:text-slate-700]="hubSection() !== 'saved'"
-        (click)="setHubSection('saved')"
-      >
-        Saved items
-      </button>
-      <button
-        type="button"
-        class="flex-1 cursor-pointer rounded-lg px-4 py-2.5 text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/40"
-        [class.bg-white]="hubSection() === 'settings'"
-        [class.text-slate-900]="hubSection() === 'settings'"
-        [class.shadow-nbs-card]="hubSection() === 'settings'"
-        [class.text-nbs-muted]="hubSection() !== 'settings'"
-        [class.hover:text-slate-700]="hubSection() !== 'settings'"
-        (click)="setHubSection('settings')"
-      >
-        Account settings
-      </button>
-    </nav>
-
-    @if (hubSection() === 'saved') {
-      <div
-        class="grid gap-6"
-        [class.lg:grid-cols-3]="showQuickActionsSidebar()"
-      >
-        <div
-          class="space-y-6"
-          [class.lg:col-span-2]="showQuickActionsSidebar()"
-        >
-          <section
-            class="rounded-2xl border border-nbs-border bg-white p-5 shadow-nbs-card sm:p-6"
-          >
-            <div
-              class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between"
-            >
-              <div>
-                <h2
-                  class="text-base font-semibold tracking-tight text-slate-900"
-                >
-                  Saved datasets
-                </h2>
-                <p class="mt-1 text-sm text-nbs-muted">
-                  Your bookmarked datasets for quick return.
-                </p>
-              </div>
-              @if (savedDatasets().length > 0) {
+        @if (savedDatasets().length === 0) {
+        <div class="flex flex-col items-center rounded-xl bg-nbs-surface px-6 py-10 text-center">
+          <span class="flex size-12 items-center justify-center rounded-xl bg-white text-nbs-primary shadow-nbs-card">
+            <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              aria-hidden="true">
+              <ellipse cx="12" cy="6" rx="8" ry="3" />
+              <path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3" stroke-linecap="round" />
+            </svg>
+          </span>
+          <p class="mt-4 text-sm font-semibold text-slate-900">
+            No saved datasets yet
+          </p>
+          <p class="mt-1 max-w-sm text-sm text-nbs-muted">
+            Browse the catalog and save datasets to return to them
+            quickly.
+          </p>
+          <div class="mt-5 flex flex-wrap justify-center gap-2.5">
+            <app-button variant="primary" size="sm" (clicked)="goTo('/datasets')">
+              Browse catalog
+            </app-button>
+            <app-button variant="outline" size="sm" (clicked)="goTo('/search')">
+              Search datasets
+            </app-button>
+          </div>
+        </div>
+        } @else {
+        <ul class="space-y-3">
+          @for (item of savedDatasets(); track item.datasetId) {
+          <li>
+            <button type="button"
+              class="group flex w-full cursor-pointer flex-col gap-3 rounded-xl border border-nbs-border bg-white p-4 text-left transition-all duration-200 hover:border-nbs-primary/35 hover:bg-nbs-primary-soft/20 hover:shadow-nbs-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/35 sm:flex-row sm:items-center sm:justify-between"
+              (click)="openDataset(item)">
+              <span class="flex min-w-0 items-start gap-3">
                 <span
-                  class="inline-flex w-fit items-center rounded-full bg-nbs-primary-soft px-3 py-1 text-xs font-semibold text-nbs-primary"
-                >
-                  {{ savedDatasets().length }} saved
-                </span>
-              }
-            </div>
-
-            @if (savedDatasets().length === 0) {
-              <div
-                class="flex flex-col items-center rounded-xl bg-nbs-surface px-6 py-10 text-center"
-              >
-                <span
-                  class="flex size-12 items-center justify-center rounded-xl bg-white text-nbs-primary shadow-nbs-card"
-                >
-                  <svg
-                    class="size-6"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    aria-hidden="true"
-                  >
+                  class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-nbs-primary-soft text-nbs-primary transition-colors group-hover:bg-nbs-primary group-hover:text-white">
+                  <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    aria-hidden="true">
                     <ellipse cx="12" cy="6" rx="8" ry="3" />
-                    <path
-                      d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"
-                      stroke-linecap="round"
-                    />
+                    <path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"
+                      stroke-linecap="round" />
                   </svg>
                 </span>
-                <p class="mt-4 text-sm font-semibold text-slate-900">
-                  No saved datasets yet
-                </p>
-                <p class="mt-1 max-w-sm text-sm text-nbs-muted">
-                  Browse the catalog and save datasets to return to them
-                  quickly.
-                </p>
-                <div class="mt-5 flex flex-wrap justify-center gap-2.5">
-                  <app-button
-                    variant="primary"
-                    size="sm"
-                    (clicked)="goTo('/datasets')"
-                  >
-                    Browse catalog
-                  </app-button>
-                  <app-button
-                    variant="outline"
-                    size="sm"
-                    (clicked)="goTo('/search')"
-                  >
-                    Search datasets
-                  </app-button>
-                </div>
-              </div>
-            } @else {
-              <ul class="space-y-3">
-                @for (item of savedDatasets(); track item.datasetId) {
-                  <li>
-                    <button
-                      type="button"
-                      class="group flex w-full cursor-pointer flex-col gap-3 rounded-xl border border-nbs-border bg-white p-4 text-left transition-all duration-200 hover:border-nbs-primary/35 hover:bg-nbs-primary-soft/20 hover:shadow-nbs-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/35 sm:flex-row sm:items-center sm:justify-between"
-                      (click)="openDataset(item)"
-                    >
-                      <span class="flex min-w-0 items-start gap-3">
-                        <span
-                          class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-nbs-primary-soft text-nbs-primary transition-colors group-hover:bg-nbs-primary group-hover:text-white"
-                        >
-                          <svg
-                            class="size-5"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            aria-hidden="true"
-                          >
-                            <ellipse cx="12" cy="6" rx="8" ry="3" />
-                            <path
-                              d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"
-                              stroke-linecap="round"
-                            />
-                          </svg>
-                        </span>
-                        <span class="min-w-0">
-                          <span
-                            class="block truncate text-sm font-semibold text-slate-900"
-                          >
-                            {{ item.title }}
-                          </span>
-                          <span
-                            class="mt-1 inline-flex flex-wrap items-center gap-2 text-xs text-nbs-muted"
-                          >
-                            <span>{{ item.topic || 'Uncategorized' }}</span>
-                            <span
-                              class="size-1 rounded-full bg-slate-300"
-                              aria-hidden="true"
-                            ></span>
-                            <span>Saved {{ item.savedAt }}</span>
-                          </span>
-                        </span>
-                      </span>
-                      <span
-                        class="inline-flex items-center gap-1 text-xs font-semibold text-nbs-primary opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
-                      >
-                        Open
-                        <svg
-                          class="size-4"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="2"
-                          aria-hidden="true"
-                        >
-                          <path
-                            d="M9 6l6 6-6 6"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                          />
-                        </svg>
-                      </span>
-                    </button>
-                  </li>
-                }
-              </ul>
-            }
-          </section>
+                <span class="min-w-0">
+                  <span class="block truncate text-sm font-semibold text-slate-900">
+                    {{ item.title }}
+                  </span>
+                  <span class="mt-1 inline-flex flex-wrap items-center gap-2 text-xs text-nbs-muted">
+                    <span>{{ item.topic || 'Uncategorized' }}</span>
+                    <span class="size-1 rounded-full bg-slate-300" aria-hidden="true"></span>
+                    <span>Saved {{ item.savedAt }}</span>
+                  </span>
+                </span>
+              </span>
+              <span
+                class="inline-flex items-center gap-1 text-xs font-semibold text-nbs-primary opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
+                Open
+                <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  aria-hidden="true">
+                  <path d="M9 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </span>
+            </button>
+          </li>
+          }
+        </ul>
+        }
+      </section>
 
-          <section
-            class="rounded-2xl border border-nbs-border bg-white p-5 shadow-nbs-card sm:p-6"
-          >
-            <div class="flex flex-col gap-1">
-              <h2 class="text-base font-semibold tracking-tight text-slate-900">
-                Saved queries
-              </h2>
-              <p class="text-sm text-nbs-muted">
-                Save repeated searches and rerun them from here.
+      <section class="rounded-2xl border border-nbs-border bg-white p-5 shadow-nbs-card sm:p-6">
+        <div class="flex flex-col gap-1">
+          <h2 class="text-base font-semibold tracking-tight text-slate-900">
+            Saved queries
+          </h2>
+          <p class="text-sm text-nbs-muted">
+            Save repeated searches and rerun them from here.
+          </p>
+        </div>
+
+        @if (savedQueries().length === 0) {
+        <div class="mt-4 flex flex-col items-center rounded-xl bg-nbs-surface px-6 py-8 text-center">
+          <span class="flex size-12 items-center justify-center rounded-xl bg-white text-nbs-primary shadow-nbs-card">
+            <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              aria-hidden="true">
+              <circle cx="11" cy="11" r="7" />
+              <path d="m21 21-4.3-4.3" stroke-linecap="round" />
+            </svg>
+          </span>
+          <p class="mt-4 text-sm font-semibold text-slate-900">
+            No saved queries yet
+          </p>
+          <p class="mt-1 max-w-sm text-sm text-nbs-muted">
+            Run a search and save the queries you use often.
+          </p>
+          <div class="mt-5">
+            <app-button variant="primary" size="sm" (clicked)="goTo('/search')">
+              Open search
+            </app-button>
+          </div>
+        </div>
+        } @else {
+        <ul class="mt-4 space-y-2.5">
+          @for (item of savedQueries(); track item.id) {
+          <li
+            class="flex flex-col gap-3 rounded-xl border border-nbs-border bg-white p-4 transition-all duration-200 hover:border-nbs-primary/30 hover:shadow-nbs-hover motion-safe:hover:-translate-y-0.5 sm:flex-row sm:items-center sm:justify-between">
+            <div class="min-w-0">
+              <p class="text-sm font-semibold text-slate-900">
+                {{ item.label }}
+              </p>
+              <p class="mt-0.5 truncate text-xs text-nbs-muted">
+                {{ item.query }}
               </p>
             </div>
-
-            @if (savedQueries().length === 0) {
-              <div
-                class="mt-4 flex flex-col items-center rounded-xl bg-nbs-surface px-6 py-8 text-center"
-              >
-                <span
-                  class="flex size-12 items-center justify-center rounded-xl bg-white text-nbs-primary shadow-nbs-card"
-                >
-                  <svg
-                    class="size-6"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    aria-hidden="true"
-                  >
-                    <circle cx="11" cy="11" r="7" />
-                    <path d="m21 21-4.3-4.3" stroke-linecap="round" />
-                  </svg>
-                </span>
-                <p class="mt-4 text-sm font-semibold text-slate-900">
-                  No saved queries yet
-                </p>
-                <p class="mt-1 max-w-sm text-sm text-nbs-muted">
-                  Run a search and save the queries you use often.
-                </p>
-                <div class="mt-5">
-                  <app-button
-                    variant="primary"
-                    size="sm"
-                    (clicked)="goTo('/search')"
-                  >
-                    Open search
-                  </app-button>
-                </div>
-              </div>
-            } @else {
-              <ul class="mt-4 space-y-2.5">
-                @for (item of savedQueries(); track item.id) {
-                  <li
-                    class="flex flex-col gap-3 rounded-xl border border-nbs-border bg-white p-4 transition-all duration-200 hover:border-nbs-primary/30 hover:shadow-nbs-hover motion-safe:hover:-translate-y-0.5 sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <div class="min-w-0">
-                      <p class="text-sm font-semibold text-slate-900">
-                        {{ item.label }}
-                      </p>
-                      <p class="mt-0.5 truncate text-xs text-nbs-muted">
-                        {{ item.query }}
-                      </p>
-                    </div>
-                    <div class="flex shrink-0 items-center gap-2">
-                      <app-button
-                        variant="outline"
-                        size="sm"
-                        (clicked)="runQuery(item.query)"
-                      >
-                        Run
-                      </app-button>
-                      <app-button
-                        variant="ghost"
-                        size="sm"
-                        (clicked)="removeQuery(item.id)"
-                      >
-                        Remove
-                      </app-button>
-                    </div>
-                  </li>
-                }
-              </ul>
-            }
-          </section>
-        </div>
-
-        @if (showQuickActionsSidebar()) {
-          <aside class="space-y-6">
-            @if (!account()?.isVerified) {
-              <section
-                class="rounded-xl border border-amber-200 bg-amber-50 p-5 shadow-nbs-card"
-              >
-                <div class="flex items-start gap-3">
-                  <span
-                    class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-700"
-                  >
-                    <svg
-                      class="size-5"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      aria-hidden="true"
-                    >
-                      <path
-                        d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      />
-                    </svg>
-                  </span>
-                  <div class="min-w-0">
-                    <p class="text-sm font-semibold text-amber-900">
-                      Verify your email
-                    </p>
-                    <p class="mt-1 text-xs text-amber-800">
-                      Confirm your address to secure your account.
-                    </p>
-                    <button
-                      type="button"
-                      class="mt-3 cursor-pointer text-xs font-semibold text-amber-900 underline decoration-amber-400 underline-offset-2 transition-colors hover:text-amber-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/50"
-                      (click)="scrollToSection('settings-security')"
-                    >
-                      Go to security settings
-                    </button>
-                  </div>
-                </div>
-              </section>
-            }
-
-            @if (quickActions().length > 0) {
-              <section
-                class="rounded-xl border border-nbs-border bg-white p-5 shadow-nbs-card"
-              >
-                <h2
-                  class="text-xs font-semibold uppercase tracking-wide text-nbs-muted"
-                >
-                  Quick actions
-                </h2>
-                <ul class="mt-3 space-y-1.5">
-                  @for (action of quickActions(); track action.route) {
-                    <li>
-                      <button
-                        type="button"
-                        class="group flex w-full cursor-pointer items-center gap-3 rounded-lg border border-transparent px-3 py-2.5 text-left transition-all duration-200 hover:border-nbs-border hover:bg-nbs-surface hover:shadow-nbs-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/40 motion-safe:hover:-translate-y-0.5"
-                        (click)="goTo(action.route)"
-                      >
-                        <span
-                          class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-nbs-primary-soft text-nbs-primary"
-                        >
-                          @switch (action.icon) {
-                            @case ('search') {
-                              <svg
-                                class="size-5"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="2"
-                                aria-hidden="true"
-                              >
-                                <circle cx="11" cy="11" r="7" />
-                                <path
-                                  d="m21 21-4.3-4.3"
-                                  stroke-linecap="round"
-                                />
-                              </svg>
-                            }
-                            @case ('dataset') {
-                              <svg
-                                class="size-5"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="2"
-                                aria-hidden="true"
-                              >
-                                <ellipse cx="12" cy="6" rx="8" ry="3" />
-                                <path
-                                  d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"
-                                  stroke-linecap="round"
-                                />
-                              </svg>
-                            }
-                            @case ('chart') {
-                              <svg
-                                class="size-5"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="2"
-                                aria-hidden="true"
-                              >
-                                <path
-                                  d="M4 20V10m6 10V4m6 16v-7"
-                                  stroke-linecap="round"
-                                />
-                              </svg>
-                            }
-                            @case ('code') {
-                              <svg
-                                class="size-5"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="2"
-                                aria-hidden="true"
-                              >
-                                <path
-                                  d="m8 9-3 3 3 3m8-6 3 3-3 3"
-                                  stroke-linecap="round"
-                                  stroke-linejoin="round"
-                                />
-                              </svg>
-                            }
-                            @case ('shield') {
-                              <svg
-                                class="size-5"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="2"
-                                aria-hidden="true"
-                              >
-                                <path
-                                  d="M12 3 5 6v5c0 4.4 3 8.5 7 10 4-1.5 7-5.6 7-10V6l-7-3Z"
-                                  stroke-linecap="round"
-                                  stroke-linejoin="round"
-                                />
-                              </svg>
-                            }
-                          }
-                        </span>
-                        <span class="min-w-0 flex-1">
-                          <span
-                            class="block text-sm font-medium text-slate-900"
-                            >{{ action.label }}</span
-                          >
-                          <span class="block truncate text-xs text-nbs-muted">{{
-                            action.description
-                          }}</span>
-                        </span>
-                        <svg
-                          class="size-4 shrink-0 text-slate-300 transition-colors group-hover:text-nbs-primary"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="2"
-                          aria-hidden="true"
-                        >
-                          <path
-                            d="M9 6l6 6-6 6"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                          />
-                        </svg>
-                      </button>
-                    </li>
-                  }
-                </ul>
-              </section>
-            }
-          </aside>
+            <div class="flex shrink-0 items-center gap-2">
+              <app-button variant="outline" size="sm" (clicked)="runQuery(item.query)">
+                Run
+              </app-button>
+              <app-button variant="ghost" size="sm" (clicked)="removeQuery(item.id)">
+                Remove
+              </app-button>
+            </div>
+          </li>
+          }
+        </ul>
         }
-      </div>
-    }
+      </section>
+    </div>
 
-    @if (hubSection() === 'settings') {
-      <section id="account-settings" class="scroll-mt-6">
-        <div class="mx-auto max-w-2xl space-y-5">
-          <div
-            class="rounded-xl border border-nbs-border bg-white shadow-nbs-card"
-          >
-            <div id="settings-profile" class="scroll-mt-24 p-5 sm:p-6">
-              <div class="flex items-start justify-between gap-3">
-                <div class="flex items-start gap-3">
-                  <span
-                    class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-nbs-primary-soft text-nbs-primary"
-                  >
-                    <svg
-                      class="size-5"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      aria-hidden="true"
-                    >
-                      <circle cx="12" cy="8" r="4" />
-                      <path
-                        d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"
-                        stroke-linecap="round"
-                      />
-                    </svg>
-                  </span>
-                  <div>
-                    <h3 class="text-sm font-semibold text-slate-900">
-                      Profile
-                    </h3>
-                    <p class="mt-0.5 text-xs text-nbs-muted">
-                      Your name and account email.
-                    </p>
-                  </div>
-                </div>
-                @if (profileDirty()) {
-                  <span
-                    class="inline-flex shrink-0 items-center rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700"
-                  >
-                    Unsaved
-                  </span>
-                }
-              </div>
-
-              <form class="mt-4 grid gap-4" (ngSubmit)="saveProfile()">
-                <app-text-input
-                  label="Full name"
-                  name="name"
-                  [required]="true"
-                  placeholder="Your full name"
-                  [error]="profileFieldError('name')"
-                  [(ngModel)]="profileName"
-                  (ngModelChange)="onProfileFieldChange()"
-                />
-                <app-text-input
-                  label="Email"
-                  type="email"
-                  name="email"
-                  [readonly]="true"
-                  hint="Email is managed in security settings and requires re-verification to change."
-                  [(ngModel)]="profileEmail"
-                />
-                @if (profileError()) {
-                  <p
-                    class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700"
-                  >
-                    {{ profileError() }}
-                  </p>
-                }
-                <div class="flex flex-wrap items-center gap-3">
-                  <app-button
-                    type="submit"
-                    variant="primary"
-                    size="sm"
-                    [disabled]="!profileDirty() || profileSaving()"
-                    [loading]="profileSaving()"
-                  >
-                    Save profile
-                  </app-button>
-                  @if (profileSaved()) {
-                    <output
-                      class="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700"
-                    >
-                      <svg
-                        class="size-4"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        aria-hidden="true"
-                      >
-                        <path
-                          d="m5 13 4 4L19 7"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                        />
-                      </svg>
-                      Saved
-                    </output>
-                  }
-                </div>
-              </form>
-            </div>
-
-            <div
-              id="settings-preferences"
-              class="scroll-mt-24 border-t border-nbs-border p-5 sm:p-6"
-            >
-              <div class="flex items-start justify-between gap-3">
-                <div class="flex items-start gap-3">
-                  <span
-                    class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-nbs-primary-soft text-nbs-primary"
-                  >
-                    <svg
-                      class="size-5"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      aria-hidden="true"
-                    >
-                      <path
-                        d="M4 6h10M18 6h2M4 12h2M10 12h10M4 18h8M16 18h4"
-                        stroke-linecap="round"
-                      />
-                      <circle cx="16" cy="6" r="2" />
-                      <circle cx="8" cy="12" r="2" />
-                      <circle cx="14" cy="18" r="2" />
-                    </svg>
-                  </span>
-                  <div>
-                    <h3 class="text-sm font-semibold text-slate-900">
-                      Preferences
-                    </h3>
-                    <p class="mt-0.5 text-xs text-nbs-muted">
-                      Choose how the app appears to you.
-                    </p>
-                  </div>
-                </div>
-                @if (preferenceMessage()) {
-                  <output
-                    class="inline-flex shrink-0 items-center gap-1.5 text-xs font-medium text-emerald-700"
-                  >
-                    <svg
-                      class="size-4"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      aria-hidden="true"
-                    >
-                      <path
-                        d="m5 13 4 4L19 7"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      />
-                    </svg>
-                    {{ preferenceMessage() }}
-                  </output>
-                }
-              </div>
-
-              <div class="mt-4">
-                <app-select-input
-                  label="Language"
-                  placeholder="Select language"
-                  [options]="languageOptions"
-                  [(ngModel)]="language"
-                  (ngModelChange)="onLanguageChange($event)"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div
-            id="settings-security"
-            class="scroll-mt-24 overflow-hidden rounded-xl border border-nbs-border bg-white shadow-nbs-card"
-          >
-            <app-account-security />
+    @if (showQuickActionsSidebar()) {
+    <aside class="space-y-6">
+      @if (!account()?.isVerified) {
+      <section class="rounded-xl border border-nbs-warning-border bg-nbs-warning-soft p-5 shadow-nbs-card">
+        <div class="flex items-start gap-3">
+          <span
+            class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-nbs-warning-border text-nbs-warning">
+            <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              aria-hidden="true">
+              <path d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"
+                stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </span>
+          <div class="min-w-0">
+            <p class="text-sm font-semibold text-nbs-warning">
+              Verify your email
+            </p>
+            <p class="mt-1 text-xs text-nbs-warning">
+              Confirm your address to secure your account.
+            </p>
+            <button type="button"
+              class="mt-3 cursor-pointer text-xs font-semibold text-nbs-warning underline decoration-nbs-warning/40 underline-offset-2 transition-colors hover:text-nbs-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nbs-warning/50"
+              (click)="scrollToSection('settings-security')">
+              Go to security settings
+            </button>
           </div>
         </div>
       </section>
+      }
+
+      @if (quickActions().length > 0) {
+      <section class="rounded-xl border border-nbs-border bg-white p-5 shadow-nbs-card">
+        <h2 class="text-xs font-semibold uppercase tracking-wide text-nbs-muted">
+          Quick actions
+        </h2>
+        <ul class="mt-3 space-y-1.5">
+          @for (action of quickActions(); track action.route) {
+          <li>
+            <button type="button"
+              class="group flex w-full cursor-pointer items-center gap-3 rounded-lg border border-transparent px-3 py-2.5 text-left transition-all duration-200 hover:border-nbs-border hover:bg-nbs-surface hover:shadow-nbs-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/40 motion-safe:hover:-translate-y-0.5"
+              (click)="goTo(action.route)">
+              <span
+                class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-nbs-primary-soft text-nbs-primary">
+                @switch (action.icon) {
+                @case ('search') {
+                <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  aria-hidden="true">
+                  <circle cx="11" cy="11" r="7" />
+                  <path d="m21 21-4.3-4.3" stroke-linecap="round" />
+                </svg>
+                }
+                @case ('dataset') {
+                <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  aria-hidden="true">
+                  <ellipse cx="12" cy="6" rx="8" ry="3" />
+                  <path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3" stroke-linecap="round" />
+                </svg>
+                }
+                @case ('chart') {
+                <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  aria-hidden="true">
+                  <path d="M4 20V10m6 10V4m6 16v-7" stroke-linecap="round" />
+                </svg>
+                }
+                @case ('code') {
+                <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  aria-hidden="true">
+                  <path d="m8 9-3 3 3 3m8-6 3 3-3 3" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                }
+                @case ('shield') {
+                <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  aria-hidden="true">
+                  <path d="M12 3 5 6v5c0 4.4 3 8.5 7 10 4-1.5 7-5.6 7-10V6l-7-3Z" stroke-linecap="round"
+                    stroke-linejoin="round" />
+                </svg>
+                }
+                }
+              </span>
+              <span class="min-w-0 flex-1">
+                <span class="block text-sm font-medium text-slate-900">{{ action.label }}</span>
+                <span class="block truncate text-xs text-nbs-muted">{{
+                  action.description
+                  }}</span>
+              </span>
+              <svg class="size-4 shrink-0 text-slate-300 transition-colors group-hover:text-nbs-primary"
+                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M9 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </button>
+          </li>
+          }
+        </ul>
+      </section>
+      }
+    </aside>
     }
   </div>
+  }
+
+  @if (hubSection() === 'settings') {
+  <section id="account-settings" class="scroll-mt-6">
+    <div class="mx-auto max-w-2xl space-y-5">
+      <div class="rounded-xl border border-nbs-border bg-white shadow-nbs-card">
+        <div id="settings-profile" class="scroll-mt-24 p-5 sm:p-6">
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex items-start gap-3">
+              <span
+                class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-nbs-primary-soft text-nbs-primary">
+                <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  aria-hidden="true">
+                  <circle cx="12" cy="8" r="4" />
+                  <path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1" stroke-linecap="round" />
+                </svg>
+              </span>
+              <div>
+                <h3 class="text-sm font-semibold text-slate-900">
+                  Profile
+                </h3>
+                <p class="mt-0.5 text-xs text-nbs-muted">
+                  Your name and account email.
+                </p>
+              </div>
+            </div>
+            @if (profileDirty()) {
+            <span
+              class="inline-flex shrink-0 items-center rounded-full bg-nbs-warning-soft px-2.5 py-1 text-xs font-semibold text-nbs-warning">
+              Unsaved
+            </span>
+            }
+          </div>
+
+          <form class="mt-4 grid gap-4" (ngSubmit)="saveProfile()">
+            <app-text-input label="Full name" name="name" [required]="true" placeholder="Your full name"
+              [error]="profileFieldError('name')" [(ngModel)]="profileName" (ngModelChange)="onProfileFieldChange()" />
+            <app-text-input label="Email" type="email" name="email" [readonly]="true"
+              hint="Email is managed in security settings and requires re-verification to change."
+              [(ngModel)]="profileEmail" />
+            @if (profileError()) {
+            <p class="rounded-md border border-nbs-danger-border bg-nbs-danger-soft px-3 py-2 text-xs text-nbs-danger">
+              {{ profileError() }}
+            </p>
+            }
+            <div class="flex flex-wrap items-center gap-3">
+              <app-button type="submit" variant="primary" size="sm" [disabled]="!profileDirty() || profileSaving()"
+                [loading]="profileSaving()">
+                Save profile
+              </app-button>
+              @if (profileSaved()) {
+              <output class="inline-flex items-center gap-1.5 text-xs font-medium text-nbs-success">
+                <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  aria-hidden="true">
+                  <path d="m5 13 4 4L19 7" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                Saved
+              </output>
+              }
+            </div>
+          </form>
+        </div>
+
+        <div id="settings-preferences" class="scroll-mt-24 border-t border-nbs-border p-5 sm:p-6">
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex items-start gap-3">
+              <span
+                class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-nbs-primary-soft text-nbs-primary">
+                <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  aria-hidden="true">
+                  <path d="M4 6h10M18 6h2M4 12h2M10 12h10M4 18h8M16 18h4" stroke-linecap="round" />
+                  <circle cx="16" cy="6" r="2" />
+                  <circle cx="8" cy="12" r="2" />
+                  <circle cx="14" cy="18" r="2" />
+                </svg>
+              </span>
+              <div>
+                <h3 class="text-sm font-semibold text-slate-900">
+                  Preferences
+                </h3>
+                <p class="mt-0.5 text-xs text-nbs-muted">
+                  Choose how the app appears to you.
+                </p>
+              </div>
+            </div>
+            @if (preferenceMessage()) {
+            <output class="inline-flex shrink-0 items-center gap-1.5 text-xs font-medium text-nbs-success">
+              <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                aria-hidden="true">
+                <path d="m5 13 4 4L19 7" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              {{ preferenceMessage() }}
+            </output>
+            }
+          </div>
+
+          <div class="mt-4">
+            <app-select-input label="Language" placeholder="Select language" [options]="languageOptions"
+              [(ngModel)]="language" (ngModelChange)="onLanguageChange($event)" />
+          </div>
+        </div>
+      </div>
+
+      <div id="settings-security"
+        class="scroll-mt-24 overflow-hidden rounded-xl border border-nbs-border bg-white shadow-nbs-card">
+        <app-account-security />
+      </div>
+    </div>
+  </section>
+  }
+</div>
 }
