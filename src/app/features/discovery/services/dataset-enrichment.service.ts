@@ -74,13 +74,38 @@ export class DatasetEnrichmentService {
 
   getFileChart(
     fileId: string,
-    chartType: 'line' | 'bar' = 'line',
+    options: {
+      chartType?: 'line' | 'bar';
+      sort?: 'asc' | 'desc';
+      limit?: number;
+      groupBy?: string;
+      metric?: string;
+      xField?: string;
+      yField?: string;
+    } = {},
   ): Observable<DatasetChartPreview> {
+    const chartType = options.chartType ?? 'line';
+    const params: Record<string, string> = {
+      chart_type: chartType,
+      limit: String(options.limit ?? 12),
+    };
+    if (options.sort) {
+      params['sort'] = options.sort;
+    }
+    if (options.groupBy) {
+      params['group_by'] = options.groupBy;
+    }
+    if (options.metric) {
+      params['metric'] = options.metric;
+    }
+    if (options.xField) {
+      params['x_field'] = options.xField;
+    }
+    if (options.yField) {
+      params['y_field'] = options.yField;
+    }
     return this.api
-      .get<BackendChartResponse>(`/v1/dataset/files/${fileId}/chart/`, {
-        chart_type: chartType,
-        limit: '12',
-      })
+      .get<BackendChartResponse>(`/v1/dataset/files/${fileId}/chart/`, params)
       .pipe(map((response) => this.toChartPreview(response, chartType)));
   }
 

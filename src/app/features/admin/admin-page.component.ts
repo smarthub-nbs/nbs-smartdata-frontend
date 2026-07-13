@@ -7,6 +7,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Params, Router, RouterLink } from '@angular/router';
 import { AuthService } from '@app/core/services/auth.service';
 import {
@@ -14,6 +15,7 @@ import {
   DatasetUsageRow,
   AdminAnalyticsService,
 } from '@app/features/admin';
+import { AdminActivityTypeFilter } from '@app/features/admin/models/admin-analytics.model';
 import { DatasetWorkflowPanelComponent } from '@app/features/admin/components/dataset-workflow-panel.component';
 import { TaxonomyManagerComponent } from '@app/features/admin/components/taxonomy-manager.component';
 import {
@@ -31,6 +33,7 @@ import {
   DataTableColumn,
   DataTableComponent,
   BadgeComponent,
+  ButtonComponent,
   IconComponent,
   NbsSwapEnterDirective,
 } from '@shared/ui';
@@ -68,11 +71,13 @@ const ADMIN_NAV_ITEMS: readonly AdminNavItem[] = [
   imports: [
     DatePipe,
     DecimalPipe,
+    FormsModule,
     RouterLink,
     DataTableComponent,
     DatasetWorkflowPanelComponent,
     TaxonomyManagerComponent,
     BadgeComponent,
+    ButtonComponent,
     IconComponent,
     NbsSwapEnterDirective,
   ],
@@ -178,6 +183,24 @@ export class AdminPageComponent {
         : entry.summary;
     }
     return entry.summary || entry.action;
+  }
+
+  protected onActivityTypeChange(value: string): void {
+    const type =
+      value === 'dataset_audit' || value === 'api_usage'
+        ? value
+        : ('' as AdminActivityTypeFilter);
+    this.analytics.setActivityType(type);
+  }
+
+  protected goToPreviousActivityPage(): void {
+    const page = this.analytics.activityPaginationState().page;
+    this.analytics.loadActivityPage(page - 1);
+  }
+
+  protected goToNextActivityPage(): void {
+    const page = this.analytics.activityPaginationState().page;
+    this.analytics.loadActivityPage(page + 1);
   }
 
   protected onUsageRowClick(row: DatasetUsageRow): void {

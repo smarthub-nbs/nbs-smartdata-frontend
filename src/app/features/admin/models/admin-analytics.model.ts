@@ -129,6 +129,8 @@ export interface AdminActivityEntry {
   details: Record<string, unknown> | null;
 }
 
+export type AdminActivityTypeFilter = '' | 'dataset_audit' | 'api_usage';
+
 export interface AdminActivityListPayload {
   items: AdminActivityEntry[];
   pagination: {

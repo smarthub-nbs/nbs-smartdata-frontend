@@ -176,6 +176,14 @@
           </li>
           }
         </ul>
+        @if (accountService.bookmarksHasMoreState()) {
+        <div class="mt-4 flex justify-center">
+          <app-button variant="outline" size="sm" [loading]="accountService.bookmarksLoadingMoreState()"
+            (clicked)="accountService.loadMoreBookmarks()">
+            Load more
+          </app-button>
+        </div>
+        }
         }
       </section>
 

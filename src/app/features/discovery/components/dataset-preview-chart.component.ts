@@ -23,6 +23,8 @@ import {
 import { ensureChartJsRegistered } from '@app/features/explore/utils/chart-js.util';
 import { RouterLink } from '@angular/router';
 
+type PreviewChartType = 'line' | 'bar';
+
 @Component({
   selector: 'app-dataset-preview-chart',
   standalone: true,
@@ -40,6 +42,7 @@ export class DatasetPreviewChartComponent implements AfterViewInit {
   protected readonly loading = signal(true);
   protected readonly unavailable = signal(false);
   protected readonly chartLabel = signal('Trend');
+  protected readonly chartType = signal<PreviewChartType>('line');
 
   private chart: ChartInstance | null = null;
   private viewReady = false;
@@ -47,10 +50,11 @@ export class DatasetPreviewChartComponent implements AfterViewInit {
   constructor() {
     effect(() => {
       const dataset = this.dataset();
+      const type = this.chartType();
       if (!this.viewReady) {
         return;
       }
-      this.loadChart(dataset);
+      this.loadChart(dataset, type);
     });
 
     this.destroyRef.onDestroy(() => this.destroyChart());
@@ -58,10 +62,17 @@ export class DatasetPreviewChartComponent implements AfterViewInit {
 
   ngAfterViewInit(): void {
     this.viewReady = true;
-    this.loadChart(this.dataset());
+    this.loadChart(this.dataset(), this.chartType());
   }
 
-  private loadChart(dataset: Dataset): void {
+  protected setChartType(type: PreviewChartType): void {
+    if (type === this.chartType()) {
+      return;
+    }
+    this.chartType.set(type);
+  }
+
+  private loadChart(dataset: Dataset, chartType: PreviewChartType): void {
     const fileId = dataset.primaryFileId;
     if (!fileId) {
       this.loading.set(false);
@@ -73,7 +84,11 @@ export class DatasetPreviewChartComponent implements AfterViewInit {
     this.loading.set(true);
     this.unavailable.set(false);
     this.enrichment
-      .getFileChart(fileId, 'line')
+      .getFileChart(fileId, {
+        chartType,
+        limit: 12,
+        ...(chartType === 'bar' ? { sort: 'desc' as const } : {}),
+      })
       .pipe(
         catchError(() => of(null)),
         takeUntilDestroyed(this.destroyRef),
@@ -87,13 +102,18 @@ export class DatasetPreviewChartComponent implements AfterViewInit {
         }
         this.chartLabel.set(preview.label);
         this.renderChart(
+          chartType,
           preview.points.map((p) => p.label),
           preview.points.map((p) => p.value),
         );
       });
   }
 
-  private renderChart(labels: string[], values: number[]): void {
+  private renderChart(
+    chartType: PreviewChartType,
+    labels: string[],
+    values: number[],
+  ): void {
     const canvas = this.canvas()?.nativeElement;
     if (!canvas) {
       return;
@@ -103,17 +123,20 @@ export class DatasetPreviewChartComponent implements AfterViewInit {
     this.destroyChart();
 
     const config: ChartConfiguration = {
-      type: 'line',
+      type: chartType,
       data: {
         labels,
         datasets: [
           {
             data: values,
             borderColor: '#0f766e',
-            backgroundColor: 'rgba(15, 118, 110, 0.12)',
-            fill: true,
+            backgroundColor:
+              chartType === 'bar'
+                ? 'rgba(15, 118, 110, 0.65)'
+                : 'rgba(15, 118, 110, 0.12)',
+            fill: chartType === 'line',
             tension: 0.25,
-            pointRadius: 2,
+            pointRadius: chartType === 'line' ? 2 : 0,
           },
         ],
       },

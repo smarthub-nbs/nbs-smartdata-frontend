@@ -45,3 +45,8 @@ Thumbs.db
 
 *.md
 !README.md
+
+# Local-only Docker (not shared with the team)
+Dockerfile
+.dockerignore
+proxy.conf.docker.json

@@ -27,6 +27,8 @@ import {
   DatasetBulkAction,
   DatasetBulkActionJob,
   DatasetBulkActionJobDetail,
+  DatasetBulkActionJobListPayload,
+  DatasetBulkUploadJobListPayload,
   DatasetBulkUploadItemInput,
   DatasetBulkUploadJob,
   DatasetFrequencyValue,
@@ -398,6 +400,34 @@ export class AdminDatasetWorkflowService {
       .pipe(map(() => undefined));
   }
 
+  updateVersion(
+    versionId: string,
+    update: { versionNumber?: string; changelog?: string },
+  ): Observable<void> {
+    const payload: Record<string, string> = {};
+    if (update.versionNumber !== undefined) {
+      payload['version_number'] = update.versionNumber.trim();
+    }
+    if (update.changelog !== undefined) {
+      payload['changelog'] = update.changelog.trim();
+    }
+    return this.api
+      .patch(`/v1/dataset/versions/${versionId}/`, payload)
+      .pipe(map(() => undefined));
+  }
+
+  deleteVersion(versionId: string): Observable<void> {
+    return this.api
+      .delete(`/v1/dataset/versions/${versionId}/`)
+      .pipe(map(() => undefined));
+  }
+
+  setFilePrimary(fileId: string): Observable<void> {
+    return this.api
+      .patch(`/v1/dataset/files/${fileId}/`, { is_primary: true })
+      .pipe(map(() => undefined));
+  }
+
   runBulkAction(
     action: DatasetBulkAction,
     datasetIds: string[],
@@ -416,6 +446,19 @@ export class AdminDatasetWorkflowService {
   getBulkActionJob(jobId: string): Observable<DatasetBulkActionJobDetail> {
     return this.api.get<DatasetBulkActionJobDetail>(
       `/v1/dataset/admin-queue/bulk-action/jobs/${jobId}/`,
+    );
+  }
+
+  listBulkActionJobs(
+    page = 1,
+    pageSize = 10,
+  ): Observable<DatasetBulkActionJobListPayload> {
+    return this.api.get<DatasetBulkActionJobListPayload>(
+      '/v1/dataset/admin-queue/bulk-action/jobs/',
+      {
+        page: String(page),
+        page_size: String(pageSize),
+      },
     );
   }
 
@@ -455,6 +498,19 @@ export class AdminDatasetWorkflowService {
   getBulkUploadJob(jobId: string): Observable<DatasetBulkUploadJob> {
     return this.api.get<DatasetBulkUploadJob>(
       `/v1/dataset/admin-queue/bulk-upload/jobs/${jobId}/`,
+    );
+  }
+
+  listBulkUploadJobs(
+    page = 1,
+    pageSize = 10,
+  ): Observable<DatasetBulkUploadJobListPayload> {
+    return this.api.get<DatasetBulkUploadJobListPayload>(
+      '/v1/dataset/admin-queue/bulk-upload/jobs/',
+      {
+        page: String(page),
+        page_size: String(pageSize),
+      },
     );
   }
 

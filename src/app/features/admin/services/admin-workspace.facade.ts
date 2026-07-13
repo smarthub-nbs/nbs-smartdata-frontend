@@ -13,6 +13,7 @@ import {
   debounceTime,
   distinctUntilChanged,
   finalize,
+  forkJoin,
   of,
   switchMap,
   takeWhile,
@@ -35,6 +36,7 @@ import {
   DatasetBulkUploadItemInput,
   EMPTY_QUEUE_PAGINATION,
   EMPTY_QUEUE_SUMMARY,
+  RecentBulkJob,
   StatusCounts,
   StatusFilter,
 } from '@app/features/admin/models/admin-dataset.model';
@@ -92,6 +94,8 @@ export class AdminWorkspaceFacade {
   private readonly _checkedIds = signal<string[]>([]);
   private readonly _restorableId = signal<string | null>(null);
   private readonly _bulkJobMessage = signal<string | null>(null);
+  private readonly _recentBulkJobs = signal<RecentBulkJob[]>([]);
+  private readonly _recentBulkJobsLoading = signal(false);
 
   readonly items = this._items.asReadonly();
   readonly pagination = this._pagination.asReadonly();
@@ -109,6 +113,8 @@ export class AdminWorkspaceFacade {
   readonly checkedIds = this._checkedIds.asReadonly();
   readonly restorableId = this._restorableId.asReadonly();
   readonly bulkJobMessage = this._bulkJobMessage.asReadonly();
+  readonly recentBulkJobs = this._recentBulkJobs.asReadonly();
+  readonly recentBulkJobsLoading = this._recentBulkJobsLoading.asReadonly();
 
   readonly selectedId = computed(() => this._selectedRecord()?.id ?? '');
   readonly checkedCount = computed(() => this._checkedIds().length);
@@ -185,6 +191,69 @@ export class AdminWorkspaceFacade {
     }
     this.loadSummary();
     this.loadQueue(initial?.datasetId);
+    if (this.auth.canReviewDatasets()) {
+      this.loadRecentBulkJobs();
+    }
+  }
+
+  loadRecentBulkJobs(): void {
+    this._recentBulkJobsLoading.set(true);
+    forkJoin({
+      actions: this.workflow.listBulkActionJobs(1, 8),
+      uploads: this.workflow.listBulkUploadJobs(1, 8),
+    })
+      .pipe(
+        finalize(() => this._recentBulkJobsLoading.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: ({ actions, uploads }) => {
+          const actionJobs: RecentBulkJob[] = actions.items.map((job) => ({
+            kind: 'action',
+            id: job.id,
+            status: job.status,
+            label: `Bulk ${job.action}`,
+            processedCount: job.processed_count,
+            totalCount: job.requested_count,
+            failedCount: job.failed_count,
+            createdAt: job.created_at,
+          }));
+          const uploadJobs: RecentBulkJob[] = uploads.items.map((job) => ({
+            kind: 'upload',
+            id: job.id,
+            status: job.status,
+            label: 'Bulk upload',
+            processedCount: job.processed_count,
+            totalCount: job.total_count,
+            failedCount: job.failed_count,
+            createdAt: job.created_at,
+          }));
+          this._recentBulkJobs.set(
+            [...actionJobs, ...uploadJobs]
+              .sort(
+                (a, b) =>
+                  new Date(b.createdAt).getTime() -
+                  new Date(a.createdAt).getTime(),
+              )
+              .slice(0, 10),
+          );
+        },
+        error: () => {
+          this._recentBulkJobs.set([]);
+        },
+      });
+  }
+
+  resumeBulkJob(job: RecentBulkJob): void {
+    if (job.status !== 'queued' && job.status !== 'running') {
+      return;
+    }
+    this._bulkJobMessage.set(null);
+    if (job.kind === 'action') {
+      this.pollBulkActionJob(job.id);
+      return;
+    }
+    this.pollBulkUploadJob(job.id);
   }
 
   setStatusFilter(filter: StatusFilter): void {
@@ -346,6 +415,7 @@ export class AdminWorkspaceFacade {
           this.setMessage(
             `Bulk ${action} queued for ${job.requested_count} dataset(s).`,
           );
+          this.loadRecentBulkJobs();
           this.pollBulkActionJob(job.id);
         },
         error: (error: unknown) => this.showError(error),
@@ -370,6 +440,7 @@ export class AdminWorkspaceFacade {
       .subscribe({
         next: (job) => {
           this.setMessage(`Bulk upload queued for ${job.total_count} file(s).`);
+          this.loadRecentBulkJobs();
           this.pollBulkUploadJob(job.id);
         },
         error: (error: unknown) => this.showError(error),
@@ -664,6 +735,7 @@ export class AdminWorkspaceFacade {
           } else {
             this.toast.error(job.error || `Bulk ${job.action} failed.`);
           }
+          this.loadRecentBulkJobs();
           this.refreshAfterMutation({ datasetId: '', statusChanged: true });
         },
         error: (error: unknown) => {
@@ -703,6 +775,7 @@ export class AdminWorkspaceFacade {
           } else {
             this.toast.error(job.error || 'Bulk upload failed.');
           }
+          this.loadRecentBulkJobs();
           this.refreshAfterMutation({ datasetId: '', statusChanged: true });
         },
         error: (error: unknown) => {

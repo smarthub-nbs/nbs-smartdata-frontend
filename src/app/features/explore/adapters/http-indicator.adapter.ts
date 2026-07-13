@@ -85,16 +85,6 @@ export class HttpIndicatorAdapter implements IndicatorAdapter {
 
   list(): Observable<ExploreIndicator[]> {
     return this.api.get<BackendDataset[]>('/v1/dataset/').pipe(
-      switchMap((summaries) => {
-        if (summaries.length === 0) {
-          return of([]);
-        }
-        return forkJoin(
-          summaries.map((dataset) =>
-            this.api.get<BackendDataset>(`/v1/dataset/${dataset.id}/`),
-          ),
-        );
-      }),
       switchMap((datasets) => {
         const candidates = datasets
           .map((dataset) => ({

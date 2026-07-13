@@ -8,10 +8,26 @@
         {{ chartLabel() }} from the primary file
       </p>
     </div>
-    <a routerLink="/explore" [queryParams]="{ indicator: dataset().id }"
-      class="text-xs font-semibold text-nbs-primary hover:underline">
-      Open in Explore
-    </a>
+    <div class="flex flex-wrap items-center gap-3">
+      <div class="inline-flex rounded-md border border-slate-200 p-0.5" role="group" aria-label="Chart type">
+        <button type="button"
+          class="rounded px-2.5 py-1 text-xs font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/40"
+          [class.bg-nbs-primary]="chartType() === 'line'" [class.text-white]="chartType() === 'line'"
+          [class.text-slate-600]="chartType() !== 'line'" (click)="setChartType('line')">
+          Line
+        </button>
+        <button type="button"
+          class="rounded px-2.5 py-1 text-xs font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/40"
+          [class.bg-nbs-primary]="chartType() === 'bar'" [class.text-white]="chartType() === 'bar'"
+          [class.text-slate-600]="chartType() !== 'bar'" (click)="setChartType('bar')">
+          Bar
+        </button>
+      </div>
+      <a routerLink="/explore" [queryParams]="{ indicator: dataset().id }"
+        class="text-xs font-semibold text-nbs-primary hover:underline">
+        Open in Explore
+      </a>
+    </div>
   </div>
 
   @if (loading()) {
