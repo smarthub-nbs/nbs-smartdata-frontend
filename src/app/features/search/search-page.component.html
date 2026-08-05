@@ -1,27 +1,948 @@
 <div class="nbs-enter space-y-6 pb-8">
   <header
-    class="relative overflow-hidden rounded-2xl bg-nbs-hero px-5 py-7 text-white shadow-nbs-hover sm:px-8 sm:py-9"
+    class="relative isolate overflow-hidden rounded-2xl bg-nbs-hero px-5 py-7 text-white shadow-nbs-hover sm:px-8 sm:py-9 lg:min-h-[260px]"
   >
     <div
-      class="pointer-events-none absolute -right-16 -top-24 size-64 rounded-full border-[22px] border-white/10"
+      class="pointer-events-none absolute inset-0 -z-10 opacity-30 [background-image:linear-gradient(rgb(255_255_255_/_0.13)_1px,transparent_1px),linear-gradient(90deg,rgb(255_255_255_/_0.13)_1px,transparent_1px)] [background-size:34px_34px]"
     ></div>
     <div
-      class="pointer-events-none absolute -bottom-24 right-20 size-48 rounded-full border-[16px] border-nbs-highlight/20"
+      class="pointer-events-none absolute -left-24 -top-32 -z-10 size-80 rounded-full bg-cyan-300/10 blur-3xl"
     ></div>
-    <div class="relative max-w-2xl">
-      <p
-        class="mb-3 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-white/90"
+    <div
+      class="pointer-events-none absolute -bottom-36 right-1/3 -z-10 size-96 rounded-full bg-nbs-accent/20 blur-3xl"
+    ></div>
+    <div
+      class="pointer-events-none absolute -right-16 -top-24 -z-10 size-64 rounded-full border-[22px] border-white/10"
+    ></div>
+    <div
+      class="pointer-events-none absolute -bottom-24 right-20 -z-10 size-48 rounded-full border-[16px] border-nbs-highlight/20"
+    ></div>
+
+    <div
+      class="pointer-events-none absolute inset-0 -z-0 overflow-hidden"
+      aria-hidden="true"
+    >
+      <svg
+        class="absolute left-[28%] top-8 h-44 w-64 opacity-55"
+        viewBox="0 0 256 176"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
       >
-        <span class="size-1.5 rounded-full bg-nbs-highlight"></span>
-        NBS Smart Search
-      </p>
-      <h1 class="text-3xl font-semibold tracking-tight sm:text-4xl">
-        Find the statistics you need
-      </h1>
-      <p class="mt-3 max-w-xl text-sm leading-6 text-white/80 sm:text-base">
-        Ask a question about Tanzania’s official statistics. Search by topic,
-        region, year, indicator, or keyword.
-      </p>
+        <path
+          d="M8 143c27-42 42-12 68-43 25-30 42 12 67-20 24-31 40-7 66-35 15-16 25-13 39-28"
+          stroke="#7DD3FC"
+          stroke-width="3"
+          stroke-linecap="round"
+        />
+        <path
+          d="M8 143c27-42 42-12 68-43 25-30 42 12 67-20 24-31 40-7 66-35 15-16 25-13 39-28"
+          stroke="white"
+          stroke-opacity=".45"
+          stroke-width="1"
+          stroke-dasharray="4 7"
+        />
+        <path
+          d="M12 31h230M12 72h230M12 113h230M48 14v140M103 14v140M158 14v140M213 14v140"
+          stroke="white"
+          stroke-opacity=".13"
+          stroke-width="1"
+          stroke-dasharray="2 7"
+        />
+        <circle
+          cx="76"
+          cy="100"
+          r="5"
+          fill="#EDC91E"
+          stroke="white"
+          stroke-width="2"
+        />
+        <circle
+          cx="143"
+          cy="80"
+          r="5"
+          fill="#219F94"
+          stroke="white"
+          stroke-width="2"
+        />
+        <circle
+          cx="209"
+          cy="45"
+          r="5"
+          fill="#7DD3FC"
+          stroke="white"
+          stroke-width="2"
+        />
+        <rect
+          x="16"
+          y="10"
+          width="87"
+          height="24"
+          rx="12"
+          fill="white"
+          fill-opacity=".1"
+          stroke="white"
+          stroke-opacity=".16"
+        />
+        <text
+          x="59"
+          y="26"
+          fill="white"
+          fill-opacity=".8"
+          font-family="Public Sans, sans-serif"
+          font-size="9"
+          font-weight="600"
+          text-anchor="middle"
+        >
+          DATA TRENDS
+        </text>
+      </svg>
+      <svg
+        class="absolute left-[34%] top-4 h-52 w-60 opacity-35"
+        viewBox="0 0 240 208"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <circle
+          cx="120"
+          cy="104"
+          r="80"
+          stroke="white"
+          stroke-width="1"
+          stroke-opacity=".25"
+          stroke-dasharray="3 9"
+        />
+        <circle
+          cx="120"
+          cy="104"
+          r="52"
+          stroke="#7DD3FC"
+          stroke-width="2"
+          stroke-opacity=".6"
+          stroke-dasharray="2 8"
+        />
+        <circle
+          cx="120"
+          cy="104"
+          r="20"
+          fill="#0272A7"
+          stroke="#EDC91E"
+          stroke-width="2"
+        />
+        <path
+          d="M120 24v160M40 104h160M63 47l114 114M177 47 63 161"
+          stroke="white"
+          stroke-opacity=".18"
+        />
+        <circle cx="120" cy="24" r="5" fill="#219F94" />
+        <circle cx="200" cy="104" r="5" fill="#EDC91E" />
+        <circle cx="63" cy="161" r="5" fill="#7DD3FC" />
+        <circle cx="177" cy="47" r="5" fill="#219F94" />
+      </svg>
+      <svg
+        class="absolute -right-4 top-3 h-32 w-52 opacity-45"
+        viewBox="0 0 208 128"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <rect
+          x="8"
+          y="10"
+          width="192"
+          height="108"
+          rx="18"
+          fill="white"
+          fill-opacity=".08"
+          stroke="white"
+          stroke-opacity=".18"
+        />
+        <path
+          d="M28 91V43M28 91h151"
+          stroke="white"
+          stroke-opacity=".22"
+          stroke-width="1"
+        />
+        <path
+          d="M37 78c18-5 24-24 41-18 18 7 24-19 41-12 17 8 25-15 45-7"
+          stroke="#EDC91E"
+          stroke-width="3"
+          stroke-linecap="round"
+        />
+        <path
+          d="M37 78c18-5 24-24 41-18 18 7 24-19 41-12 17 8 25-15 45-7"
+          stroke="white"
+          stroke-opacity=".45"
+          stroke-width="1"
+          stroke-dasharray="3 6"
+        />
+        <circle
+          cx="78"
+          cy="60"
+          r="4"
+          fill="#219F94"
+          stroke="white"
+          stroke-width="2"
+        />
+        <circle
+          cx="119"
+          cy="48"
+          r="4"
+          fill="#7DD3FC"
+          stroke="white"
+          stroke-width="2"
+        />
+        <circle
+          cx="164"
+          cy="41"
+          r="4"
+          fill="#EDC91E"
+          stroke="white"
+          stroke-width="2"
+        />
+        <text
+          x="28"
+          y="29"
+          fill="white"
+          fill-opacity=".75"
+          font-family="Public Sans, sans-serif"
+          font-size="8"
+          font-weight="600"
+          letter-spacing="1"
+        >
+          LIVE INSIGHTS
+        </text>
+      </svg>
+      <svg
+        class="absolute -bottom-3 left-[18%] h-32 w-48 opacity-40"
+        viewBox="0 0 192 128"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <rect
+          x="9"
+          y="9"
+          width="174"
+          height="110"
+          rx="18"
+          fill="white"
+          fill-opacity=".07"
+          stroke="white"
+          stroke-opacity=".16"
+        />
+        <circle
+          cx="56"
+          cy="64"
+          r="30"
+          stroke="#7DD3FC"
+          stroke-width="10"
+          stroke-dasharray="112 77"
+          transform="rotate(-38 56 64)"
+        />
+        <circle
+          cx="56"
+          cy="64"
+          r="30"
+          stroke="#EDC91E"
+          stroke-width="10"
+          stroke-dasharray="43 146"
+          transform="rotate(-38 56 64)"
+        />
+        <circle cx="56" cy="64" r="18" fill="#0272A7" fill-opacity=".7" />
+        <path
+          d="M103 45h56M103 62h42M103 79h50"
+          stroke="white"
+          stroke-opacity=".5"
+          stroke-width="5"
+          stroke-linecap="round"
+        />
+        <circle cx="103" cy="99" r="4" fill="#219F94" />
+        <circle cx="117" cy="99" r="4" fill="#EDC91E" />
+        <circle cx="131" cy="99" r="4" fill="#7DD3FC" />
+      </svg>
+      <svg
+        class="absolute bottom-3 right-[31%] h-24 w-32 opacity-35"
+        viewBox="0 0 128 96"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M64 8 70 25l18 1-14 11 5 18-15-10-15 10 5-18-14-11 18-1 6-17Z"
+          stroke="#EDC91E"
+          stroke-width="2"
+          stroke-linejoin="round"
+        />
+        <circle cx="64" cy="48" r="8" fill="#EDC91E" />
+        <circle cx="28" cy="20" r="3" fill="#7DD3FC" />
+        <circle cx="101" cy="68" r="4" fill="#219F94" />
+        <circle cx="104" cy="21" r="2" fill="white" />
+      </svg>
+      <svg
+        class="absolute bottom-5 right-4 h-24 w-28 opacity-40"
+        viewBox="0 0 112 96"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <ellipse
+          cx="56"
+          cy="25"
+          rx="27"
+          ry="10"
+          fill="#7DD3FC"
+          fill-opacity=".35"
+          stroke="white"
+          stroke-opacity=".6"
+          stroke-width="2"
+        />
+        <path
+          d="M29 25v34c0 6 12 10 27 10s27-4 27-10V25"
+          fill="#0272A7"
+          fill-opacity=".35"
+          stroke="white"
+          stroke-opacity=".6"
+          stroke-width="2"
+        />
+        <path
+          d="M29 42c0 6 12 10 27 10s27-4 27-10M29 59c0 6 12 10 27 10s27-4 27-10"
+          stroke="white"
+          stroke-opacity=".45"
+          stroke-width="2"
+        />
+        <circle
+          cx="91"
+          cy="20"
+          r="6"
+          fill="#EDC91E"
+          stroke="white"
+          stroke-width="2"
+        />
+      </svg>
+      <svg
+        class="absolute left-[30%] top-1/2 h-24 w-24 -translate-y-1/2 opacity-35"
+        viewBox="0 0 96 96"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M48 13c-17 0-30 12-30 28 0 22 30 43 30 43s30-21 30-43c0-16-13-28-30-28Z"
+          fill="#219F94"
+          fill-opacity=".3"
+          stroke="white"
+          stroke-opacity=".65"
+          stroke-width="2"
+        />
+        <circle
+          cx="48"
+          cy="41"
+          r="10"
+          fill="#EDC91E"
+          stroke="white"
+          stroke-width="3"
+        />
+        <path
+          d="M29 74h38"
+          stroke="white"
+          stroke-opacity=".35"
+          stroke-width="3"
+          stroke-linecap="round"
+        />
+      </svg>
+      <svg
+        class="absolute right-[22%] top-5 h-20 w-24 opacity-35"
+        viewBox="0 0 96 80"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <rect
+          x="15"
+          y="14"
+          width="58"
+          height="51"
+          rx="10"
+          fill="#0272A7"
+          fill-opacity=".3"
+          stroke="white"
+          stroke-opacity=".6"
+          stroke-width="2"
+        />
+        <path
+          d="M15 30h58M29 9v12M59 9v12"
+          stroke="white"
+          stroke-opacity=".65"
+          stroke-width="3"
+          stroke-linecap="round"
+        />
+        <circle cx="31" cy="43" r="4" fill="#EDC91E" />
+        <circle cx="48" cy="43" r="4" fill="#7DD3FC" />
+        <circle cx="31" cy="55" r="4" fill="#219F94" />
+        <circle cx="48" cy="55" r="4" fill="white" />
+      </svg>
+      <svg
+        class="absolute bottom-14 left-[47%] h-16 w-20 opacity-30"
+        viewBox="0 0 80 64"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <circle cx="32" cy="27" r="17" stroke="#EDC91E" stroke-width="5" />
+        <path
+          d="m45 40 18 16"
+          stroke="#7DD3FC"
+          stroke-width="6"
+          stroke-linecap="round"
+        />
+        <circle cx="32" cy="27" r="6" fill="#219F94" />
+      </svg>
+      <svg
+        class="absolute left-[35%] top-3 h-12 w-12 opacity-30"
+        viewBox="0 0 48 48"
+        fill="none"
+        aria-hidden="true"
+      >
+        <circle cx="24" cy="24" r="16" stroke="#7DD3FC" stroke-width="3" />
+        <path
+          d="M8 24h32M24 8c5 5 7 11 7 16s-2 11-7 16c-5-5-7-11-7-16s2-11 7-16Z"
+          stroke="white"
+          stroke-width="2"
+        />
+      </svg>
+      <svg
+        class="absolute left-[50%] top-2 h-11 w-11 opacity-30"
+        viewBox="0 0 48 48"
+        fill="none"
+        aria-hidden="true"
+      >
+        <rect
+          x="10"
+          y="8"
+          width="28"
+          height="34"
+          rx="5"
+          stroke="#EDC91E"
+          stroke-width="3"
+        />
+        <path
+          d="M16 18h16M16 25h16M16 32h10"
+          stroke="white"
+          stroke-width="2.5"
+          stroke-linecap="round"
+        />
+      </svg>
+      <svg
+        class="absolute right-[13%] top-[43%] h-12 w-12 opacity-30"
+        viewBox="0 0 48 48"
+        fill="none"
+        aria-hidden="true"
+      >
+        <path
+          d="M24 8c-8 0-14 6-14 14 0 10 14 20 14 20s14-10 14-20c0-8-6-14-14-14Z"
+          stroke="#219F94"
+          stroke-width="3"
+        />
+        <circle cx="24" cy="22" r="5" fill="#EDC91E" />
+      </svg>
+      <svg
+        class="absolute left-[32%] bottom-6 h-12 w-12 opacity-25"
+        viewBox="0 0 48 48"
+        fill="none"
+        aria-hidden="true"
+      >
+        <path d="M8 38V10M8 38h32" stroke="white" stroke-width="2" />
+        <path
+          d="m14 30 7-8 6 4 9-13"
+          stroke="#7DD3FC"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+      <svg
+        class="absolute left-[39%] bottom-2 h-11 w-11 opacity-25"
+        viewBox="0 0 48 48"
+        fill="none"
+        aria-hidden="true"
+      >
+        <path
+          d="M10 15h28v22H10zM16 15V9h16v6M18 22h12M18 29h8"
+          stroke="#EDC91E"
+          stroke-width="2.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+      <svg
+        class="absolute right-[4%] top-[58%] h-12 w-12 opacity-30"
+        viewBox="0 0 48 48"
+        fill="none"
+        aria-hidden="true"
+      >
+        <path
+          d="M24 9 9 17l15 8 15-8-15-8Z"
+          fill="#0272A7"
+          fill-opacity=".5"
+          stroke="white"
+          stroke-width="2"
+        />
+        <path
+          d="M14 22v10l10 7 10-7V22M19 28h10"
+          stroke="#7DD3FC"
+          stroke-width="2"
+        />
+      </svg>
+      <svg
+        class="absolute right-[37%] bottom-4 h-12 w-12 opacity-25"
+        viewBox="0 0 48 48"
+        fill="none"
+        aria-hidden="true"
+      >
+        <circle cx="24" cy="18" r="7" stroke="#7DD3FC" stroke-width="3" />
+        <path
+          d="M11 39c1-9 6-14 13-14s12 5 13 14M17 9c-3 1-5 4-5 7M31 9c3 1 5 4 5 7"
+          stroke="white"
+          stroke-width="2.5"
+          stroke-linecap="round"
+        />
+      </svg>
+      <svg
+        class="absolute right-[27%] top-1 h-10 w-10 opacity-25"
+        viewBox="0 0 48 48"
+        fill="none"
+        aria-hidden="true"
+      >
+        <path
+          d="M24 7 28 19l12 1-9 8 3 12-10-7-10 7 3-12-9-8 12-1 4-12Z"
+          stroke="#EDC91E"
+          stroke-width="2.5"
+          stroke-linejoin="round"
+        />
+      </svg>
+      <svg
+        class="absolute left-[52%] top-[58%] h-11 w-11 opacity-25"
+        viewBox="0 0 48 48"
+        fill="none"
+        aria-hidden="true"
+      >
+        <path
+          d="M12 36V20l12-8 12 8v16H12Z"
+          stroke="#219F94"
+          stroke-width="3"
+          stroke-linejoin="round"
+        />
+        <path
+          d="M19 36V25h10v11M9 36h30"
+          stroke="white"
+          stroke-width="2.5"
+          stroke-linecap="round"
+        />
+      </svg>
+      <svg
+        class="absolute left-[46%] bottom-1 h-12 w-12 opacity-25"
+        viewBox="0 0 48 48"
+        fill="none"
+        aria-hidden="true"
+      >
+        <path
+          d="M24 9v28M14 14c3-4 17-4 20 0M13 32c4 4 18 4 22 0"
+          stroke="#7DD3FC"
+          stroke-width="3"
+          stroke-linecap="round"
+        />
+        <path
+          d="M10 38h28"
+          stroke="white"
+          stroke-width="2.5"
+          stroke-linecap="round"
+        />
+      </svg>
+      <svg
+        class="absolute right-[48%] top-2 h-10 w-10 opacity-25"
+        viewBox="0 0 48 48"
+        fill="none"
+        aria-hidden="true"
+      >
+        <path
+          d="M24 8a16 16 0 1 0 16 16"
+          stroke="#EDC91E"
+          stroke-width="3"
+          stroke-linecap="round"
+        />
+        <path
+          d="M24 8v9M24 24l7-5"
+          stroke="white"
+          stroke-width="2.5"
+          stroke-linecap="round"
+        />
+      </svg>
+      <svg
+        class="absolute left-[31%] top-[28%] h-10 w-10 opacity-25"
+        viewBox="0 0 48 48"
+        fill="none"
+        aria-hidden="true"
+      >
+        <path
+          d="M10 38V20h10v18M28 38V11h10v27M7 38h34"
+          stroke="#7DD3FC"
+          stroke-width="3"
+          stroke-linejoin="round"
+        />
+        <path
+          d="M13 25h4M31 17h4M31 24h4"
+          stroke="white"
+          stroke-width="2"
+          stroke-linecap="round"
+        />
+      </svg>
+      <svg
+        class="absolute left-[45%] top-[49%] h-11 w-11 opacity-25"
+        viewBox="0 0 48 48"
+        fill="none"
+        aria-hidden="true"
+      >
+        <path
+          d="M24 39c0-14-7-24-16-28 0 15 5 25 16 28ZM24 39c0-14 7-24 16-28 0 15-5 25-16 28Z"
+          fill="#219F94"
+          fill-opacity=".45"
+          stroke="white"
+          stroke-width="2"
+        />
+        <path d="M24 39V17" stroke="#EDC91E" stroke-width="2.5" />
+      </svg>
+      <svg
+        class="absolute left-[56%] top-[67%] h-10 w-10 opacity-25"
+        viewBox="0 0 48 48"
+        fill="none"
+        aria-hidden="true"
+      >
+        <path
+          d="M24 8c8 11 13 17 13 23a13 13 0 1 1-26 0c0-6 5-12 13-23Z"
+          fill="#7DD3FC"
+          fill-opacity=".4"
+          stroke="white"
+          stroke-width="2.5"
+        />
+        <path
+          d="M18 31c2 3 5 4 8 4"
+          stroke="#EDC91E"
+          stroke-width="2.5"
+          stroke-linecap="round"
+        />
+      </svg>
+      <svg
+        class="absolute left-[63%] top-[39%] h-11 w-11 opacity-25"
+        viewBox="0 0 48 48"
+        fill="none"
+        aria-hidden="true"
+      >
+        <rect
+          x="10"
+          y="14"
+          width="28"
+          height="22"
+          rx="5"
+          stroke="#EDC91E"
+          stroke-width="3"
+        />
+        <path
+          d="M17 14v-3h14v3M17 24h14M17 30h8"
+          stroke="white"
+          stroke-width="2.5"
+          stroke-linecap="round"
+        />
+      </svg>
+      <svg
+        class="absolute left-[72%] bottom-2 h-10 w-10 opacity-25"
+        viewBox="0 0 48 48"
+        fill="none"
+        aria-hidden="true"
+      >
+        <path
+          d="M24 8v30M11 15h26M11 33h26"
+          stroke="white"
+          stroke-width="2.5"
+          stroke-linecap="round"
+        />
+        <path
+          d="M17 15c0 5 4 8 7 8s7-3 7-8M17 33c0-5 4-8 7-8s7 3 7 8"
+          stroke="#7DD3FC"
+          stroke-width="3"
+        />
+      </svg>
+      <svg
+        class="absolute right-[7%] bottom-[38%] h-10 w-10 opacity-25"
+        viewBox="0 0 48 48"
+        fill="none"
+        aria-hidden="true"
+      >
+        <path
+          d="M24 10a13 13 0 1 0 0 26 13 13 0 0 0 0-26Z"
+          stroke="#219F94"
+          stroke-width="3"
+        />
+        <path
+          d="M24 17v7l5 4M10 24H6M42 24h-4"
+          stroke="#EDC91E"
+          stroke-width="2.5"
+          stroke-linecap="round"
+        />
+      </svg>
+      <svg
+        class="absolute right-[17%] top-[25%] h-10 w-10 opacity-25"
+        viewBox="0 0 48 48"
+        fill="none"
+        aria-hidden="true"
+      >
+        <path
+          d="M10 36V18l14-8 14 8v18"
+          stroke="white"
+          stroke-width="2.5"
+          stroke-linejoin="round"
+        />
+        <path d="M16 36V23h16v13M20 28h8" stroke="#7DD3FC" stroke-width="3" />
+        <circle cx="24" cy="15" r="3" fill="#EDC91E" />
+      </svg>
+      <svg
+        class="absolute right-[35%] top-[72%] h-10 w-10 opacity-25"
+        viewBox="0 0 48 48"
+        fill="none"
+        aria-hidden="true"
+      >
+        <path
+          d="M8 32h32M12 32V19l8-5 8 5v13M28 32V12l8-4 4 4v20"
+          stroke="#7DD3FC"
+          stroke-width="2.5"
+          stroke-linejoin="round"
+        />
+        <path
+          d="M16 24h8M32 19h4M32 25h4"
+          stroke="#EDC91E"
+          stroke-width="2.5"
+          stroke-linecap="round"
+        />
+      </svg>
+      <svg
+        class="absolute left-[76%] top-2 h-10 w-10 opacity-25"
+        viewBox="0 0 48 48"
+        fill="none"
+        aria-hidden="true"
+      >
+        <path
+          d="M8 24c5-7 10-7 16 0s11 7 16 0M8 31c5-7 10-7 16 0s11 7 16 0"
+          stroke="#7DD3FC"
+          stroke-width="2.5"
+          stroke-linecap="round"
+        />
+        <circle cx="24" cy="12" r="3" fill="#219F94" />
+      </svg>
+      <svg
+        class="absolute left-[58%] bottom-1 h-9 w-9 opacity-25"
+        viewBox="0 0 48 48"
+        fill="none"
+        aria-hidden="true"
+      >
+        <path
+          d="M12 35h24M16 35V19h16v16M12 19h24M20 19v-6h8v6"
+          stroke="white"
+          stroke-width="2.5"
+          stroke-linejoin="round"
+        />
+        <path
+          d="M20 25h8M20 30h8"
+          stroke="#EDC91E"
+          stroke-width="2.5"
+          stroke-linecap="round"
+        />
+      </svg>
+      <svg
+        class="absolute right-[57%] bottom-[17%] h-10 w-10 opacity-25"
+        viewBox="0 0 48 48"
+        fill="none"
+        aria-hidden="true"
+      >
+        <path
+          d="M10 21a20 20 0 0 1 28 0M15 26a13 13 0 0 1 18 0M21 32a5 5 0 0 1 6 0"
+          stroke="#7DD3FC"
+          stroke-width="3"
+          stroke-linecap="round"
+        />
+        <circle cx="24" cy="37" r="3" fill="#EDC91E" />
+      </svg>
+    </div>
+
+    <div class="relative z-10 flex items-center justify-between gap-8">
+      <div class="max-w-2xl">
+        <p
+          class="mb-3 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-white/90"
+        >
+          <span class="size-1.5 rounded-full bg-nbs-highlight"></span>
+          NBS Smart Search
+        </p>
+        <h1 class="text-3xl font-semibold tracking-tight sm:text-4xl">
+          Find the statistics you need
+        </h1>
+        <p class="mt-3 max-w-xl text-sm leading-6 text-white/80 sm:text-base">
+          Ask a question about Tanzania’s official statistics. Search by topic,
+          region, year, indicator, or keyword.
+        </p>
+        <div
+          class="mt-5 flex flex-wrap gap-2 text-[11px] font-medium text-white/75"
+        >
+          <span
+            class="rounded-full border border-white/15 bg-white/10 px-3 py-1.5"
+            >Official NBS data</span
+          >
+          <span
+            class="rounded-full border border-white/15 bg-white/10 px-3 py-1.5"
+            >National coverage</span
+          >
+          <span
+            class="rounded-full border border-white/15 bg-white/10 px-3 py-1.5"
+            >Smart results</span
+          >
+        </div>
+      </div>
+
+      <div class="hidden shrink-0 lg:block" aria-hidden="true">
+        <svg
+          class="h-[205px] w-[275px] overflow-visible"
+          viewBox="0 0 275 205"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <circle
+            cx="143"
+            cy="101"
+            r="74"
+            stroke="white"
+            stroke-opacity=".13"
+            stroke-width="1.5"
+            stroke-dasharray="4 8"
+          />
+          <circle
+            cx="143"
+            cy="101"
+            r="51"
+            stroke="#EDC91E"
+            stroke-opacity=".38"
+            stroke-width="2"
+            stroke-dasharray="2 10"
+          />
+          <path
+            d="M143 101 220 50M143 101 228 139M143 101 79 160M143 101 66 65"
+            stroke="white"
+            stroke-opacity=".2"
+            stroke-width="1.5"
+          />
+          <path
+            d="M42 162c23-31 42-21 59-43 19-24 30-13 47-31 20-21 32-11 51-27 18-15 28-8 43-19"
+            stroke="#7DD3FC"
+            stroke-opacity=".75"
+            stroke-width="3"
+            stroke-linecap="round"
+          />
+          <path
+            d="M42 162c23-31 42-21 59-43 19-24 30-13 47-31 20-21 32-11 51-27 18-15 28-8 43-19"
+            stroke="white"
+            stroke-opacity=".4"
+            stroke-width="1"
+            stroke-dasharray="3 7"
+          />
+          <circle
+            cx="143"
+            cy="101"
+            r="16"
+            fill="#0272A7"
+            stroke="white"
+            stroke-opacity=".7"
+            stroke-width="2"
+          />
+          <circle cx="143" cy="101" r="6" fill="#EDC91E" />
+          <circle
+            cx="79"
+            cy="160"
+            r="5"
+            fill="#219F94"
+            stroke="white"
+            stroke-width="2"
+          />
+          <circle
+            cx="228"
+            cy="139"
+            r="5"
+            fill="#EDC91E"
+            stroke="white"
+            stroke-width="2"
+          />
+          <circle
+            cx="66"
+            cy="65"
+            r="5"
+            fill="#7DD3FC"
+            stroke="white"
+            stroke-width="2"
+          />
+          <circle
+            cx="220"
+            cy="50"
+            r="5"
+            fill="#219F94"
+            stroke="white"
+            stroke-width="2"
+          />
+          <g class="animate-pulse">
+            <circle
+              cx="143"
+              cy="101"
+              r="28"
+              stroke="#EDC91E"
+              stroke-opacity=".45"
+              stroke-width="1"
+            />
+          </g>
+          <rect
+            x="8"
+            y="20"
+            width="72"
+            height="30"
+            rx="15"
+            fill="white"
+            fill-opacity=".1"
+            stroke="white"
+            stroke-opacity=".16"
+          />
+          <text
+            x="44"
+            y="39"
+            fill="white"
+            fill-opacity=".85"
+            font-family="Public Sans, sans-serif"
+            font-size="10"
+            font-weight="600"
+            text-anchor="middle"
+          >
+            INDICATORS
+          </text>
+          <rect
+            x="196"
+            y="169"
+            width="70"
+            height="30"
+            rx="15"
+            fill="white"
+            fill-opacity=".1"
+            stroke="white"
+            stroke-opacity=".16"
+          />
+          <text
+            x="231"
+            y="188"
+            fill="white"
+            fill-opacity=".85"
+            font-family="Public Sans, sans-serif"
+            font-size="10"
+            font-weight="600"
+            text-anchor="middle"
+          >
+            AREAS
+          </text>
+        </svg>
+      </div>
     </div>
   </header>
 
