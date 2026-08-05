@@ -1,5 +1,5 @@
 @if (record(); as record) {
-<div class="nbs-enter w-full space-y-8">
+<div class="w-full space-y-8" [nbsSwapEnter]="record.id">
   <div
     class="sticky top-6 z-10 -mx-1 flex flex-wrap items-center justify-between gap-3 border-b border-nbs-border bg-white/95 px-1 py-2 backdrop-blur supports-[backdrop-filter]:bg-white/85">
     <nav class="flex gap-0.5 overflow-x-auto" aria-label="Dataset sections">
@@ -42,6 +42,17 @@
       <app-button variant="primary" size="sm" [loading]="actionLoading() === 'publish'"
         (clicked)="publish.emit(record.id)">
         Publish
+      </app-button>
+      }
+      @if (canUnpublishRecord(record)) {
+      <app-button variant="outline" size="sm" [loading]="actionLoading() === 'unpublish'"
+        (clicked)="unpublish.emit(record.id)">
+        Unpublish
+      </app-button>
+      }
+      @if (canTransferOwner()) {
+      <app-button variant="ghost" size="sm" (clicked)="transferOpen.set(true)">
+        Transfer
       </app-button>
       }
       @if (record.status === 'published' || publishedId() === record.id) {
@@ -253,4 +264,47 @@
     <app-dataset-activity-log [datasetId]="record.id" />
   </section>
 </div>
+
+@if (transferOpen()) {
+<app-modal size="md" ariaLabel="Transfer dataset ownership" (closed)="closeTransfer()">
+  <div modalHeader>
+    <h2 class="text-base font-semibold text-slate-900">Transfer ownership</h2>
+    <p class="mt-1 text-sm text-nbs-muted">
+      Search for an active user who can manage datasets.
+    </p>
+  </div>
+  <div class="space-y-3 px-1">
+    <label class="block">
+      <span class="mb-1 block text-sm font-medium text-slate-900">User search</span>
+      <input type="search" class="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm"
+        [ngModel]="transferQuery()" (ngModelChange)="transferQuery.set($event)" (keyup.enter)="searchTransferUsers()"
+        placeholder="Email or name" />
+    </label>
+    <app-button variant="outline" size="sm" [loading]="transferLoading()" (clicked)="searchTransferUsers()">
+      Search users
+    </app-button>
+    <ul class="max-h-48 space-y-1 overflow-y-auto">
+      @for (user of transferUsers(); track user.id) {
+      <li>
+        <button type="button" [class]="ownerRowClasses(user.id)" (click)="selectedOwnerId.set(user.id)">
+          <span>
+            <span class="block font-medium text-slate-900">{{ user.displayName }}</span>
+            <span class="text-xs text-nbs-muted">{{ user.email }}</span>
+          </span>
+        </button>
+      </li>
+      } @empty {
+      <li class="px-1 py-3 text-sm text-nbs-muted">No users loaded yet.</li>
+      }
+    </ul>
+  </div>
+  <div modalFooter class="flex justify-end gap-2">
+    <app-button variant="ghost" size="sm" (clicked)="closeTransfer()">Cancel</app-button>
+    <app-button variant="primary" size="sm" [disabled]="!selectedOwnerId()" [loading]="actionLoading() === 'transfer'"
+      (clicked)="confirmTransfer()">
+      Transfer
+    </app-button>
+  </div>
+</app-modal>
+}
 }

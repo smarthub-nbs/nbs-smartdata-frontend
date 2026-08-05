@@ -26,16 +26,31 @@
     <p class="text-[11px] font-medium uppercase tracking-wider text-nbs-muted">
       {{ items().length }} {{ items().length === 1 ? 'dataset' : 'datasets' }}
     </p>
+    @if (canBulkSelect()) {
+    <label class="inline-flex cursor-pointer items-center gap-1.5 text-[11px] text-slate-600">
+      <input type="checkbox" class="size-3.5 rounded border-slate-300 text-nbs-primary focus:ring-nbs-primary/30"
+        [checked]="allPageChecked()" (change)="onToggleCheckAll($event)" />
+      Select page
+    </label>
+    } @else {
     <p class="hidden items-center gap-1 text-[11px] text-slate-400 lg:flex">
       <kbd class="rounded border border-slate-200 bg-slate-50 px-1 font-sans text-[10px] text-slate-500">↑</kbd>
       <kbd class="rounded border border-slate-200 bg-slate-50 px-1 font-sans text-[10px] text-slate-500">↓</kbd>
       to navigate
     </p>
+    }
   </div>
 
   <ul class="space-y-1" aria-label="Dataset queue">
     @for (item of items(); track item.id) {
-    <li>
+    <li class="flex items-stretch gap-1">
+      @if (canBulkSelect()) {
+      <label class="flex cursor-pointer items-center px-1">
+        <span class="sr-only">Select {{ item.title }}</span>
+        <input type="checkbox" class="size-3.5 rounded border-slate-300 text-nbs-primary focus:ring-nbs-primary/30"
+          [checked]="isChecked(item.id)" (change)="onToggleChecked($event, item.id)" />
+      </label>
+      }
       <button type="button" [attr.data-queue-id]="item.id" [class]="queueItemClasses(item.id)"
         [attr.aria-current]="item.id === selectedId() ? 'true' : null" (click)="selectDataset.emit(item.id)"
         (keydown)="onListKeydown($event)">

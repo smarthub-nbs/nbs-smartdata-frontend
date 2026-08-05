@@ -166,6 +166,93 @@ export interface BackendAdminTag {
   slug: string;
 }
 
+export interface BackendAdminRegion {
+  id: string;
+  name: string;
+}
+
+export type DatasetBulkAction = 'approve' | 'reject' | 'publish';
+
+export type DatasetBulkJobStatus =
+  'queued' | 'running' | 'completed' | 'failed';
+
+export interface DatasetBulkActionJob {
+  id: string;
+  action: DatasetBulkAction;
+  status: DatasetBulkJobStatus;
+  requested_by_email: string | null;
+  requested_count: number;
+  processed_count: number;
+  failed_count: number;
+  task_id: string | null;
+  error: string;
+  created_at: string;
+  started_at: string | null;
+  completed_at: string | null;
+}
+
+export interface DatasetBulkActionJobDetail extends DatasetBulkActionJob {
+  dataset_ids: string[];
+  reason: string;
+  processed: { dataset_id: string }[];
+  failed: { dataset_id: string; error: string }[];
+}
+
+export interface DatasetBulkJobListPagination {
+  page: number;
+  page_size: number;
+  total_items: number;
+  total_pages: number;
+  has_next: boolean;
+  has_previous: boolean;
+}
+
+export interface DatasetBulkActionJobListPayload {
+  items: DatasetBulkActionJob[];
+  pagination: DatasetBulkJobListPagination;
+}
+
+export interface DatasetBulkUploadJobListPayload {
+  items: DatasetBulkUploadJob[];
+  pagination: DatasetBulkJobListPagination;
+}
+
+export type RecentBulkJobKind = 'action' | 'upload';
+
+export interface RecentBulkJob {
+  kind: RecentBulkJobKind;
+  id: string;
+  status: DatasetBulkJobStatus;
+  label: string;
+  processedCount: number;
+  totalCount: number;
+  failedCount: number;
+  createdAt: string;
+}
+
+export interface DatasetBulkUploadJob {
+  id: string;
+  status: DatasetBulkJobStatus;
+  publish_after_upload: boolean;
+  reason: string;
+  requested_by_email: string | null;
+  total_count: number;
+  processed_count: number;
+  failed_count: number;
+  task_id: string | null;
+  error: string;
+  created_at: string;
+  started_at: string | null;
+  completed_at: string | null;
+}
+
+export interface DatasetBulkUploadItemInput {
+  datasetId: string;
+  datasetVersionId?: string;
+  isPrimary?: boolean;
+  file: File;
+}
+
 export interface BackendAdminDatasetMetadata {
   id: string;
   title: string;
@@ -202,7 +289,7 @@ export interface AdminDatasetFile {
 
 export interface AdminDatasetVersion {
   id: string;
-  versionNumber: number;
+  versionNumber: string | number;
   changelog: string;
 }
 
@@ -235,7 +322,7 @@ export interface BackendDatasetFile {
 
 export interface BackendDatasetVersion {
   id: string;
-  version_number: number;
+  version_number: string | number;
   changelog: string;
   dataset: { id: string } | null;
 }

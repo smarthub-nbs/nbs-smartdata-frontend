@@ -27,6 +27,9 @@ export class DatasetQueueListComponent {
   readonly pagination = input.required<AdminDatasetQueuePagination>();
   readonly searchTerm = input.required<string>();
   readonly selectedId = input.required<string>();
+  readonly checkedIds = input<string[]>([]);
+  readonly canBulkSelect = input(false);
+  readonly allPageChecked = input(false);
   readonly loading = input(false);
   readonly hasActiveSearch = input(false);
   readonly pageRangeLabel = input('');
@@ -35,8 +38,24 @@ export class DatasetQueueListComponent {
   readonly previousPage = output<void>();
   readonly nextPage = output<void>();
   readonly selectDataset = output<string>();
+  readonly toggleChecked = output<string>();
+  readonly toggleCheckAll = output<void>();
 
   protected readonly skeletonRows = Array.from({ length: 4 });
+
+  protected isChecked(id: string): boolean {
+    return this.checkedIds().includes(id);
+  }
+
+  protected onToggleChecked(event: Event, id: string): void {
+    event.stopPropagation();
+    this.toggleChecked.emit(id);
+  }
+
+  protected onToggleCheckAll(event: Event): void {
+    event.stopPropagation();
+    this.toggleCheckAll.emit();
+  }
 
   protected onSearch(event: Event): void {
     this.searchInput.emit((event.target as HTMLInputElement).value);
@@ -105,7 +124,7 @@ export class DatasetQueueListComponent {
 
   protected queueItemClasses(id: string): string {
     const base =
-      'w-full cursor-pointer rounded-lg px-3 py-3.5 text-left transition duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/40 motion-reduce:transition-none';
+      'min-w-0 flex-1 cursor-pointer rounded-lg px-3 py-3.5 text-left transition duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/40 motion-reduce:transition-none';
     return id === this.selectedId()
       ? `${base} bg-nbs-primary/5 shadow-sm ring-1 ring-nbs-primary/20`
       : `${base} hover:bg-slate-50 hover:shadow-sm`;

@@ -3,6 +3,7 @@ import {
   Component,
   computed,
   DestroyRef,
+  effect,
   inject,
   signal,
   viewChild,
@@ -17,7 +18,6 @@ import { ExploreChartType } from '@app/features/explore/models/explore.model';
 import { ExploreDataService } from '@app/features/explore';
 import { downloadCanvasAsPng } from '@app/features/explore/utils/chart-export.util';
 import { PageStateComponent } from '@app/shared/components/page-state/page-state.component';
-import { environment } from '@env/environment';
 import { ButtonComponent } from '@shared/ui';
 
 @Component({
@@ -35,9 +35,6 @@ import { ButtonComponent } from '@shared/ui';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ExplorePageComponent {
-  protected readonly showMockNotice =
-    !environment.production && environment.useMockExploreApi;
-
   protected readonly exploreData = inject(ExploreDataService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -71,6 +68,34 @@ export class ExplorePageComponent {
           this.applyIndicator(indicatorParam);
         }
       });
+
+    effect(
+      () => {
+        const state = this.exploreData.catalogLoadState();
+        if (state.status !== 'success') {
+          return;
+        }
+
+        const requested = this.route.snapshot.queryParamMap.get('indicator');
+        if (requested && this.exploreData.getIndicator(requested)) {
+          this.applyIndicator(requested);
+          return;
+        }
+
+        const byTopic = requested
+          ? state.data.find((item) => item.topicSlug === requested)
+          : undefined;
+        if (byTopic) {
+          this.applyIndicator(byTopic.id);
+          return;
+        }
+
+        if (!this.exploreData.getIndicator(this.selectedId())) {
+          this.applyIndicator(this.exploreData.getDefaultIndicatorId());
+        }
+      },
+      { allowSignalWrites: true },
+    );
   }
 
   protected onIndicatorChange(id: string): void {

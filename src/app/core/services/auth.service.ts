@@ -8,10 +8,18 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
-import { Observable, catchError, map, of, switchMap, tap } from 'rxjs';
+import {
+  Observable,
+  catchError,
+  map,
+  of,
+  switchMap,
+  tap,
+} from 'rxjs';
 import { ApiError } from '@app/core/models/api-error.model';
 import { UserProfile, UserRole } from '@app/core/models/user.model';
 import { ApiService } from '@app/core/services/api.service';
+import { CsrfService } from '@app/core/services/csrf.service';
 import { ToastService } from '@app/core/services/toast.service';
 import { fieldErrorsFromApi } from '@app/core/utils/api-field-errors.util';
 import { environment } from '@env/environment';
@@ -33,6 +41,7 @@ interface ApiEnvelope<T> {
 
 interface LoginResponse {
   access: string;
+  /** Present only for legacy clients; refresh is HttpOnly-cookie based. */
   refresh?: string;
 }
 
@@ -78,6 +87,7 @@ export class AuthService {
   private readonly api = inject(ApiService);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
+  private readonly csrf = inject(CsrfService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly currentUser = signal<UserProfile | null>(this.readUser());
   private readonly accessToken = signal<string | null>(
@@ -139,6 +149,50 @@ export class AuthService {
         of({ message: this.resolveErrorMessage(error, 'Sign in failed.') }),
       ),
     );
+  }
+
+  signInWithGoogle(accessToken: string): Observable<AuthError | null> {
+    return this.http
+      .post<ApiEnvelope<LoginResponse>>(
+        `${environment.apiBaseUrl}/v1/auth/social/google/`,
+        { access_token: accessToken },
+      )
+      .pipe(
+        tap((response) => this.saveTokens(response.data)),
+        switchMap(() => this.fetchCurrentUser()),
+        map(() => null),
+        catchError((error: unknown) =>
+          of({
+            message: this.resolveErrorMessage(error, 'Google sign-in failed.'),
+          }),
+        ),
+      );
+  }
+
+  signInWithGitHub(payload: {
+    code: string;
+    redirectUri: string;
+    codeVerifier: string;
+  }): Observable<AuthError | null> {
+    return this.http
+      .post<ApiEnvelope<LoginResponse>>(
+        `${environment.apiBaseUrl}/v1/auth/social/github/`,
+        {
+          code: payload.code,
+          redirect_uri: payload.redirectUri,
+          code_verifier: payload.codeVerifier,
+        },
+      )
+      .pipe(
+        tap((response) => this.saveTokens(response.data)),
+        switchMap(() => this.fetchCurrentUser()),
+        map(() => null),
+        catchError((error: unknown) =>
+          of({
+            message: this.resolveErrorMessage(error, 'GitHub sign-in failed.'),
+          }),
+        ),
+      );
   }
 
   register(request: RegisterRequest): Observable<AuthError | null> {
@@ -407,6 +461,7 @@ export class AuthService {
   private clearSession(): void {
     this.currentUser.set(null);
     this.accessToken.set(null);
+    this.csrf.clearToken();
     localStorage.removeItem(ACCESS_TOKEN_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
     localStorage.removeItem(USER_KEY);

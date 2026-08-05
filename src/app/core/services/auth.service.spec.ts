@@ -108,6 +108,32 @@ describe('AuthService', () => {
     expect(service.isAuthenticated()).toBeTrue();
     expect(service.user()?.role).toBe('admin');
     expect(service.getAccessToken()).toBe('access-token');
+    expect(localStorage.getItem('nbs_access_token')).toBe('access-token');
+  });
+
+  it('stores access only when login omits refresh (cookie-based auth)', () => {
+    let result: unknown;
+
+    service
+      .signInWithPassword('admin@example.com', 'secret')
+      .subscribe((value) => {
+        result = value;
+      });
+
+    httpMock.expectOne(`${apiBase}/v1/auth/login/`).flush({
+      success: true,
+      message: 'ok',
+      data: { access: 'access-token' },
+    });
+
+    httpMock.expectOne(`${apiBase}/v1/auth/me/`).flush({
+      success: true,
+      message: 'ok',
+      data: currentUserResponse,
+    });
+
+    expect(result).toBeNull();
+    expect(service.getAccessToken()).toBe('access-token');
     expect(localStorage.getItem('nbs_refresh_token')).toBeNull();
   });
 
@@ -201,8 +227,7 @@ describe('AuthService', () => {
     expect(service.isAuthenticated()).toBeFalse();
   });
 
-  it('refreshes the access token when a refresh token exists', () => {
-    localStorage.setItem('nbs_refresh_token', 'refresh-token');
+  it('refreshes the access token via HttpOnly cookie', () => {
     let token!: string | null;
 
     service.refreshAccessToken().subscribe((value) => {
@@ -225,7 +250,6 @@ describe('AuthService', () => {
   });
 
   it('clears the session when refresh fails', () => {
-    localStorage.setItem('nbs_refresh_token', 'refresh-token');
     localStorage.setItem('nbs_access_token', 'old-access');
     localStorage.setItem(
       'nbs_user',
@@ -248,6 +272,7 @@ describe('AuthService', () => {
     flushCsrf(httpMock);
 
     const refresh = httpMock.expectOne(`${apiBase}/v1/auth/refresh/`);
+    expect(refresh.request.body).toEqual({});
     refresh.flush(
       { success: false, error: { code: 'token_invalid', message: 'Expired.' } },
       { status: 401, statusText: 'Unauthorized' },
@@ -259,7 +284,6 @@ describe('AuthService', () => {
   });
 
   it('signs out, clears storage, and navigates to login', () => {
-    localStorage.setItem('nbs_refresh_token', 'refresh-token');
     localStorage.setItem('nbs_access_token', 'access-token');
     localStorage.setItem(
       'nbs_user',
@@ -289,13 +313,14 @@ describe('AuthService', () => {
   });
 
   it('navigates to login with idle reason when signed out due to inactivity', () => {
-    localStorage.setItem('nbs_refresh_token', 'refresh-token');
+    localStorage.setItem('nbs_access_token', 'access-token');
 
     service.signOut({ reason: 'idle' });
 
     flushCsrf(httpMock);
 
     const logout = httpMock.expectOne(`${apiBase}/v1/auth/logout/`);
+    expect(logout.request.body).toEqual({});
     logout.flush({ success: true, message: 'ok' });
 
     expect(router.navigate).toHaveBeenCalledWith(['/login'], {

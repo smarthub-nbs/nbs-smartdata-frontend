@@ -29,9 +29,17 @@ export class DatasetFilterBarComponent {
 
   protected readonly activeFilterCount = computed(() => {
     const f = this.filters();
-    return [f.query, f.topicSlug, f.format, f.frequency, f.region].filter(
-      (value) => !!value,
-    ).length;
+    return [
+      f.query,
+      f.topicSlug,
+      f.format,
+      f.frequency,
+      f.region,
+      f.tag,
+      f.license,
+      f.publisher,
+      f.year,
+    ].filter((value) => !!value).length;
   });
 
   protected onFilterChange(key: keyof DatasetFilters, value: string): void {

@@ -1,4 +1,4 @@
-<div class="nbs-enter space-y-6">
+<div class="space-y-6">
   <header class="nbs-page-header">
     <h1 class="nbs-page-title">Developers</h1>
     <p class="nbs-page-lead">
@@ -9,7 +9,7 @@
 
   <nav aria-label="Developer sections"
     class="sticky top-2 z-20 -mx-1 flex flex-wrap gap-1 rounded-xl border border-nbs-border bg-white/90 p-1 shadow-sm backdrop-blur-sm">
-    @for (section of sections; track section.id) {
+    @for (section of sections(); track section.id) {
     <button type="button"
       class="cursor-pointer rounded-lg px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/40"
       [class.bg-nbs-primary-soft]="activeSection() === section.id"
@@ -94,6 +94,12 @@
   <div id="api-keys" class="scroll-mt-20">
     <app-api-key-manager />
   </div>
+
+  @if (auth.canManageApiKeys()) {
+  <div id="api-usage" class="scroll-mt-20">
+    <app-developer-usage-summary />
+  </div>
+  }
 
   <div id="api-reference" class="scroll-mt-20">
     <app-api-docs-panel />

@@ -10,6 +10,12 @@ import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { AuthService } from '@app/core/services/auth.service';
 import {
+  beginGitHubSignIn,
+  isGitHubSignInConfigured,
+  isGoogleSignInConfigured,
+  requestGoogleAccessToken,
+} from '@app/features/auth/utils/social-auth.util';
+import {
   ButtonComponent,
   AlertComponent,
   IconComponent,
@@ -38,6 +44,9 @@ export class LoginPageComponent {
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly submitting = signal(false);
+  protected readonly socialSubmitting = signal<'google' | 'github' | null>(
+    null,
+  );
   protected readonly errorMessage = signal('');
   protected readonly resetSuccess = signal(
     this.route.snapshot.queryParamMap.get('reset') === 'success',
@@ -50,6 +59,9 @@ export class LoginPageComponent {
   );
 
   protected readonly registerQueryParams = { returnUrl: this.returnUrl };
+  protected readonly googleEnabled = isGoogleSignInConfigured();
+  protected readonly githubEnabled = isGitHubSignInConfigured();
+  protected readonly socialEnabled = this.googleEnabled || this.githubEnabled;
 
   protected readonly form = this.fb.nonNullable.group({
     username: ['', Validators.required],
@@ -81,6 +93,43 @@ export class LoginPageComponent {
       });
   }
 
+  protected async signInWithGoogle(): Promise<void> {
+    this.errorMessage.set('');
+    this.socialSubmitting.set('google');
+    try {
+      const accessToken = await requestGoogleAccessToken();
+      this.auth
+        .signInWithGoogle(accessToken)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe((err) => {
+          this.socialSubmitting.set(null);
+          if (err) {
+            this.errorMessage.set(err.message);
+            return;
+          }
+          void this.router.navigateByUrl(this.returnUrl);
+        });
+    } catch (error: unknown) {
+      this.socialSubmitting.set(null);
+      this.errorMessage.set(
+        error instanceof Error ? error.message : 'Google sign-in failed.',
+      );
+    }
+  }
+
+  protected async signInWithGitHub(): Promise<void> {
+    this.errorMessage.set('');
+    this.socialSubmitting.set('github');
+    try {
+      await beginGitHubSignIn(this.returnUrl);
+    } catch (error: unknown) {
+      this.socialSubmitting.set(null);
+      this.errorMessage.set(
+        error instanceof Error ? error.message : 'GitHub sign-in failed.',
+      );
+    }
+  }
+
   /** Rejects external URLs and auth pages so sign-in never loops back here. */
   private safeReturnUrl(value: string | null): string {
     if (!value || !value.startsWith('/') || value.startsWith('//')) {
@@ -93,6 +142,7 @@ export class LoginPageComponent {
       '/forgot-password',
       '/reset-password',
       '/verify-email',
+      '/auth/github/callback',
     ];
     return authPaths.includes(path) ? '/' : value;
   }

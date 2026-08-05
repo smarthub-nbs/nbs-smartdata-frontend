@@ -42,6 +42,46 @@ const GATEWAY_ENDPOINTS: ApiEndpointDoc[] = [
   },
   {
     method: 'GET',
+    path: '/v1/gateway/datasets/{lookup}/',
+    summary: 'Retrieve a published dataset by ID or slug.',
+  },
+  {
+    method: 'GET',
+    path: '/v1/gateway/datasets/{lookup}/metadata/',
+    summary: 'Return metadata for a published dataset.',
+  },
+  {
+    method: 'GET',
+    path: '/v1/gateway/datasets/{lookup}/stats/',
+    summary: 'Return view and download stats for a dataset.',
+  },
+  {
+    method: 'GET',
+    path: '/v1/gateway/datasets/{lookup}/versions/',
+    summary: 'List versions for a published dataset.',
+  },
+  {
+    method: 'GET',
+    path: '/v1/gateway/datasets/{lookup}/versions/latest/',
+    summary: 'Return the latest published dataset version.',
+  },
+  {
+    method: 'GET',
+    path: '/v1/gateway/datasets/{lookup}/versions/latest/data/',
+    summary: 'Read structured rows from the latest version primary file.',
+  },
+  {
+    method: 'GET',
+    path: '/v1/gateway/datasets/{lookup}/download/',
+    summary: 'Download the latest published dataset package.',
+  },
+  {
+    method: 'GET',
+    path: '/v1/gateway/datasets/{lookup}/files/',
+    summary: 'List files attached to a published dataset.',
+  },
+  {
+    method: 'GET',
     path: '/v1/gateway/datasets/formats/',
     summary: 'List distinct validated file formats.',
   },
@@ -67,6 +107,16 @@ const GATEWAY_ENDPOINTS: ApiEndpointDoc[] = [
   },
   {
     method: 'GET',
+    path: '/v1/gateway/frequencies/',
+    summary: 'List frequency facet values with counts.',
+  },
+  {
+    method: 'GET',
+    path: '/v1/gateway/regions/',
+    summary: 'List region facet values with counts.',
+  },
+  {
+    method: 'GET',
     path: '/v1/gateway/files/{file_id}/preview/',
     summary: 'Preview a few rows from a gateway file.',
   },
@@ -79,6 +129,11 @@ const GATEWAY_ENDPOINTS: ApiEndpointDoc[] = [
     method: 'GET',
     path: '/v1/gateway/files/{file_id}/data/',
     summary: 'Read structured rows from a gateway file.',
+  },
+  {
+    method: 'GET',
+    path: '/v1/gateway/files/{file_id}/download/',
+    summary: 'Download a published dataset file.',
   },
 ];
 

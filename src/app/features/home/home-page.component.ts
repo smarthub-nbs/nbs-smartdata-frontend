@@ -8,7 +8,8 @@ import { DatePipe, DecimalPipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { DatasetService } from '@app/features/discovery';
 import { isMeaningfulTopic } from '@app/features/discovery/utils/dataset-topic.util';
-import { IconComponent, type IconName, SearchBarComponent } from '@shared/ui';
+import { IconComponent, type IconName } from '@shared/ui';
+import { SearchBarComponent } from '@shared/ui/search-bar/search-bar.component';
 
 interface TopicLink {
   label: string;

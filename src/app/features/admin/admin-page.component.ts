@@ -1,4 +1,4 @@
-import { DecimalPipe } from '@angular/common';
+import { DatePipe, DecimalPipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -7,9 +7,15 @@ import {
   inject,
   signal,
 } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Params, Router, RouterLink } from '@angular/router';
 import { AuthService } from '@app/core/services/auth.service';
-import { DatasetUsageRow, AdminAnalyticsService } from '@app/features/admin';
+import {
+  AdminActivityEntry,
+  DatasetUsageRow,
+  AdminAnalyticsService,
+} from '@app/features/admin';
+import { AdminActivityTypeFilter } from '@app/features/admin/models/admin-analytics.model';
 import { DatasetWorkflowPanelComponent } from '@app/features/admin/components/dataset-workflow-panel.component';
 import { TaxonomyManagerComponent } from '@app/features/admin/components/taxonomy-manager.component';
 import {
@@ -27,7 +33,9 @@ import {
   DataTableColumn,
   DataTableComponent,
   BadgeComponent,
+  ButtonComponent,
   IconComponent,
+  NbsSwapEnterDirective,
 } from '@shared/ui';
 
 interface PlatformMetricCard {
@@ -61,13 +69,17 @@ const ADMIN_NAV_ITEMS: readonly AdminNavItem[] = [
   selector: 'app-admin-page',
   standalone: true,
   imports: [
+    DatePipe,
     DecimalPipe,
+    FormsModule,
     RouterLink,
     DataTableComponent,
     DatasetWorkflowPanelComponent,
     TaxonomyManagerComponent,
     BadgeComponent,
+    ButtonComponent,
     IconComponent,
+    NbsSwapEnterDirective,
   ],
   templateUrl: './admin-page.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -99,16 +111,8 @@ export class AdminPageComponent {
   protected readonly usageColumns: DataTableColumn<DatasetUsageRow>[] = [
     { key: 'title', header: 'Dataset', sortable: true },
     { key: 'topic', header: 'Topic', sortable: true },
-    { key: 'apiCalls', header: 'API calls', sortable: true, align: 'right' },
     { key: 'downloads', header: 'Downloads', sortable: true, align: 'right' },
     { key: 'views', header: 'Views', sortable: true, align: 'right' },
-    {
-      key: 'lastAccessed',
-      header: 'Last accessed',
-      sortable: true,
-      align: 'right',
-      format: (row) => this.formatLastAccessed(row.lastAccessed),
-    },
   ];
 
   protected readonly platformCards = computed<PlatformMetricCard[]>(() => {
@@ -116,22 +120,24 @@ export class AdminPageComponent {
     const datasetCount = this.analytics.datasetCount();
     const activeCount = this.analytics.activeDatasetCount();
     const topDataset = this.analytics.topResolvedRow();
+    const days = this.analytics.days();
+    const windowLabel = `Last ${days} days`;
 
     return [
       {
         label: 'API calls',
         value: summary.totalApiCalls.toLocaleString(),
-        detail: 'Developer API demand',
+        detail: windowLabel,
       },
       {
         label: 'Downloads',
         value: summary.totalDownloads.toLocaleString(),
-        detail: 'Dataset file downloads',
+        detail: windowLabel,
       },
       {
         label: 'Views',
         value: summary.totalViews.toLocaleString(),
-        detail: 'Discovery page views',
+        detail: windowLabel,
       },
       {
         label: 'Datasets with activity',
@@ -155,6 +161,47 @@ export class AdminPageComponent {
   }
 
   protected readonly topDemandDataset = this.analytics.topResolvedRow;
+
+  protected readonly workflowEventCards = computed(() => {
+    const summary = this.analytics.datasetActivitySummary();
+    if (!summary) {
+      return [];
+    }
+    const totals = summary.totals;
+    return [
+      { label: 'Workflow events', value: totals.workflow_events },
+      { label: 'File events', value: totals.file_events },
+      { label: 'Metadata events', value: totals.metadata_events },
+      { label: 'Version events', value: totals.version_events },
+    ];
+  });
+
+  protected activityLabel(entry: AdminActivityEntry): string {
+    if (entry.activity_type === 'api_usage') {
+      return entry.method
+        ? `${entry.method} ${entry.endpoint ?? 'API request'}`
+        : entry.summary;
+    }
+    return entry.summary || entry.action;
+  }
+
+  protected onActivityTypeChange(value: string): void {
+    const type =
+      value === 'dataset_audit' || value === 'api_usage'
+        ? value
+        : ('' as AdminActivityTypeFilter);
+    this.analytics.setActivityType(type);
+  }
+
+  protected goToPreviousActivityPage(): void {
+    const page = this.analytics.activityPaginationState().page;
+    this.analytics.loadActivityPage(page - 1);
+  }
+
+  protected goToNextActivityPage(): void {
+    const page = this.analytics.activityPaginationState().page;
+    this.analytics.loadActivityPage(page + 1);
+  }
 
   protected onUsageRowClick(row: DatasetUsageRow): void {
     if (!row.resolved) {
@@ -249,17 +296,5 @@ export class AdminPageComponent {
   private toPage(value: string | null): number | undefined {
     const page = Number(value);
     return Number.isInteger(page) && page > 0 ? page : undefined;
-  }
-
-  private formatLastAccessed(value: string): string {
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) {
-      return value;
-    }
-    return new Intl.DateTimeFormat(undefined, {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    }).format(date);
   }
 }
