@@ -1203,6 +1203,36 @@
       </p>
     </section>
 
+    @if (response()!.results.length > 0) {
+      @if (!showVisualization()) {
+        <section
+          class="rounded-xl border border-nbs-primary/15 bg-nbs-primary/5 p-4 sm:p-5"
+        >
+          <div
+            class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+          >
+            <div>
+              <p class="text-sm font-semibold text-slate-900">
+                Want to see the data visually?
+              </p>
+              <p class="mt-1 text-sm text-nbs-muted">
+                Compare the returned values using an interactive chart.
+              </p>
+            </div>
+            <button
+              type="button"
+              class="inline-flex shrink-0 items-center justify-center rounded-lg bg-nbs-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-nbs-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary focus-visible:ring-offset-2"
+              (click)="showVisualization.set(true)"
+            >
+              Visualize these results
+            </button>
+          </div>
+        </section>
+      } @else {
+        <app-search-data-visualization [results]="response()!.results" />
+      }
+    }
+
     <div class="grid gap-6 lg:grid-cols-3">
       <div class="space-y-4 lg:col-span-2">
         @if (response()!.results.length === 0) {
