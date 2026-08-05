@@ -3,6 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import {
   Observable,
   catchError,
+  filter,
   forkJoin,
   map,
   of,
@@ -220,7 +221,14 @@ export class TispSearchService {
                 return forkJoin(
                   selectedSubgroups.map((subgroup) =>
                     this.getDatavalues(row, subgroup).pipe(
-                      map((values) => this.mapFilterRow(row, subgroup, values)),
+                      map((values) => ({
+                        values: this.filterDatavaluesForQuery(values, query),
+                        subgroup,
+                      })),
+                      filter(({ values }) => values.length > 0),
+                      map(({ values, subgroup: selectedSubgroup }) =>
+                        this.mapFilterRow(row, selectedSubgroup, values),
+                      ),
                     ),
                   ),
                 );
@@ -523,6 +531,58 @@ export class TispSearchService {
       return '';
     }
     return `${facts.join('; ')}.`;
+  }
+
+  private filterDatavaluesForQuery(
+    values: TispDatavalueRow[],
+    query: string,
+  ): TispDatavalueRow[] {
+    const normalizedQuery = query.toLowerCase();
+    const knownAreas = [
+      'tanzania',
+      'mainland',
+      'zanzibar',
+      'arusha',
+      'dar es salaam',
+      'dodoma',
+      'mwanza',
+      'mbeya',
+      'morogoro',
+      'tanga',
+      'simiyu',
+      'mara',
+      'kigoma',
+      'kilimanjaro',
+      'mara',
+      'tabora',
+      'iringa',
+      'mtwara',
+      'lindi',
+      'pwani',
+      'geita',
+      'katavi',
+      'rukwa',
+      'singida',
+      'shinyanga',
+      'kagera',
+      'njombe',
+    ];
+    const requestedAreas = knownAreas.filter((area) =>
+      normalizedQuery.includes(area),
+    );
+    if (requestedAreas.length === 0) {
+      return values;
+    }
+
+    const matchingRows = values.filter((value) => {
+      const areaName = value.area_name.toLowerCase();
+      const areaCode = value.area_code?.toLowerCase() ?? '';
+      return requestedAreas.some(
+        (area) => areaName === area || areaCode === area,
+      );
+    });
+
+    return matchingRows;
   }
 
   private prioritizeDatavalues(values: TispDatavalueRow[]): TispDatavalueRow[] {

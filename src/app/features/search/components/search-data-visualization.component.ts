@@ -130,7 +130,7 @@ export class SearchDataVisualizationComponent implements AfterViewInit {
 
     ensureChartJsRegistered();
     this.destroyChart();
-    const labels = points.map((point) => point.label);
+    const labels = points.map((point) => `${point.label} · ${point.context}`);
     const values = points.map((point) => point.value);
     const colors = [...CHART_COLORS.series, '#78c6c0', '#f3df67', '#4bafd3'];
     const config: ChartConfiguration = {

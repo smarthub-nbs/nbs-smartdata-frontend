@@ -53,7 +53,13 @@ const TOPIC_KEYWORDS: Record<string, string[]> = {
   education: ['education', 'school', 'enrolment', 'enrollment', 'student'],
   water: ['water', 'sewerage', 'water supply', 'connection', 'consumption'],
   tourism: ['tourism', 'visitor', 'visitors', 'inbound', 'receipts'],
-  government: ['government', 'expenditure', 'revenue', 'projection', 'collection'],
+  government: [
+    'government',
+    'expenditure',
+    'revenue',
+    'projection',
+    'collection',
+  ],
   industry: ['industry', 'industries', 'industrial', 'licence', 'license'],
   justice: ['justice', 'court', 'case', 'backlog', 'filed', 'decided'],
 };
@@ -204,6 +210,15 @@ export class SmartSearchService {
     if (parsed.regions.includes(dataset.region)) {
       score += 28;
       reasons.push(`Region: ${dataset.region}`);
+    }
+
+    if (parsed.regions.length > 0) {
+      const regionMatch = parsed.regions.some((region) =>
+        haystack.includes(region.toLowerCase()),
+      );
+      if (!regionMatch && dataset.region !== 'National') {
+        score -= 80;
+      }
     }
 
     if (parsed.topics.includes(dataset.topicSlug)) {
