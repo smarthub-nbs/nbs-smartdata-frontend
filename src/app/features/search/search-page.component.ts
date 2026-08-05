@@ -13,6 +13,7 @@ import { ApiError } from '@app/core/models/api-error.model';
 import { SEARCH_EXAMPLE_QUERIES } from '@app/features/search/data/search-examples';
 import { RecommendedDatasetsComponent } from '@app/features/search/components/recommended-datasets.component';
 import { SearchResultCardComponent } from '@app/features/search/components/search-result-card.component';
+import { AiSearchingAnimationComponent } from '@app/features/search/components/ai-searching-animation.component';
 import { SmartSearchResponse } from '@app/features/search/models/smart-search.model';
 import { SmartSearchService } from '@app/features/search/services/smart-search.service';
 import { DatasetService } from '@app/features/discovery';
@@ -29,6 +30,7 @@ import { ButtonComponent, SearchBarComponent } from '@shared/ui';
     SearchBarComponent,
     SearchResultCardComponent,
     RecommendedDatasetsComponent,
+    AiSearchingAnimationComponent,
     PageStateComponent,
   ],
   templateUrl: './search-page.component.html',
@@ -49,6 +51,7 @@ export class SearchPageComponent {
   protected readonly searchError = signal<string | null>(null);
 
   protected readonly topResultId = signal<string | null>(null);
+  protected readonly searchAnimationPointer = signal({ x: 0, y: 0 });
 
   constructor() {
     this.datasetService.ensureCatalogLoaded();
@@ -83,6 +86,22 @@ export class SearchPageComponent {
   protected useExample(exampleQuery: string): void {
     this.query = exampleQuery;
     this.runSearch();
+  }
+
+  protected onSearchAnimationMove(event: PointerEvent): void {
+    const target = event.currentTarget;
+    if (!(target instanceof SVGSVGElement)) {
+      return;
+    }
+
+    const bounds = target.getBoundingClientRect();
+    const x = ((event.clientX - bounds.left) / bounds.width - 0.5) * 12;
+    const y = ((event.clientY - bounds.top) / bounds.height - 0.5) * 8;
+    this.searchAnimationPointer.set({ x, y });
+  }
+
+  protected resetSearchAnimationPointer(): void {
+    this.searchAnimationPointer.set({ x: 0, y: 0 });
   }
 
   private executeSmartSearch(query: string): void {
