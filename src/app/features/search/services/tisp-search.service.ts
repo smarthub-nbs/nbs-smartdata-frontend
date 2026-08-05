@@ -9,6 +9,7 @@ import {
   shareReplay,
   switchMap,
 } from 'rxjs';
+import { ApiService } from '@app/core/services/api.service';
 import { Dataset } from '@app/features/discovery';
 
 interface TispCensusRow {
@@ -71,9 +72,14 @@ interface KnownTispDatavalueLookup {
   subgroup: TispSubgroup;
 }
 
+interface CachedTispSearchResponse {
+  datasets: Dataset[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class TispSearchService {
   private readonly http = inject(HttpClient);
+  private readonly api = inject(ApiService);
   private readonly apiBaseUrl = '/tisp-api';
   private readonly sourceBaseUrl = 'https://tisp.nbs.go.tz:8000';
 
@@ -112,6 +118,28 @@ export class TispSearchService {
       return of([]);
     }
 
+    // The cache is fast and preserves previously fetched TISP responses, but
+    // it is deliberately sparse. Fall back to the live TISP catalogue when a
+    // query has not been cached yet (or when the cache endpoint is unavailable)
+    // so search is not limited to the one seeded indicator.
+    return this.searchBackendCache(query).pipe(
+      switchMap((datasets) =>
+        datasets.length ? of(datasets) : this.searchLiveTisp(normalized),
+      ),
+      catchError(() => this.searchLiveTisp(normalized)),
+    );
+  }
+
+  private searchBackendCache(query: string): Observable<Dataset[]> {
+    return this.api
+      .post<CachedTispSearchResponse>('/v1/search/tisp-cache/', { query })
+      .pipe(
+        map((response) => response.datasets ?? []),
+        catchError(() => of([])),
+      );
+  }
+
+  private searchLiveTisp(normalized: string): Observable<Dataset[]> {
     const knownLookup = this.findKnownDatavalueLookup(normalized);
     if (knownLookup) {
       return this.searchKnownDatavalue(knownLookup);
@@ -356,7 +384,19 @@ export class TispSearchService {
       .toLowerCase();
 
     let score = 0;
-    const meaningfulTokens = tokens.filter((token) => token !== 'number');
+    const aliases: Record<string, string[]> = {
+      cpi: ['consumer', 'price', 'index'],
+      gdp: ['gross', 'domestic', 'product'],
+      visitors: ['visitor'],
+      enrollment: ['enrolment'],
+      students: ['student'],
+      households: ['household'],
+      industries: ['industry'],
+      licence: ['license'],
+    };
+    const meaningfulTokens = tokens
+      .filter((token) => token !== 'number')
+      .flatMap((token) => [token, ...(aliases[token] ?? [])]);
 
     if (
       normalizedQuery.length > 8 &&

@@ -1,10 +1,11 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, forkJoin, map } from 'rxjs';
+import { Observable, catchError, forkJoin, map, of, switchMap } from 'rxjs';
 import { Dataset, DatasetService } from '@app/features/discovery';
 import {
   SmartSearchResponse,
   SmartSearchResult,
 } from '@app/features/search/models/smart-search.model';
+import { AiAnswerService } from '@app/features/search/services/ai-answer.service';
 import { TispSearchService } from '@app/features/search/services/tisp-search.service';
 
 interface ParsedQuery {
@@ -16,10 +17,14 @@ interface ParsedQuery {
 
 const REGION_ALIASES: Record<string, string> = {
   dodoma: 'Dodoma',
+  dar: 'Dar es Salaam',
+  'dar es salaam': 'Dar es Salaam',
+  mwanza: 'Mwanza',
+  arusha: 'Arusha',
   national: 'National',
   tanzania: 'National',
-  mainland: 'National',
-  zanzibar: 'National',
+  mainland: 'Mainland',
+  zanzibar: 'Zanzibar',
 };
 
 const TOPIC_KEYWORDS: Record<string, string[]> = {
@@ -46,12 +51,18 @@ const TOPIC_KEYWORDS: Record<string, string[]> = {
   ],
   health: ['health', 'facility', 'hospital', 'disease'],
   education: ['education', 'school', 'enrolment', 'enrollment', 'student'],
+  water: ['water', 'sewerage', 'water supply', 'connection', 'consumption'],
+  tourism: ['tourism', 'visitor', 'visitors', 'inbound', 'receipts'],
+  government: ['government', 'expenditure', 'revenue', 'projection', 'collection'],
+  industry: ['industry', 'industries', 'industrial', 'licence', 'license'],
+  justice: ['justice', 'court', 'case', 'backlog', 'filed', 'decided'],
 };
 
 @Injectable({ providedIn: 'root' })
 export class SmartSearchService {
   private readonly datasetService = inject(DatasetService);
   private readonly tispSearch = inject(TispSearchService);
+  private readonly aiAnswer = inject(AiAnswerService);
 
   smartSearch(query: string): Observable<SmartSearchResponse> {
     const trimmed = query.trim();
@@ -69,11 +80,14 @@ export class SmartSearchService {
           query: trimmed,
           answer: this.buildAnswer(trimmed, results, answerFacts),
           answerFacts,
+          usedAi: false,
+          aiModel: null,
           interpretation: this.buildInterpretation(parsed, results.length),
           results,
           suggestedIndicators: this.suggestIndicators(parsed),
         };
       }),
+      switchMap((response) => this.enhanceWithAi(response)),
     );
   }
 
@@ -326,6 +340,31 @@ export class SmartSearchService {
         [...external, ...catalog].map((dataset) => [dataset.id, dataset]),
       ).values(),
     ];
+  }
+
+  private enhanceWithAi(
+    response: SmartSearchResponse,
+  ): Observable<SmartSearchResponse> {
+    if (response.results.length === 0) {
+      return of(response);
+    }
+
+    return this.aiAnswer
+      .generateAnswer({
+        query: response.query,
+        deterministicAnswer: response.answer,
+        facts: response.answerFacts,
+        results: response.results,
+      })
+      .pipe(
+        map((aiResponse) => ({
+          ...response,
+          answer: aiResponse.answer || response.answer,
+          usedAi: aiResponse.usedAi,
+          aiModel: aiResponse.model,
+        })),
+        catchError(() => of(response)),
+      );
   }
 
   private recommendationScore(source: Dataset, candidate: Dataset): number {

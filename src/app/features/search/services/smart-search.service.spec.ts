@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { Dataset } from '@app/features/discovery/models/dataset.model';
 import { DatasetService } from '@app/features/discovery/services/dataset.service';
+import { AiAnswerService } from '@app/features/search/services/ai-answer.service';
 import { SmartSearchService } from '@app/features/search/services/smart-search.service';
 import { TispSearchService } from '@app/features/search/services/tisp-search.service';
 
@@ -60,18 +61,31 @@ describe('SmartSearchService', () => {
   let service: SmartSearchService;
   let datasetService: jasmine.SpyObj<DatasetService>;
   let tispSearchService: jasmine.SpyObj<TispSearchService>;
+  let aiAnswerService: jasmine.SpyObj<AiAnswerService>;
 
   beforeEach(() => {
     datasetService = jasmine.createSpyObj('DatasetService', ['searchCatalog']);
     datasetService.searchCatalog.and.returnValue(of([gdpDataset]));
     tispSearchService = jasmine.createSpyObj('TispSearchService', ['search']);
     tispSearchService.search.and.returnValue(of([]));
+    aiAnswerService = jasmine.createSpyObj('AiAnswerService', [
+      'generateAnswer',
+    ]);
+    aiAnswerService.generateAnswer.and.returnValue(
+      of({
+        answer: '',
+        usedAi: false,
+        model: null,
+        reason: 'openai_not_configured',
+      }),
+    );
 
     TestBed.configureTestingModule({
       providers: [
         SmartSearchService,
         { provide: DatasetService, useValue: datasetService },
         { provide: TispSearchService, useValue: tispSearchService },
+        { provide: AiAnswerService, useValue: aiAnswerService },
       ],
     });
 
@@ -118,6 +132,30 @@ describe('SmartSearchService', () => {
       expect(response.answerFacts).toEqual([
         'Population size in Tanzania was 61,741,120 in 2022.',
       ]);
+      expect(response.usedAi).toBeFalse();
+      done();
+    });
+  });
+
+  it('uses the backend AI answer when it is available', (done) => {
+    datasetService.searchCatalog.and.returnValue(of([]));
+    tispSearchService.search.and.returnValue(of([tispPopulationDataset]));
+    aiAnswerService.generateAnswer.and.returnValue(
+      of({
+        answer:
+          'AI summary: Tanzania population was 61,741,120 in 2022 according to NBS/TISP.',
+        usedAi: true,
+        model: 'gpt-test',
+        reason: '',
+      }),
+    );
+
+    service.smartSearch('population Tanzania 2022').subscribe((response) => {
+      expect(response.answer).toBe(
+        'AI summary: Tanzania population was 61,741,120 in 2022 according to NBS/TISP.',
+      );
+      expect(response.usedAi).toBeTrue();
+      expect(response.aiModel).toBe('gpt-test');
       done();
     });
   });
