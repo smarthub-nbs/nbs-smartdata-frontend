@@ -20,6 +20,24 @@ const REGION_ALIASES: Record<string, string> = {
   dar: 'Dar es Salaam',
   'dar es salaam': 'Dar es Salaam',
   mwanza: 'Mwanza',
+  tanga: 'Tanga',
+  'tanga mjini': 'Tanga Mjini',
+  'tanga city': 'Tanga City',
+  'tanga cc': 'Tanga City Council',
+  'tanga city council': 'Tanga City Council',
+  mbeya: 'Mbeya',
+  morogoro: 'Morogoro',
+  kigoma: 'Kigoma',
+  tabora: 'Tabora',
+  mtwara: 'Mtwara',
+  lindi: 'Lindi',
+  pwani: 'Pwani',
+  geita: 'Geita',
+  katavi: 'Katavi',
+  singida: 'Singida',
+  shinyanga: 'Shinyanga',
+  kagera: 'Kagera',
+  njombe: 'Njombe',
   arusha: 'Arusha',
   national: 'National',
   tanzania: 'National',
@@ -123,8 +141,10 @@ export class SmartSearchService {
     const tokens = normalized.split(/[\s,.;:!?]+/).filter(Boolean);
 
     const regions = new Set<string>();
-    for (const [alias, region] of Object.entries(REGION_ALIASES)) {
-      if (normalized.includes(alias)) {
+    for (const [alias, region] of Object.entries(REGION_ALIASES).sort(
+      ([a], [b]) => b.length - a.length,
+    )) {
+      if (new RegExp(`(?:^|\\s)${this.escapeRegExp(alias)}(?:$|\\s)`).test(normalized)) {
         regions.add(region);
       }
     }
@@ -149,7 +169,14 @@ export class SmartSearchService {
       }
     }
 
+    if (regions.has('Tanga City Council')) {
+      regions.delete('Tanga');
+    }
     return { tokens, regions: [...regions], topics: [...topics], years };
+  }
+
+  private escapeRegExp(value: string): string {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 
   private scoreDatasets(

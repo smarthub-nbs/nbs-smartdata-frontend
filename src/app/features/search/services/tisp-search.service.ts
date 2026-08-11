@@ -24,6 +24,11 @@ interface TispCensusRow {
   indicator_name: string;
 }
 
+interface TispPaginatedResponse<T> {
+  results?: T[];
+  data?: T[];
+}
+
 interface TispDatavalueRow {
   data_value?: number | null;
   datavalue?: number | null;
@@ -187,7 +192,7 @@ export class TispSearchService {
     return this.getCensusRows().pipe(
       map((rows) =>
         rows
-          .filter((row) => this.matchesCensus(row, tokens, years))
+          .filter((row) => this.matchesCensus(row, tokens, years, query))
           .slice(0, 20)
           .map((row) => this.mapCensusRow(row)),
       ),
@@ -325,8 +330,15 @@ export class TispSearchService {
 
   private getCensusRows(): Observable<TispCensusRow[]> {
     this.censusRows$ ??= this.http
-      .get<TispCensusRow[]>(`${this.apiBaseUrl}/census/dmdata/`)
+      .get<TispCensusRow[] | TispPaginatedResponse<TispCensusRow>>(
+        `${this.apiBaseUrl}/census/dmdata/`,
+      )
       .pipe(
+        map((response) =>
+          Array.isArray(response)
+            ? response
+            : response.results ?? response.data ?? [],
+        ),
         catchError(() => of([])),
         shareReplay(1),
       );
@@ -347,6 +359,7 @@ export class TispSearchService {
     row: TispCensusRow,
     tokens: string[],
     years: number[],
+    query: string,
   ): boolean {
     const haystack = [
       row.indicator_name,
@@ -362,12 +375,83 @@ export class TispSearchService {
       .join(' ')
       .toLowerCase();
 
-    const matchesText = tokens.some((token) => haystack.includes(token));
+    const matchesText = tokens.some((token) =>
+      new RegExp(`(?:^|\\s)${this.escapeRegExp(token)}(?:$|\\s)`).test(
+        haystack,
+      ),
+    );
     const matchesYear =
       years.length === 0 ||
       years.some((year) => row.time_name.includes(String(year)));
+    const requestedAreas = this.requestedAreaTerms(query);
+    const matchesArea =
+      requestedAreas.length === 0 ||
+      requestedAreas.some((area) => this.matchesArea(row, area));
 
-    return matchesText && matchesYear;
+    return matchesText && matchesYear && matchesArea;
+  }
+
+  private requestedAreaTerms(query: string): string[] {
+    const areas = [
+      'dar es salaam',
+      'tanga city council',
+      'tanga mjini',
+      'tanga city',
+      'tanga cc',
+      'tanga',
+      'tanzania',
+      'mainland',
+      'zanzibar',
+      'arusha',
+      'dodoma',
+      'mwanza',
+      'mbeya',
+      'morogoro',
+    ];
+    const normalized = query.toLowerCase();
+    const matched = areas.filter((area) =>
+      new RegExp(`(?:^|\\s)${this.escapeRegExp(area)}(?:$|\\s)`).test(
+        normalized,
+      ),
+    );
+    return matched.filter(
+      (area) =>
+        !matched.some(
+          (longer) => longer !== area && longer.startsWith(`${area} `),
+        ),
+    );
+  }
+
+  private matchesArea(row: TispCensusRow, requestedArea: string): boolean {
+    const areaName = row.area_name.trim().toLowerCase();
+    const areaCode = row.area_code.trim().toLowerCase();
+    if (requestedArea === 'tanga cc') {
+      return [
+        'tanga cc',
+        'tanga city council',
+        'tanga city',
+        'tanga mjini',
+        'tanga municipal',
+      ].includes(areaName);
+    }
+    if (
+      requestedArea === 'tanga city council' ||
+      requestedArea === 'tanga mjini' ||
+      requestedArea === 'tanga city'
+    ) {
+      return [
+        'tanga cc',
+        'tanga city council',
+        'tanga city',
+        'tanga mjini',
+        'tanga municipal',
+      ].includes(areaName);
+    }
+    return areaName === requestedArea || areaCode === requestedArea;
+  }
+
+  private escapeRegExp(value: string): string {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 
   private indicatorMatchScore(
@@ -549,6 +633,10 @@ export class TispSearchService {
       'mbeya',
       'morogoro',
       'tanga',
+      'tanga mjini',
+      'tanga city',
+      'tanga cc',
+      'tanga city council',
       'simiyu',
       'mara',
       'kigoma',
@@ -567,9 +655,18 @@ export class TispSearchService {
       'kagera',
       'njombe',
     ];
-    const requestedAreas = knownAreas.filter((area) =>
+    let requestedAreas = knownAreas.filter((area) =>
       normalizedQuery.includes(area),
     );
+    if (
+      requestedAreas.some((area) =>
+        ['tanga cc', 'tanga city council', 'tanga mjini', 'tanga city'].includes(
+          area,
+        ),
+      )
+    ) {
+      requestedAreas = requestedAreas.filter((area) => area !== 'tanga');
+    }
     if (requestedAreas.length === 0) {
       return values;
     }
@@ -577,9 +674,23 @@ export class TispSearchService {
     const matchingRows = values.filter((value) => {
       const areaName = value.area_name.toLowerCase();
       const areaCode = value.area_code?.toLowerCase() ?? '';
-      return requestedAreas.some(
-        (area) => areaName === area || areaCode === area,
-      );
+      return requestedAreas.some((area) => {
+        if (
+          area === 'tanga mjini' ||
+          area === 'tanga city' ||
+          area === 'tanga cc' ||
+          area === 'tanga city council'
+        ) {
+          return [
+            'tanga mjini',
+            'tanga city',
+            'tanga municipal',
+            'tanga cc',
+            'tanga city council',
+          ].includes(areaName);
+        }
+        return areaName === area || areaCode === area;
+      });
     });
 
     return matchingRows;
