@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, map } from 'rxjs';
+import { Observable, map, of, switchMap } from 'rxjs';
 import { ApiService } from '@app/core/services/api.service';
 import {
   DatasetChartPreview,
@@ -8,12 +8,14 @@ import {
   DatasetUpdateRecord,
 } from '@app/features/discovery/models/dataset.model';
 
+type PreviewCell = string | number | boolean | null;
+
 interface BackendFileDataResponse {
   file_id: string;
   filename: string;
   file_format: string;
   columns?: string[];
-  rows?: Record<string, string | number | boolean | null>[];
+  rows?: Record<string, PreviewCell>[];
   document?: {
     page_count?: number;
     pages?: {
@@ -26,6 +28,59 @@ interface BackendFileDataResponse {
   returned_rows: number;
   total_rows: number | null;
 }
+
+interface ChartFieldSelection {
+  xField: string | null;
+  yField: string | null;
+}
+
+interface FileChartOptions {
+  chartType?: 'line' | 'bar';
+  sort?: 'asc' | 'desc';
+  limit?: number;
+  groupBy?: string;
+  metric?: string;
+  xField?: string;
+  yField?: string;
+}
+
+const LINE_X_CANDIDATES = [
+  'time_name',
+  'month',
+  'period',
+  'date',
+  'time',
+  'year',
+  'year_code',
+] as const;
+const BAR_X_CANDIDATES = [
+  'area_name',
+  'region',
+  'country',
+  'geo',
+  'geography',
+  'area',
+  'district',
+  'zone',
+  'facility_type',
+  'sector',
+  'crop',
+  'indicator',
+  'service',
+  'energy_source',
+  'transport_mode',
+  'visitor_origin',
+  'education_level',
+  'commodity',
+  'age_group',
+] as const;
+const Y_CANDIDATES = [
+  'data_value',
+  'datavalue',
+  'value',
+  'count',
+] as const;
+const IDENTIFIER_COLUMN = /(_code|_level|_id|_key|_tag)$/i;
 
 interface BackendStatusHistory {
   dataset?: string | { id: string };
@@ -74,39 +129,174 @@ export class DatasetEnrichmentService {
 
   getFileChart(
     fileId: string,
-    options: {
-      chartType?: 'line' | 'bar';
-      sort?: 'asc' | 'desc';
-      limit?: number;
-      groupBy?: string;
-      metric?: string;
-      xField?: string;
-      yField?: string;
-    } = {},
+    options: FileChartOptions = {},
   ): Observable<DatasetChartPreview> {
     const chartType = options.chartType ?? 'line';
-    const params: Record<string, string> = {
-      chart_type: chartType,
-      limit: String(options.limit ?? 12),
-    };
-    if (options.sort) {
-      params['sort'] = options.sort;
-    }
-    if (options.groupBy) {
-      params['group_by'] = options.groupBy;
-    }
-    if (options.metric) {
-      params['metric'] = options.metric;
-    }
+
+    return this.resolveChartFields(fileId, chartType, options).pipe(
+      switchMap((fields) => {
+        if (!fields.xField) {
+          return of({
+            chartType,
+            label: 'Trend',
+            points: [],
+          } satisfies DatasetChartPreview);
+        }
+
+        const params: Record<string, string> = {
+          chart_type: chartType,
+          limit: String(options.limit ?? 12),
+          x_field: fields.xField,
+          metric: options.metric ?? (fields.yField ? 'sum' : 'count'),
+        };
+        if (options.sort) {
+          params['sort'] = options.sort;
+        }
+        if (options.groupBy) {
+          params['group_by'] = options.groupBy;
+        }
+        if (fields.yField) {
+          params['y_field'] = fields.yField;
+        }
+        if (
+          !options.sort &&
+          fields.xField &&
+          this.isGeographicField(fields.xField)
+        ) {
+          params['sort'] = 'desc';
+        }
+
+        return this.api
+          .get<BackendChartResponse>(
+            `/v1/dataset/files/${fileId}/chart/`,
+            params,
+          )
+          .pipe(map((response) => this.toChartPreview(response, chartType)));
+      }),
+    );
+  }
+
+  private resolveChartFields(
+    fileId: string,
+    chartType: 'line' | 'bar',
+    options: Pick<FileChartOptions, 'xField' | 'yField'>,
+  ): Observable<ChartFieldSelection> {
     if (options.xField) {
-      params['x_field'] = options.xField;
+      return of({
+        xField: options.xField,
+        yField: options.yField ?? null,
+      });
     }
-    if (options.yField) {
-      params['y_field'] = options.yField;
-    }
+
     return this.api
-      .get<BackendChartResponse>(`/v1/dataset/files/${fileId}/chart/`, params)
-      .pipe(map((response) => this.toChartPreview(response, chartType)));
+      .get<BackendFileDataResponse>(`/v1/dataset/files/${fileId}/data/`, {
+        offset: '0',
+        limit: '25',
+      })
+      .pipe(
+        map((preview) =>
+          this.pickChartFields(
+            preview.columns ?? [],
+            preview.rows ?? [],
+            chartType,
+          ),
+        ),
+      );
+  }
+
+  private pickChartFields(
+    columns: string[],
+    rows: Record<string, PreviewCell>[],
+    chartType: 'line' | 'bar',
+  ): ChartFieldSelection {
+    if (columns.length === 0) {
+      return { xField: null, yField: null };
+    }
+
+    const preferred =
+      chartType === 'bar' ? BAR_X_CANDIDATES : LINE_X_CANDIDATES;
+    const fallback = chartType === 'bar' ? LINE_X_CANDIDATES : BAR_X_CANDIDATES;
+    let xField =
+      this.findColumn(columns, preferred) ??
+      this.findColumn(columns, fallback) ??
+      columns[0] ??
+      null;
+
+    if (xField && rows.length >= 2 && this.distinctCount(rows, xField) < 2) {
+      const fallbackX = this.findColumn(columns, fallback);
+      if (
+        fallbackX &&
+        fallbackX !== xField &&
+        this.distinctCount(rows, fallbackX) >= 2
+      ) {
+        xField = fallbackX;
+      }
+    }
+
+    const reserved = new Set(
+      [...LINE_X_CANDIDATES, ...BAR_X_CANDIDATES].map((name) =>
+        name.toLowerCase(),
+      ),
+    );
+    const preferredY = this.findColumn(columns, Y_CANDIDATES);
+    const yField =
+      (preferredY && preferredY !== xField ? preferredY : null) ??
+      columns.find((column) => {
+        if (column === xField) {
+          return false;
+        }
+        if (reserved.has(column.toLowerCase())) {
+          return false;
+        }
+        if (IDENTIFIER_COLUMN.test(column)) {
+          return false;
+        }
+        return rows.some((row) => this.isNumeric(row[column]));
+      }) ??
+      null;
+
+    return { xField, yField };
+  }
+
+  private isGeographicField(field: string): boolean {
+    return (BAR_X_CANDIDATES as readonly string[]).includes(
+      field.toLowerCase(),
+    );
+  }
+
+  private distinctCount(
+    rows: Record<string, PreviewCell>[],
+    field: string,
+  ): number {
+    return new Set(rows.map((row) => String(row[field] ?? ''))).size;
+  }
+
+  private findColumn(
+    columns: string[],
+    candidates: readonly string[],
+  ): string | null {
+    for (const candidate of candidates) {
+      const match = columns.find(
+        (column) => column.toLowerCase() === candidate.toLowerCase(),
+      );
+      if (match) {
+        return match;
+      }
+    }
+    return null;
+  }
+
+  private isNumeric(value: PreviewCell | undefined): boolean {
+    if (typeof value === 'number') {
+      return Number.isFinite(value);
+    }
+    if (typeof value === 'boolean') {
+      return true;
+    }
+    if (typeof value !== 'string' || value.trim() === '') {
+      return false;
+    }
+    return Number.isFinite(Number.parseFloat(value));
   }
 
   getUpdateHistory(datasetId: string): Observable<DatasetUpdateRecord[]> {

@@ -337,7 +337,7 @@ export class TispSearchService {
         map((response) =>
           Array.isArray(response)
             ? response
-            : response.results ?? response.data ?? [],
+            : (response.results ?? response.data ?? []),
         ),
         catchError(() => of([])),
         shareReplay(1),
@@ -660,9 +660,12 @@ export class TispSearchService {
     );
     if (
       requestedAreas.some((area) =>
-        ['tanga cc', 'tanga city council', 'tanga mjini', 'tanga city'].includes(
-          area,
-        ),
+        [
+          'tanga cc',
+          'tanga city council',
+          'tanga mjini',
+          'tanga city',
+        ].includes(area),
       )
     ) {
       requestedAreas = requestedAreas.filter((area) => area !== 'tanga');

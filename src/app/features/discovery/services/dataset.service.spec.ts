@@ -1,3 +1,8 @@
+import { provideHttpClient } from '@angular/common/http';
+import {
+  HttpTestingController,
+  provideHttpClientTesting,
+} from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { of, Subject } from 'rxjs';
 import { DATASET_ADAPTER } from '@app/features/discovery/adapters/dataset.adapter';
@@ -40,6 +45,8 @@ describe('DatasetService', () => {
 
     TestBed.configureTestingModule({
       providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
         DatasetService,
         {
           provide: DATASET_ADAPTER,
@@ -56,6 +63,52 @@ describe('DatasetService', () => {
     service.patchRecordCountFromPreview(dataset.id, 25);
 
     expect(service.getById(dataset.id)?.recordCount).toBe(25);
+  });
+
+  it('keeps detail metadata and primary file when a list refresh omits them', (done) => {
+    const adapter = TestBed.inject(
+      DATASET_ADAPTER,
+    ) as jasmine.SpyObj<DatasetAdapter>;
+
+    const detailed: Dataset = {
+      ...dataset,
+      metadataId: 'meta-1',
+      primaryFileId: 'file-1',
+      title: 'Monthly Climate Observations — Dodoma (2020)',
+      region: 'Dodoma',
+      publisher: 'Dataset Seeder',
+      license: 'Open Data Commons ODbL',
+      frequency: 'Quarterly',
+      recordCount: 12,
+    };
+
+    adapter.getById.and.returnValue(of(detailed));
+    service.loadDatasetById(detailed.id).subscribe();
+
+    adapter.list.and.returnValue(
+      of([
+        {
+          ...dataset,
+          title: 'Climate Monthly Dodoma 2020',
+          region: 'National',
+          publisher: 'NBS',
+        },
+      ]),
+    );
+    service.refreshCatalog();
+
+    setTimeout(() => {
+      const merged = service.getById(detailed.id);
+      expect(merged?.primaryFileId).toBe('file-1');
+      expect(merged?.metadataId).toBe('meta-1');
+      expect(merged?.title).toBe(
+        'Monthly Climate Observations — Dodoma (2020)',
+      );
+      expect(merged?.region).toBe('Dodoma');
+      expect(merged?.publisher).toBe('Dataset Seeder');
+      expect(merged?.recordCount).toBe(12);
+      done();
+    }, 0);
   });
 
   it('ignores null, zero, and unchanged preview totals', () => {
@@ -84,6 +137,7 @@ describe('DatasetService', () => {
     const adapter = TestBed.inject(
       DATASET_ADAPTER,
     ) as jasmine.SpyObj<DatasetAdapter>;
+    const http = TestBed.inject(HttpTestingController);
     const topics: DatasetTopic[] = [
       {
         id: 'topic-population',
@@ -103,6 +157,12 @@ describe('DatasetService', () => {
 
     adapter.listTopics.and.returnValue(of(topics));
     service.refreshCatalog();
+    const tagRequests = http.match((request) =>
+      request.url.includes('/v1/dataset/tags/'),
+    );
+    const activeRequest = tagRequests[tagRequests.length - 1];
+    expect(activeRequest).toBeTruthy();
+    activeRequest.flush([]);
 
     expect(service.topics().map((topic) => topic.slug)).toEqual(['population']);
   });

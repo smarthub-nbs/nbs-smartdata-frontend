@@ -1,18 +1,25 @@
 import {
-  AfterViewInit,
+  afterNextRender,
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
   ElementRef,
-  effect,
+  Injector,
+  computed,
   inject,
   input,
   signal,
   viewChild,
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { Chart, ChartConfiguration, Chart as ChartInstance } from 'chart.js';
-import { catchError, of } from 'rxjs';
+import {
+  catchError,
+  distinctUntilChanged,
+  of,
+  switchMap,
+  tap,
+} from 'rxjs';
 import { Dataset } from '@app/features/discovery/models/dataset.model';
 import { DatasetEnrichmentService } from '@app/features/discovery/services/dataset-enrichment.service';
 import {
@@ -25,6 +32,17 @@ import { RouterLink } from '@angular/router';
 
 type PreviewChartType = 'line' | 'bar';
 
+interface PendingChart {
+  chartType: PreviewChartType;
+  labels: string[];
+  values: number[];
+}
+
+interface ChartRequest {
+  fileId: string;
+  chartType: PreviewChartType;
+}
+
 @Component({
   selector: 'app-dataset-preview-chart',
   standalone: true,
@@ -32,37 +50,82 @@ type PreviewChartType = 'line' | 'bar';
   templateUrl: './dataset-preview-chart.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class DatasetPreviewChartComponent implements AfterViewInit {
+export class DatasetPreviewChartComponent {
   readonly dataset = input.required<Dataset>();
 
   private readonly enrichment = inject(DatasetEnrichmentService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly injector = inject(Injector);
   private readonly canvas = viewChild<ElementRef<HTMLCanvasElement>>('canvas');
 
   protected readonly loading = signal(true);
   protected readonly unavailable = signal(false);
   protected readonly chartLabel = signal('Trend');
-  protected readonly chartType = signal<PreviewChartType>('line');
+  protected readonly chartType = signal<PreviewChartType>('bar');
+
+  private readonly chartRequest = computed<ChartRequest>(() => ({
+    fileId: this.dataset().primaryFileId ?? '',
+    chartType: this.chartType(),
+  }));
 
   private chart: ChartInstance | null = null;
-  private viewReady = false;
+  private pending: PendingChart | null = null;
 
   constructor() {
-    effect(() => {
-      const dataset = this.dataset();
-      const type = this.chartType();
-      if (!this.viewReady) {
-        return;
-      }
-      this.loadChart(dataset, type);
-    });
+    toObservable(this.chartRequest)
+      .pipe(
+        distinctUntilChanged(
+          (left, right) =>
+            left.fileId === right.fileId && left.chartType === right.chartType,
+        ),
+        tap(() => {
+          this.loading.set(true);
+          this.unavailable.set(false);
+        }),
+        switchMap((request) => {
+          if (!request.fileId) {
+            return of({
+              request,
+              preview: null as null,
+            });
+          }
+
+          return this.enrichment
+            .getFileChart(request.fileId, {
+              chartType: request.chartType,
+              limit: 12,
+              ...(request.chartType === 'bar'
+                ? { sort: 'desc' as const }
+                : {}),
+            })
+            .pipe(
+              catchError(() => of(null)),
+              switchMap((preview) => of({ request, preview })),
+            );
+        }),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe(({ request, preview }) => {
+        this.loading.set(false);
+
+        if (!preview || preview.points.length === 0) {
+          this.unavailable.set(true);
+          this.pending = null;
+          this.destroyChart();
+          return;
+        }
+
+        this.unavailable.set(false);
+        this.chartLabel.set(preview.label);
+        this.pending = {
+          chartType: request.chartType,
+          labels: preview.points.map((point) => point.label),
+          values: preview.points.map((point) => point.value),
+        };
+        this.scheduleRender();
+      });
 
     this.destroyRef.onDestroy(() => this.destroyChart());
-  }
-
-  ngAfterViewInit(): void {
-    this.viewReady = true;
-    this.loadChart(this.dataset(), this.chartType());
   }
 
   protected setChartType(type: PreviewChartType): void {
@@ -72,50 +135,19 @@ export class DatasetPreviewChartComponent implements AfterViewInit {
     this.chartType.set(type);
   }
 
-  private loadChart(dataset: Dataset, chartType: PreviewChartType): void {
-    const fileId = dataset.primaryFileId;
-    if (!fileId) {
-      this.loading.set(false);
-      this.unavailable.set(true);
-      this.destroyChart();
-      return;
-    }
-
-    this.loading.set(true);
-    this.unavailable.set(false);
-    this.enrichment
-      .getFileChart(fileId, {
-        chartType,
-        limit: 12,
-        ...(chartType === 'bar' ? { sort: 'desc' as const } : {}),
-      })
-      .pipe(
-        catchError(() => of(null)),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe((preview) => {
-        this.loading.set(false);
-        if (!preview || preview.points.length === 0) {
-          this.unavailable.set(true);
-          this.destroyChart();
-          return;
-        }
-        this.chartLabel.set(preview.label);
-        this.renderChart(
-          chartType,
-          preview.points.map((p) => p.label),
-          preview.points.map((p) => p.value),
-        );
-      });
+  private scheduleRender(): void {
+    afterNextRender(
+      () => {
+        this.renderPending();
+      },
+      { injector: this.injector },
+    );
   }
 
-  private renderChart(
-    chartType: PreviewChartType,
-    labels: string[],
-    values: number[],
-  ): void {
+  private renderPending(): void {
+    const pending = this.pending;
     const canvas = this.canvas()?.nativeElement;
-    if (!canvas) {
+    if (!pending || !canvas || this.loading() || this.unavailable()) {
       return;
     }
 
@@ -123,20 +155,20 @@ export class DatasetPreviewChartComponent implements AfterViewInit {
     this.destroyChart();
 
     const config: ChartConfiguration = {
-      type: chartType,
+      type: pending.chartType,
       data: {
-        labels,
+        labels: pending.labels,
         datasets: [
           {
-            data: values,
+            data: pending.values,
             borderColor: '#0f766e',
             backgroundColor:
-              chartType === 'bar'
+              pending.chartType === 'bar'
                 ? 'rgba(15, 118, 110, 0.65)'
                 : 'rgba(15, 118, 110, 0.12)',
-            fill: chartType === 'line',
+            fill: pending.chartType === 'line',
             tension: 0.25,
-            pointRadius: chartType === 'line' ? 2 : 0,
+            pointRadius: pending.chartType === 'line' ? 3 : 0,
           },
         ],
       },

@@ -76,8 +76,27 @@ interface BackendChartResponse {
 }
 
 const MAX_INDICATORS = 8;
-const YEAR_FIELD = /^(year|date|period|month|time|year_code)$/i;
-const REGION_FIELD = /^(region|geo|geography|area|district|country|zone)$/i;
+const TIME_FIELDS = [
+  'time_name',
+  'month',
+  'period',
+  'date',
+  'time',
+  'year',
+  'year_code',
+] as const;
+const REGION_FIELDS = [
+  'area_name',
+  'region',
+  'country',
+  'geo',
+  'geography',
+  'area',
+  'district',
+  'zone',
+] as const;
+const Y_FIELDS = ['data_value', 'datavalue', 'value', 'count'] as const;
+const IDENTIFIER_COLUMN = /(_code|_level|_id|_key|_tag)$/i;
 
 @Injectable()
 export class HttpIndicatorAdapter implements IndicatorAdapter {
@@ -86,7 +105,22 @@ export class HttpIndicatorAdapter implements IndicatorAdapter {
   list(): Observable<ExploreIndicator[]> {
     return this.api.get<BackendDataset[]>('/v1/dataset/').pipe(
       switchMap((datasets) => {
-        const candidates = datasets
+        const ids = datasets.slice(0, MAX_INDICATORS).map((dataset) => dataset.id);
+        if (ids.length === 0) {
+          return of([]);
+        }
+
+        return forkJoin(
+          ids.map((id) =>
+            this.api
+              .get<BackendDataset>(`/v1/dataset/${id}/`)
+              .pipe(catchError(() => of(null))),
+          ),
+        );
+      }),
+      switchMap((details) => {
+        const candidates = details
+          .filter((dataset): dataset is BackendDataset => dataset !== null)
           .map((dataset) => ({
             dataset,
             fileId: this.resolvePrimaryFileId(dataset),
@@ -94,8 +128,7 @@ export class HttpIndicatorAdapter implements IndicatorAdapter {
           .filter(
             (entry): entry is { dataset: BackendDataset; fileId: string } =>
               entry.fileId !== null,
-          )
-          .slice(0, MAX_INDICATORS);
+          );
 
         if (candidates.length === 0) {
           return of([]);
@@ -140,19 +173,24 @@ export class HttpIndicatorAdapter implements IndicatorAdapter {
             return of(null);
           }
 
+          const lineX = fields.xField;
+          const barX = fields.regionField ?? fields.xField;
           const lineParams: Record<string, string> = {
             chart_type: 'line',
-            x_field: fields.xField,
+            x_field: lineX,
             metric: fields.yField ? 'sum' : 'count',
             limit: '24',
           };
           if (fields.yField) {
             lineParams['y_field'] = fields.yField;
           }
+          if (this.isRegionField(lineX)) {
+            lineParams['sort'] = 'desc';
+          }
 
           const barParams: Record<string, string> = {
             chart_type: 'bar',
-            x_field: fields.regionField ?? fields.xField,
+            x_field: barX,
             metric: fields.yField ? 'sum' : 'count',
             limit: '12',
             sort: 'desc',
@@ -212,17 +250,43 @@ export class HttpIndicatorAdapter implements IndicatorAdapter {
     columns: string[],
     rows: Record<string, PreviewCell>[],
   ): ChartFieldSelection {
-    const xField =
-      columns.find((column) => YEAR_FIELD.test(column)) ?? columns[0] ?? null;
-    const regionField =
-      columns.find((column) => REGION_FIELD.test(column)) ?? null;
+    let xField =
+      this.findColumn(columns, TIME_FIELDS) ??
+      this.findColumn(columns, REGION_FIELDS) ??
+      columns[0] ??
+      null;
+    const regionField = this.findColumn(columns, REGION_FIELDS);
+
+    if (xField && rows.length >= 2 && this.distinctCount(rows, xField) < 2) {
+      const fallbackX = regionField;
+      if (
+        fallbackX &&
+        fallbackX !== xField &&
+        this.distinctCount(rows, fallbackX) >= 2
+      ) {
+        xField = fallbackX;
+      }
+    }
+
+    const reserved = new Set(
+      [...TIME_FIELDS, ...REGION_FIELDS].map((name) => name.toLowerCase()),
+    );
+    const preferredY = this.findColumn(columns, Y_FIELDS);
     const yField =
+      (preferredY && preferredY !== xField ? preferredY : null) ??
       columns.find((column) => {
         if (column === xField || column === regionField) {
           return false;
         }
+        if (reserved.has(column.toLowerCase())) {
+          return false;
+        }
+        if (IDENTIFIER_COLUMN.test(column)) {
+          return false;
+        }
         return rows.some((row) => this.isNumeric(row[column]));
-      }) ?? null;
+      }) ??
+      null;
 
     return { xField, yField, regionField };
   }
@@ -302,6 +366,34 @@ export class HttpIndicatorAdapter implements IndicatorAdapter {
         .filter(Boolean)
         .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
         .join(' ') || 'Untitled dataset'
+    );
+  }
+
+  private findColumn(
+    columns: string[],
+    candidates: readonly string[],
+  ): string | null {
+    for (const candidate of candidates) {
+      const match = columns.find(
+        (column) => column.toLowerCase() === candidate.toLowerCase(),
+      );
+      if (match) {
+        return match;
+      }
+    }
+    return null;
+  }
+
+  private distinctCount(
+    rows: Record<string, PreviewCell>[],
+    field: string,
+  ): number {
+    return new Set(rows.map((row) => String(row[field] ?? ''))).size;
+  }
+
+  private isRegionField(field: string): boolean {
+    return REGION_FIELDS.includes(
+      field.toLowerCase() as (typeof REGION_FIELDS)[number],
     );
   }
 

@@ -144,7 +144,11 @@ export class SmartSearchService {
     for (const [alias, region] of Object.entries(REGION_ALIASES).sort(
       ([a], [b]) => b.length - a.length,
     )) {
-      if (new RegExp(`(?:^|\\s)${this.escapeRegExp(alias)}(?:$|\\s)`).test(normalized)) {
+      if (
+        new RegExp(`(?:^|\\s)${this.escapeRegExp(alias)}(?:$|\\s)`).test(
+          normalized,
+        )
+      ) {
         regions.add(region);
       }
     }

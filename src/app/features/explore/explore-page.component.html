@@ -18,6 +18,9 @@
       </app-button>
     </div>
   </app-page-state>
+  } @else if (exploreData.allIndicators().length === 0) {
+  <app-page-state variant="empty" title="No chartable datasets" label="Explore"
+    message="Published catalog datasets need a primary data file before they can appear here." />
   } @else {
   <section class="nbs-card p-4">
     <div class="grid gap-4 md:grid-cols-3">

@@ -144,8 +144,10 @@ export class DatasetService {
           return;
         }
 
-        this.datasets.set(result.datasets);
-        this.catalogState.set(successState(result.datasets));
+        this.datasets.update((existing) =>
+          this.mergeCatalogDatasets(existing, result.datasets),
+        );
+        this.catalogState.set(successState(this.datasets()));
         this.catalogStale.set(false);
       });
 
@@ -163,10 +165,16 @@ export class DatasetService {
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe(({ datasets, topics, tags }) => {
-        this.facetDatasets.set(datasets);
-        this.topicsState.set(buildPublishedTopics(topics, datasets));
+        this.facetDatasets.update((existing) =>
+          this.mergeCatalogDatasets(existing, datasets),
+        );
+        this.topicsState.set(
+          buildPublishedTopics(topics, this.facetDatasets()),
+        );
         this.tagsState.set(
-          tags.length > 0 ? tags : this.tagsFromDatasets(datasets),
+          tags.length > 0
+            ? tags
+            : this.tagsFromDatasets(this.facetDatasets()),
         );
       });
   }
@@ -344,17 +352,78 @@ export class DatasetService {
     this.catalogLoad$.next({ ...this.filters() });
   }
 
+  private mergeCatalogDatasets(
+    existing: Dataset[],
+    incoming: Dataset[],
+  ): Dataset[] {
+    const byId = new Map(existing.map((dataset) => [dataset.id, dataset]));
+    return incoming.map((dataset) => {
+      const previous = byId.get(dataset.id);
+      return previous
+        ? this.mergeDatasetRecord(previous, dataset)
+        : dataset;
+    });
+  }
+
   private mergeDataset(dataset: Dataset): void {
     const apply = (items: Dataset[]) => {
       const index = items.findIndex((item) => item.id === dataset.id);
       if (index < 0) {
         return [...items, dataset];
       }
-      return items.map((item) => (item.id === dataset.id ? dataset : item));
+      return items.map((item) =>
+        item.id === dataset.id
+          ? this.mergeDatasetRecord(item, dataset)
+          : item,
+      );
     };
 
     this.datasets.update(apply);
     this.facetDatasets.update(apply);
+  }
+
+  /**
+   * Catalog list payloads omit metadata/files. Keep richer detail fields when a
+   * shallower list refresh would otherwise wipe them.
+   */
+  private mergeDatasetRecord(existing: Dataset, incoming: Dataset): Dataset {
+    const incomingHasDetail = Boolean(
+      incoming.primaryFileId || incoming.metadataId,
+    );
+    const existingHasDetail = Boolean(
+      existing.primaryFileId || existing.metadataId,
+    );
+
+    if (existingHasDetail && !incomingHasDetail) {
+      return {
+        ...incoming,
+        primaryFileId: existing.primaryFileId,
+        metadataId: existing.metadataId,
+        title: existing.title,
+        description: existing.description,
+        year: existing.year,
+        frequency: existing.frequency,
+        region: existing.region,
+        publisher: existing.publisher,
+        license: existing.license,
+        keywords:
+          existing.keywords.length > 0 ? existing.keywords : incoming.keywords,
+        format: existing.format,
+        recordCount: existing.recordCount || incoming.recordCount,
+        status: incoming.status ?? existing.status,
+        updatedAt: incoming.updatedAt || existing.updatedAt,
+      };
+    }
+
+    return {
+      ...existing,
+      ...incoming,
+      primaryFileId: incoming.primaryFileId ?? existing.primaryFileId,
+      metadataId: incoming.metadataId ?? existing.metadataId,
+      recordCount: incoming.recordCount || existing.recordCount,
+      keywords:
+        incoming.keywords.length > 0 ? incoming.keywords : existing.keywords,
+    };
   }
 
   private resolveErrorMessage(error: unknown, fallback: string): string {

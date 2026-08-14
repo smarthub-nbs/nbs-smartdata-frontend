@@ -41,9 +41,9 @@
       Structured CSV/XLSX files with numeric series can be charted here.
     </p>
   </div>
-  } @else {
-  <div class="h-48">
+  }
+
+  <div class="h-48" [class.hidden]="loading() || unavailable()">
     <canvas #canvas [attr.aria-label]="chartLabel() + ' preview chart'"></canvas>
   </div>
-  }
 </section>
