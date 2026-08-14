@@ -111,3 +111,53 @@ export interface AdminViewsSummary {
   };
   top_datasets: AdminAnalyticsDatasetCount[];
 }
+
+export interface AdminActivityEntry {
+  id: string;
+  activity_type: string;
+  action: string;
+  created_at: string;
+  actor_email: string | null;
+  dataset_id: string | null;
+  dataset_slug: string | null;
+  target_model: string | null;
+  target_id: string | null;
+  endpoint: string | null;
+  method: string | null;
+  status_code: number | null;
+  summary: string;
+  details: Record<string, unknown> | null;
+}
+
+export type AdminActivityTypeFilter = '' | 'dataset_audit' | 'api_usage';
+
+export interface AdminActivityListPayload {
+  items: AdminActivityEntry[];
+  pagination: {
+    page: number;
+    page_size: number;
+    total_items: number;
+    total_pages: number;
+    has_next: boolean;
+    has_previous: boolean;
+    next: string | null;
+    previous: string | null;
+  };
+}
+
+export interface AdminDatasetActivitySummary {
+  days: number;
+  totals: {
+    total_events: number;
+    unique_datasets: number;
+    dataset_events: number;
+    workflow_events: number;
+    file_events: number;
+    metadata_events: number;
+    tag_events: number;
+    version_events: number;
+  };
+  by_day: { date: string; total_events: number }[];
+  by_action: { action: string; count: number }[];
+  top_datasets: AdminAnalyticsDatasetCount[];
+}

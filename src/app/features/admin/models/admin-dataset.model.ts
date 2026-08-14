@@ -198,6 +198,38 @@ export interface DatasetBulkActionJobDetail extends DatasetBulkActionJob {
   failed: { dataset_id: string; error: string }[];
 }
 
+export interface DatasetBulkJobListPagination {
+  page: number;
+  page_size: number;
+  total_items: number;
+  total_pages: number;
+  has_next: boolean;
+  has_previous: boolean;
+}
+
+export interface DatasetBulkActionJobListPayload {
+  items: DatasetBulkActionJob[];
+  pagination: DatasetBulkJobListPagination;
+}
+
+export interface DatasetBulkUploadJobListPayload {
+  items: DatasetBulkUploadJob[];
+  pagination: DatasetBulkJobListPagination;
+}
+
+export type RecentBulkJobKind = 'action' | 'upload';
+
+export interface RecentBulkJob {
+  kind: RecentBulkJobKind;
+  id: string;
+  status: DatasetBulkJobStatus;
+  label: string;
+  processedCount: number;
+  totalCount: number;
+  failedCount: number;
+  createdAt: string;
+}
+
 export interface DatasetBulkUploadJob {
   id: string;
   status: DatasetBulkJobStatus;

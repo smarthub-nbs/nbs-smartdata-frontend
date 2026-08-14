@@ -7,7 +7,7 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Observable, catchError, of, tap } from 'rxjs';
+import { Observable, catchError, of } from 'rxjs';
 import { ApiError } from '@app/core/models/api-error.model';
 import { AuthError, AuthService } from '@app/core/services/auth.service';
 import { ApiService } from '@app/core/services/api.service';
@@ -57,8 +57,12 @@ interface BackendBookmarkList {
     page_size: number;
     total_pages: number;
     total_items: number;
+    has_next?: boolean;
+    has_previous?: boolean;
   };
 }
+
+const BOOKMARK_PAGE_SIZE = 100;
 
 @Injectable({ providedIn: 'root' })
 export class AccountService {
@@ -70,6 +74,9 @@ export class AccountService {
 
   private readonly savedDatasets = signal<SavedDatasetItem[]>([]);
   private readonly bookmarksLoading = signal(false);
+  private readonly bookmarksLoadingMore = signal(false);
+  private readonly bookmarksPage = signal(1);
+  private readonly bookmarksHasMore = signal(false);
   private readonly savedQueries = signal<SavedQueryItem[]>([]);
   private readonly preferences =
     signal<AccountPreferences>(DEFAULT_PREFERENCES);
@@ -80,6 +87,8 @@ export class AccountService {
     () => new Set(this.savedDatasets().map((item) => item.datasetId)),
   );
   readonly bookmarksLoadingState = this.bookmarksLoading.asReadonly();
+  readonly bookmarksLoadingMoreState = this.bookmarksLoadingMore.asReadonly();
+  readonly bookmarksHasMoreState = this.bookmarksHasMore.asReadonly();
 
   private readonly savedDatasetsForDisplay = computed(() =>
     this.savedDatasets().map((item) => this.enrichSavedDataset(item)),
@@ -199,32 +208,80 @@ export class AccountService {
   refreshBookmarks(): void {
     if (!this.auth.user()) {
       this.savedDatasets.set([]);
+      this.bookmarksPage.set(1);
+      this.bookmarksHasMore.set(false);
       return;
     }
 
     this.bookmarksLoading.set(true);
-    this.api
-      .get<BackendBookmarkList>('/v1/dataset/bookmarks/', {
-        page: '1',
-        page_size: '100',
-      })
-      .pipe(
-        takeUntilDestroyed(this.destroyRef),
-        tap((response) => {
+    this.fetchBookmarkPage(1)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => {
           this.savedDatasets.set(
             response.items.map((bookmark) => this.toSavedDataset(bookmark)),
           );
+          this.applyBookmarkPagination(response.pagination);
           this.bookmarksLoading.set(false);
-        }),
-        catchError((error: unknown) => {
+        },
+        error: (error: unknown) => {
           this.bookmarksLoading.set(false);
           this.toast.error(
             this.resolveErrorMessage(error, 'Could not load saved datasets.'),
           );
-          return of(null);
-        }),
-      )
-      .subscribe();
+        },
+      });
+  }
+
+  loadMoreBookmarks(): void {
+    if (
+      !this.auth.user() ||
+      !this.bookmarksHasMore() ||
+      this.bookmarksLoading() ||
+      this.bookmarksLoadingMore()
+    ) {
+      return;
+    }
+
+    const nextPage = this.bookmarksPage() + 1;
+    this.bookmarksLoadingMore.set(true);
+    this.fetchBookmarkPage(nextPage)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => {
+          const existing = new Set(
+            this.savedDatasets().map((item) => item.datasetId),
+          );
+          const appended = response.items
+            .map((bookmark) => this.toSavedDataset(bookmark))
+            .filter((item) => !existing.has(item.datasetId));
+          this.savedDatasets.update((items) => [...items, ...appended]);
+          this.applyBookmarkPagination(response.pagination);
+          this.bookmarksLoadingMore.set(false);
+        },
+        error: (error: unknown) => {
+          this.bookmarksLoadingMore.set(false);
+          this.toast.error(
+            this.resolveErrorMessage(error, 'Could not load more datasets.'),
+          );
+        },
+      });
+  }
+
+  private fetchBookmarkPage(page: number) {
+    return this.api.get<BackendBookmarkList>('/v1/dataset/bookmarks/', {
+      page: String(page),
+      page_size: String(BOOKMARK_PAGE_SIZE),
+    });
+  }
+
+  private applyBookmarkPagination(
+    pagination: BackendBookmarkList['pagination'],
+  ): void {
+    this.bookmarksPage.set(pagination.page);
+    const hasNext =
+      pagination.has_next ?? pagination.page < pagination.total_pages;
+    this.bookmarksHasMore.set(hasNext);
   }
 
   private toSavedDataset(bookmark: BackendBookmark): SavedDatasetItem {

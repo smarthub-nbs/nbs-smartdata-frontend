@@ -1,0 +1,15 @@
+<div class="flex min-h-[60vh] items-center justify-center py-8">
+  <div class="w-full max-w-md space-y-4 text-center">
+    @if (errorMessage()) {
+    <app-alert variant="error">{{ errorMessage() }}</app-alert>
+    <a routerLink="/login"
+      class="inline-flex items-center gap-1.5 text-sm font-medium text-nbs-primary hover:underline">
+      <app-icon name="arrow-right" [size]="15" class="rotate-180" />
+      Back to sign in
+    </a>
+    } @else {
+    <app-page-state variant="loading" title="Signing in with GitHub" label="GitHub"
+      message="Completing authentication…" />
+    }
+  </div>
+</div>

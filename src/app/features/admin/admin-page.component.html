@@ -134,6 +134,96 @@
         }
       </div>
     </section>
+
+    @if (workflowEventCards().length > 0) {
+    <section>
+      <h3 class="text-sm font-semibold text-slate-900">Publishing activity</h3>
+      <p class="mt-1 text-xs text-nbs-muted">
+        Dataset workflow events over the last {{ analytics.days() }} days.
+      </p>
+      <div class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        @for (card of workflowEventCards(); track card.label) {
+        <article class="rounded-lg border border-slate-200 bg-white px-3 py-3">
+          <p class="text-xs font-medium text-nbs-muted">{{ card.label }}</p>
+          <p class="mt-1 text-lg font-semibold tabular-nums text-slate-900">
+            {{ card.value | number }}
+          </p>
+        </article>
+        }
+      </div>
+    </section>
+    }
+
+    <section>
+      <div class="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h3 class="text-sm font-semibold text-slate-900">Recent activity</h3>
+          <p class="mt-1 text-xs text-nbs-muted">
+            Latest dataset audit and API usage events.
+          </p>
+        </div>
+        <label class="flex min-w-[10rem] flex-col gap-1">
+          <span class="text-[11px] font-medium text-nbs-muted">Type</span>
+          <select class="h-9 rounded-md border border-slate-200 bg-white px-2 text-sm text-slate-800"
+            [ngModel]="analytics.activityTypeFilter()" (ngModelChange)="onActivityTypeChange($event)">
+            <option value="">All</option>
+            <option value="dataset_audit">Dataset audit</option>
+            <option value="api_usage">API usage</option>
+          </select>
+        </label>
+      </div>
+      @if (analytics.activityErrorState()) {
+      <div class="mt-3 rounded-md border border-nbs-danger-border bg-nbs-danger-soft px-4 py-3" role="alert">
+        <p class="text-sm text-nbs-danger">{{ analytics.activityErrorState() }}</p>
+      </div>
+      } @else if (analytics.activityLoadingState() && analytics.recentActivity().length === 0) {
+      <p class="mt-3 text-sm text-nbs-muted">Loading activity…</p>
+      } @else if (analytics.recentActivity().length === 0) {
+      <div class="mt-3 rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center">
+        <p class="text-sm text-nbs-muted">No recent activity yet.</p>
+      </div>
+      } @else {
+      <ul class="mt-3 divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white"
+        [class.opacity-60]="analytics.activityLoadingState()">
+        @for (entry of analytics.recentActivity(); track entry.id) {
+        <li class="flex flex-wrap items-start justify-between gap-3 px-4 py-3">
+          <div class="min-w-0">
+            <p class="text-sm font-medium text-slate-900">{{ activityLabel(entry) }}</p>
+            <p class="mt-0.5 text-xs text-nbs-muted">
+              {{ entry.activity_type === 'api_usage' ? 'API usage' : 'Dataset audit' }}
+              @if (entry.dataset_slug) {
+              · {{ entry.dataset_slug }}
+              }
+              @if (entry.actor_email) {
+              · {{ entry.actor_email }}
+              }
+            </p>
+          </div>
+          <time class="shrink-0 text-xs tabular-nums text-nbs-muted" [attr.datetime]="entry.created_at">
+            {{ entry.created_at | date: 'medium' }}
+          </time>
+        </li>
+        }
+      </ul>
+      @if (analytics.activityPaginationState(); as pages) {
+      <div class="mt-3 flex flex-wrap items-center justify-between gap-2">
+        <p class="text-xs text-nbs-muted">
+          Page {{ pages.page }} of {{ pages.total_pages || 1 }}
+        </p>
+        <div class="flex gap-2">
+          <app-button variant="outline" size="sm" [disabled]="!pages.has_previous || analytics.activityLoadingState()"
+            (clicked)="goToPreviousActivityPage()">
+            Previous
+          </app-button>
+          <app-button variant="outline" size="sm" [disabled]="!pages.has_next || analytics.activityLoadingState()"
+            (clicked)="goToNextActivityPage()">
+            Next
+          </app-button>
+        </div>
+      </div>
+      }
+      }
+    </section>
     }
   </section>
   }

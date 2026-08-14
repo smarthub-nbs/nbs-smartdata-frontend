@@ -55,12 +55,39 @@ export class MockDatasetAdapter implements DatasetAdapter {
       if (filters.region && dataset.region !== filters.region) {
         return false;
       }
+      if (filters.tag) {
+        const tag = filters.tag.toLowerCase();
+        const hasTag = dataset.keywords.some(
+          (keyword) =>
+            keyword.toLowerCase() === tag ||
+            keyword.toLowerCase().replace(/\s+/g, '-') === tag,
+        );
+        if (!hasTag) {
+          return false;
+        }
+      }
+      if (filters.license && dataset.license !== filters.license) {
+        return false;
+      }
+      if (
+        filters.publisher &&
+        !dataset.publisher
+          .toLowerCase()
+          .includes(filters.publisher.toLowerCase())
+      ) {
+        return false;
+      }
+      if (filters.year && String(dataset.year ?? '') !== filters.year) {
+        return false;
+      }
       if (query) {
         const haystack = [
           dataset.title,
           dataset.description,
           dataset.topicName,
           dataset.region,
+          dataset.publisher,
+          dataset.license,
           ...dataset.keywords,
         ]
           .join(' ')

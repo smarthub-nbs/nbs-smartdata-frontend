@@ -11,10 +11,8 @@ import { Router } from '@angular/router';
 import {
   Observable,
   catchError,
-  finalize,
   map,
   of,
-  shareReplay,
   switchMap,
   tap,
 } from 'rxjs';
@@ -61,6 +59,11 @@ interface RegisterRequest {
 interface RegisterResponse {
   access: string;
   refresh?: string;
+}
+
+interface CsrfResponse {
+  csrf_token: string;
+  header_name: string;
 }
 
 interface CurrentUserResponse {
@@ -129,29 +132,30 @@ export class AuthService {
     username: string,
     password: string,
   ): Observable<AuthError | null> {
-    return this.http
-      .post<ApiEnvelope<LoginResponse>>(
+    return this.withCsrf((headers) =>
+      this.http.post<ApiEnvelope<LoginResponse>>(
         `${environment.apiBaseUrl}/v1/auth/login/`,
         {
           email: username.trim(),
           password,
         },
-      )
-      .pipe(
-        tap((response) => this.saveTokens(response.data)),
-        switchMap(() => this.fetchCurrentUser()),
-        map(() => null),
-        catchError((error: unknown) =>
-          of({ message: this.resolveErrorMessage(error, 'Sign in failed.') }),
-        ),
-      );
+        { headers, withCredentials: true },
+      ),
+    ).pipe(
+      tap((response) => this.saveTokens(response.data)),
+      switchMap(() => this.fetchCurrentUser()),
+      map(() => null),
+      catchError((error: unknown) =>
+        of({ message: this.resolveErrorMessage(error, 'Sign in failed.') }),
+      ),
+    );
   }
 
-  register(request: RegisterRequest): Observable<AuthError | null> {
+  signInWithGoogle(accessToken: string): Observable<AuthError | null> {
     return this.http
-      .post<ApiEnvelope<RegisterResponse>>(
-        `${environment.apiBaseUrl}/v1/auth/register/`,
-        request,
+      .post<ApiEnvelope<LoginResponse>>(
+        `${environment.apiBaseUrl}/v1/auth/social/google/`,
+        { access_token: accessToken },
       )
       .pipe(
         tap((response) => this.saveTokens(response.data)),
@@ -159,20 +163,73 @@ export class AuthService {
         map(() => null),
         catchError((error: unknown) =>
           of({
-            message: this.resolveErrorMessage(error, 'Registration failed.'),
+            message: this.resolveErrorMessage(error, 'Google sign-in failed.'),
           }),
         ),
       );
   }
 
+  signInWithGitHub(payload: {
+    code: string;
+    redirectUri: string;
+    codeVerifier: string;
+  }): Observable<AuthError | null> {
+    return this.http
+      .post<ApiEnvelope<LoginResponse>>(
+        `${environment.apiBaseUrl}/v1/auth/social/github/`,
+        {
+          code: payload.code,
+          redirect_uri: payload.redirectUri,
+          code_verifier: payload.codeVerifier,
+        },
+      )
+      .pipe(
+        tap((response) => this.saveTokens(response.data)),
+        switchMap(() => this.fetchCurrentUser()),
+        map(() => null),
+        catchError((error: unknown) =>
+          of({
+            message: this.resolveErrorMessage(error, 'GitHub sign-in failed.'),
+          }),
+        ),
+      );
+  }
+
+  register(request: RegisterRequest): Observable<AuthError | null> {
+    return this.withCsrf((headers) =>
+      this.http.post<ApiEnvelope<RegisterResponse>>(
+        `${environment.apiBaseUrl}/v1/auth/register/`,
+        request,
+        { headers, withCredentials: true },
+      ),
+    ).pipe(
+      tap((response) => this.saveTokens(response.data)),
+      switchMap(() => this.fetchCurrentUser()),
+      map(() => null),
+      catchError((error: unknown) =>
+        of({
+          message: this.resolveErrorMessage(error, 'Registration failed.'),
+        }),
+      ),
+    );
+  }
+
   signOut(options?: SignOutOptions): void {
-    const hadAccess =
-      this.accessToken() !== null ||
-      localStorage.getItem(ACCESS_TOKEN_KEY) !== null;
-    if (hadAccess) {
-      // Refresh token is HttpOnly; logout clears it via cookie + CSRF.
-      this.http
-        .post(`${environment.apiBaseUrl}/v1/auth/logout/`, {})
+    const access = this.accessToken();
+    if (access || localStorage.getItem(REFRESH_TOKEN_KEY)) {
+      this.withCsrf((headers) =>
+        this.http.post(
+          `${environment.apiBaseUrl}/v1/auth/logout/`,
+          {},
+          {
+            headers: {
+              ...headers,
+              ...(access ? { Authorization: `Bearer ${access}` } : {}),
+            },
+            withCredentials: true,
+          },
+        ),
+      )
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({ error: () => undefined });
     }
@@ -192,27 +249,26 @@ export class AuthService {
       return this.refreshInFlight;
     }
 
-    // Backend reads refresh from the HttpOnly cookie (withCredentials).
-    this.refreshInFlight = this.http
-      .post<ApiEnvelope<RefreshResponse>>(
+    this.refreshInFlight = this.withCsrf((headers) =>
+      this.http.post<ApiEnvelope<RefreshResponse>>(
         `${environment.apiBaseUrl}/v1/auth/refresh/`,
         {},
-      )
-      .pipe(
-        map((response) => {
-          this.accessToken.set(response.data.access);
-          localStorage.setItem(ACCESS_TOKEN_KEY, response.data.access);
-          return response.data.access;
-        }),
-        catchError(() => {
-          this.clearSession();
-          return of(null);
-        }),
-        finalize(() => {
-          this.refreshInFlight = null;
-        }),
-        shareReplay({ bufferSize: 1, refCount: true }),
-      );
+        { headers, withCredentials: true },
+      ),
+    ).pipe(
+      map((response) => {
+        this.accessToken.set(response.data.access);
+        localStorage.setItem(ACCESS_TOKEN_KEY, response.data.access);
+        return response.data.access;
+      }),
+      catchError(() => {
+        this.clearSession();
+        return of(null);
+      }),
+      tap(() => {
+        this.refreshInFlight = null;
+      }),
+    );
 
     return this.refreshInFlight;
   }
@@ -387,6 +443,7 @@ export class AuthService {
     return this.http
       .get<ApiEnvelope<CurrentUserResponse>>(
         `${environment.apiBaseUrl}/v1/auth/me/`,
+        { withCredentials: true },
       )
       .pipe(
         map((response) => this.toUserProfile(response.data)),
@@ -429,6 +486,23 @@ export class AuthService {
     } else {
       localStorage.removeItem(REFRESH_TOKEN_KEY);
     }
+  }
+
+  private withCsrf<T>(
+    request: (headers: Record<string, string>) => Observable<T>,
+  ): Observable<T> {
+    return this.http
+      .get<ApiEnvelope<CsrfResponse>>(
+        `${environment.apiBaseUrl}/v1/auth/csrf/`,
+        { withCredentials: true },
+      )
+      .pipe(
+        switchMap((response) =>
+          request({
+            [response.data.header_name]: response.data.csrf_token,
+          }),
+        ),
+      );
   }
 
   private saveUser(user: UserProfile): void {

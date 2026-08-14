@@ -66,6 +66,12 @@
           </div>
           } @else {
           <div class="flex items-center gap-1">
+            @if (!file.isPrimary) {
+            <app-button variant="outline" size="sm" [loading]="isSettingPrimary(file.id)"
+              (clicked)="setPrimaryFile(file.id)">
+              Make primary
+            </app-button>
+            }
             <app-button variant="outline" size="sm" [loading]="isValidating(file.id)" (clicked)="validateFile(file.id)">
               Validate
             </app-button>
@@ -127,13 +133,59 @@
       @if (resources().versions.length === 0) {
       <p class="text-xs text-nbs-muted">No versions recorded.</p>
       } @else {
-      <ul class="space-y-1">
+      <ul class="space-y-2">
         @for (version of resources().versions; track version.id) {
         <li class="rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700">
-          <span class="font-medium text-slate-900">v{{ version.versionNumber }}</span>
-          @if (version.changelog) {
-          <span class="text-nbs-muted">
-            — {{ version.changelog }}</span>
+          @if (editingVersionId() === version.id) {
+          <div class="flex flex-wrap items-end gap-2">
+            <label class="min-w-[7rem] flex-1">
+              <span class="mb-1 block text-[11px] font-medium text-nbs-muted">Version</span>
+              <input type="text" class="h-9 w-full rounded-md border border-slate-200 px-2 text-sm"
+                [ngModel]="editVersionNumber()" (ngModelChange)="editVersionNumber.set($event)"
+                [name]="'editVersion-' + version.id" />
+            </label>
+            <label class="min-w-[10rem] flex-[2]">
+              <span class="mb-1 block text-[11px] font-medium text-nbs-muted">Changelog</span>
+              <input type="text" class="h-9 w-full rounded-md border border-slate-200 px-2 text-sm"
+                [ngModel]="editVersionChangelog()" (ngModelChange)="editVersionChangelog.set($event)"
+                [name]="'editChangelog-' + version.id" />
+            </label>
+            <app-button variant="primary" size="sm" [loading]="actionId() === 'edit-version-' + version.id"
+              [disabled]="editVersionNumber().trim().length === 0" (clicked)="saveVersion(version.id)">
+              Save
+            </app-button>
+            <app-button variant="ghost" size="sm" (clicked)="cancelEditVersion()">
+              Cancel
+            </app-button>
+          </div>
+          } @else if (confirmingVersionId() === version.id) {
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="text-xs text-slate-700">Delete v{{ version.versionNumber }}?</span>
+            <app-button variant="danger" size="sm" [loading]="actionId() === 'delete-version-' + version.id"
+              (clicked)="confirmDeleteVersion(version.id)">
+              Confirm
+            </app-button>
+            <app-button variant="ghost" size="sm" (clicked)="cancelDeleteVersion()">
+              Cancel
+            </app-button>
+          </div>
+          } @else {
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <span class="font-medium text-slate-900">v{{ version.versionNumber }}</span>
+              @if (version.changelog) {
+              <span class="text-nbs-muted"> — {{ version.changelog }}</span>
+              }
+            </div>
+            <div class="flex shrink-0 items-center gap-1">
+              <app-button variant="outline" size="sm" (clicked)="startEditVersion(version)">
+                Edit
+              </app-button>
+              <app-button variant="outline" size="sm" (clicked)="requestDeleteVersion(version.id)">
+                Delete
+              </app-button>
+            </div>
+          </div>
           }
         </li>
         }

@@ -6,12 +6,16 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { forkJoin } from 'rxjs';
+import { finalize, forkJoin } from 'rxjs';
 import { ApiError } from '@app/core/models/api-error.model';
 import { ApiService } from '@app/core/services/api.service';
 import {
+  AdminActivityEntry,
+  AdminActivityListPayload,
+  AdminActivityTypeFilter,
   AdminApiCallsSummary,
   AdminDashboardSummary,
+  AdminDatasetActivitySummary,
   AdminDownloadsSummary,
   AdminViewsSummary,
   DatasetUsageMetrics,
@@ -21,6 +25,18 @@ import {
 import { DatasetService } from '@app/features/discovery';
 
 const ANALYTICS_DAYS = 30;
+const ACTIVITY_PAGE_SIZE = 20;
+
+const EMPTY_ACTIVITY_PAGINATION: AdminActivityListPayload['pagination'] = {
+  page: 1,
+  page_size: ACTIVITY_PAGE_SIZE,
+  total_items: 0,
+  total_pages: 0,
+  has_next: false,
+  has_previous: false,
+  next: null,
+  previous: null,
+};
 
 @Injectable({ providedIn: 'root' })
 export class AdminAnalyticsService {
@@ -30,6 +46,15 @@ export class AdminAnalyticsService {
 
   private readonly usageMetrics = signal<DatasetUsageMetrics[]>([]);
   private readonly dashboardSummary = signal<AdminDashboardSummary | null>(
+    null,
+  );
+  private readonly activityFeed = signal<AdminActivityEntry[]>([]);
+  private readonly activityPagination = signal(EMPTY_ACTIVITY_PAGINATION);
+  private readonly activityType = signal<AdminActivityTypeFilter>('');
+  private readonly activityPage = signal(1);
+  private readonly activityLoading = signal(false);
+  private readonly activityError = signal<string | null>(null);
+  private readonly datasetActivity = signal<AdminDatasetActivitySummary | null>(
     null,
   );
   private readonly analyticsDays = signal(ANALYTICS_DAYS);
@@ -77,6 +102,12 @@ export class AdminAnalyticsService {
 
   readonly days = this.analyticsDays.asReadonly();
   readonly platformDashboard = this.dashboardSummary.asReadonly();
+  readonly recentActivity = this.activityFeed.asReadonly();
+  readonly activityPaginationState = this.activityPagination.asReadonly();
+  readonly activityTypeFilter = this.activityType.asReadonly();
+  readonly activityLoadingState = this.activityLoading.asReadonly();
+  readonly activityErrorState = this.activityError.asReadonly();
+  readonly datasetActivitySummary = this.datasetActivity.asReadonly();
 
   private hasLoaded = false;
 
@@ -114,10 +145,14 @@ export class AdminAnalyticsService {
         '/v1/admin/dashboard/views/summary/',
         { days },
       ),
+      datasetActivity: this.api.get<AdminDatasetActivitySummary>(
+        '/v1/admin/dashboard/datasets/activity/summary/',
+        { days },
+      ),
     })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: ({ summary, apiCalls, downloads, views }) => {
+        next: ({ summary, apiCalls, downloads, views, datasetActivity }) => {
           this.dashboardSummary.set(summary);
           this.analyticsDays.set(apiCalls.days);
           this.windowTotals.set({
@@ -131,8 +166,10 @@ export class AdminAnalyticsService {
               views.top_datasets,
             ),
           );
+          this.datasetActivity.set(datasetActivity);
           this.loading.set(false);
           this.loaded.set(true);
+          this.loadActivity();
         },
         error: (error: unknown) => {
           this.usageMetrics.set([]);
@@ -142,9 +179,62 @@ export class AdminAnalyticsService {
             totalViews: 0,
           });
           this.dashboardSummary.set(null);
+          this.datasetActivity.set(null);
           this.loading.set(false);
           this.loaded.set(true);
           this.loadError.set(this.resolveErrorMessage(error));
+          this.loadActivity();
+        },
+      });
+  }
+
+  setActivityType(type: AdminActivityTypeFilter): void {
+    if (type === this.activityType()) {
+      return;
+    }
+    this.activityType.set(type);
+    this.activityPage.set(1);
+    this.loadActivity();
+  }
+
+  loadActivityPage(page: number): void {
+    const next = Math.max(1, Math.floor(page));
+    if (next === this.activityPage()) {
+      return;
+    }
+    this.activityPage.set(next);
+    this.loadActivity();
+  }
+
+  private loadActivity(): void {
+    this.activityLoading.set(true);
+    this.activityError.set(null);
+
+    const params: Record<string, string> = {
+      page: String(this.activityPage()),
+      page_size: String(ACTIVITY_PAGE_SIZE),
+    };
+    const type = this.activityType();
+    if (type) {
+      params['type'] = type;
+    }
+
+    this.api
+      .get<AdminActivityListPayload>('/v1/admin/activity/', params)
+      .pipe(
+        finalize(() => this.activityLoading.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (payload) => {
+          this.activityFeed.set(payload.items);
+          this.activityPagination.set(payload.pagination);
+          this.activityPage.set(payload.pagination.page);
+        },
+        error: (error: unknown) => {
+          this.activityFeed.set([]);
+          this.activityPagination.set(EMPTY_ACTIVITY_PAGINATION);
+          this.activityError.set(this.resolveErrorMessage(error));
         },
       });
   }

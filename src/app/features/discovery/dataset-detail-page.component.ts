@@ -9,6 +9,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { map } from 'rxjs';
 import { DatasetMetadataPanelComponent } from '@app/features/discovery/components/dataset-metadata-panel.component';
 import { DatasetFilePreviewComponent } from '@app/features/discovery/components/dataset-file-preview.component';
+import { DatasetPreviewChartComponent } from '@app/features/discovery/components/dataset-preview-chart.component';
 import { DatasetUpdateHistoryComponent } from '@app/features/discovery/components/dataset-update-history.component';
 import { DatasetDetailHeaderComponent } from '@app/features/discovery/components/dataset-detail-header.component';
 import { DatasetDetailFallbackComponent } from '@app/features/discovery/components/dataset-detail-fallback.component';
@@ -29,6 +30,7 @@ import { DatasetDetailFacadeService } from '@app/features/discovery/services/dat
     DatasetDetailFallbackComponent,
     DatasetMetadataPanelComponent,
     DatasetFilePreviewComponent,
+    DatasetPreviewChartComponent,
     DatasetUpdateHistoryComponent,
     RecommendedDatasetsComponent,
     DatasetDownloadMenuComponent,

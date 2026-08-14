@@ -4,6 +4,7 @@ import {
 } from '@angular/common/http';
 import {
   HttpTestingController,
+  TestRequest,
   provideHttpClientTesting,
 } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
@@ -13,6 +14,17 @@ import { AuthError, AuthService } from '@app/core/services/auth.service';
 import { environment } from '@env/environment';
 
 const apiBase = environment.apiBaseUrl;
+
+function flushCsrf(httpMock: HttpTestingController): TestRequest {
+  const csrf = httpMock.expectOne(`${apiBase}/v1/auth/csrf/`);
+  expect(csrf.request.method).toBe('GET');
+  csrf.flush({
+    success: true,
+    message: 'ok',
+    data: { csrf_token: 'csrf-token', header_name: 'X-CSRFToken' },
+  });
+  return csrf;
+}
 
 const currentUserResponse = {
   id: 'user-1',
@@ -71,15 +83,18 @@ describe('AuthService', () => {
         result = value;
       });
 
+    flushCsrf(httpMock);
+
     const login = httpMock.expectOne(`${apiBase}/v1/auth/login/`);
     expect(login.request.body).toEqual({
       email: 'admin@example.com',
       password: 'secret',
     });
+    expect(login.request.headers.get('X-CSRFToken')).toBe('csrf-token');
     login.flush({
       success: true,
       message: 'ok',
-      data: { access: 'access-token', refresh: 'refresh-token' },
+      data: { access: 'access-token' },
     });
 
     const me = httpMock.expectOne(`${apiBase}/v1/auth/me/`);
@@ -131,6 +146,8 @@ describe('AuthService', () => {
         error = value;
       });
 
+    flushCsrf(httpMock);
+
     const login = httpMock.expectOne(`${apiBase}/v1/auth/login/`);
     login.flush(
       {
@@ -158,11 +175,14 @@ describe('AuthService', () => {
         result = value;
       });
 
+    flushCsrf(httpMock);
+
     const register = httpMock.expectOne(`${apiBase}/v1/auth/register/`);
+    expect(register.request.headers.get('X-CSRFToken')).toBe('csrf-token');
     register.flush({
       success: true,
       message: 'ok',
-      data: { access: 'access-token', refresh: 'refresh-token' },
+      data: { access: 'access-token' },
     });
 
     const me = httpMock.expectOne(`${apiBase}/v1/auth/me/`);
@@ -192,6 +212,8 @@ describe('AuthService', () => {
         error = value;
       });
 
+    flushCsrf(httpMock);
+
     const register = httpMock.expectOne(`${apiBase}/v1/auth/register/`);
     register.flush(
       {
@@ -212,8 +234,11 @@ describe('AuthService', () => {
       token = value;
     });
 
+    flushCsrf(httpMock);
+
     const refresh = httpMock.expectOne(`${apiBase}/v1/auth/refresh/`);
     expect(refresh.request.body).toEqual({});
+    expect(refresh.request.headers.get('X-CSRFToken')).toBe('csrf-token');
     refresh.flush({
       success: true,
       message: 'ok',
@@ -244,6 +269,8 @@ describe('AuthService', () => {
       token = value;
     });
 
+    flushCsrf(httpMock);
+
     const refresh = httpMock.expectOne(`${apiBase}/v1/auth/refresh/`);
     expect(refresh.request.body).toEqual({});
     refresh.flush(
@@ -272,8 +299,11 @@ describe('AuthService', () => {
 
     service.signOut();
 
+    flushCsrf(httpMock);
+
     const logout = httpMock.expectOne(`${apiBase}/v1/auth/logout/`);
     expect(logout.request.body).toEqual({});
+    expect(logout.request.headers.get('X-CSRFToken')).toBe('csrf-token');
     logout.flush({ success: true, message: 'ok' });
 
     expect(localStorage.getItem('nbs_access_token')).toBeNull();
@@ -286,6 +316,8 @@ describe('AuthService', () => {
     localStorage.setItem('nbs_access_token', 'access-token');
 
     service.signOut({ reason: 'idle' });
+
+    flushCsrf(httpMock);
 
     const logout = httpMock.expectOne(`${apiBase}/v1/auth/logout/`);
     expect(logout.request.body).toEqual({});
@@ -305,10 +337,12 @@ describe('AuthService', () => {
         result = value;
       });
 
+    flushCsrf(httpMock);
+
     httpMock.expectOne(`${apiBase}/v1/auth/login/`).flush({
       success: true,
       message: 'ok',
-      data: { access: 'access-token', refresh: 'refresh-token' },
+      data: { access: 'access-token' },
     });
 
     httpMock.expectOne(`${apiBase}/v1/auth/me/`).flush({

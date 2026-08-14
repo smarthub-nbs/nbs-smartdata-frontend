@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, forkJoin, map, of, switchMap } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { ApiService } from '@app/core/services/api.service';
 import { DatasetAdapter } from '@app/features/discovery/adapters/dataset-adapter.interface';
 import {
@@ -65,10 +65,9 @@ export class HttpDatasetAdapter implements DatasetAdapter {
   list(filters?: DatasetFilters): Observable<Dataset[]> {
     const params = this.toListParams(filters);
 
-    return this.api.get<BackendDataset[]>('/v1/dataset/', params).pipe(
-      switchMap((datasets) => this.hydrateDatasetDetails(datasets)),
-      map((items) => items.map((dataset) => this.toDataset(dataset))),
-    );
+    return this.api
+      .get<BackendDataset[]>('/v1/dataset/', params)
+      .pipe(map((items) => items.map((dataset) => this.toDataset(dataset))));
   }
 
   getById(id: string): Observable<Dataset> {
@@ -87,20 +86,6 @@ export class HttpDatasetAdapter implements DatasetAdapter {
           description: `${category.name} datasets`,
           datasetCount: 0,
         })),
-      ),
-    );
-  }
-
-  private hydrateDatasetDetails(
-    summaries: BackendDataset[],
-  ): Observable<BackendDataset[]> {
-    if (summaries.length === 0) {
-      return of([]);
-    }
-
-    return forkJoin(
-      summaries.map((dataset) =>
-        this.api.get<BackendDataset>(`/v1/dataset/${dataset.id}/`),
       ),
     );
   }
@@ -128,6 +113,18 @@ export class HttpDatasetAdapter implements DatasetAdapter {
     }
     if (filters.format) {
       params['file_format'] = filters.format.toLowerCase();
+    }
+    if (filters.tag) {
+      params['tag'] = filters.tag;
+    }
+    if (filters.license) {
+      params['license'] = filters.license;
+    }
+    if (filters.publisher) {
+      params['publisher'] = filters.publisher;
+    }
+    if (filters.year) {
+      params['year'] = filters.year;
     }
 
     return Object.keys(params).length > 0 ? params : undefined;

@@ -1,4 +1,4 @@
-import { DecimalPipe } from '@angular/common';
+import { DatePipe, DecimalPipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -14,6 +14,7 @@ import { AuthService } from '@app/core/services/auth.service';
 import {
   DatasetBulkAction,
   DatasetBulkUploadItemInput,
+  RecentBulkJob,
   StatusFilter,
 } from '@app/features/admin/models/admin-dataset.model';
 import { AdminTaxonomyStore } from '@app/features/admin/services/admin-taxonomy.store';
@@ -55,6 +56,7 @@ const STATUS_FILTERS: readonly StatusFilterItem[] = [
   selector: 'app-dataset-workflow-panel',
   standalone: true,
   imports: [
+    DatePipe,
     DecimalPipe,
     FormsModule,
     ButtonComponent,
@@ -177,6 +179,10 @@ export class DatasetWorkflowPanelComponent {
     if (action === 'reject') {
       this.bulkRejectReason.set('');
     }
+  }
+
+  protected onRecentJobClick(job: RecentBulkJob): void {
+    this.facade.resumeBulkJob(job);
   }
 
   protected onSelect(id: string): void {

@@ -4,8 +4,10 @@ export const environment: Environment = {
   production: true,
   useMockApi: false,
   useMockExploreApi: false,
-  apiBaseUrl: 'https://api.smartdata.nbs.go.tz',
+  apiBaseUrl: 'http://127.0.0.1:8000/api',
   appName: 'NBS SmartData Hub',
   sessionIdleTimeoutMs: 5 * 60 * 1000,
   sessionIdleWarningMs: 30 * 1000,
+  googleClientId: '',
+  githubClientId: '',
 };

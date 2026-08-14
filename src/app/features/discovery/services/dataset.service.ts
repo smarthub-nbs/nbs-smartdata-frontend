@@ -20,9 +20,11 @@ import {
 } from 'rxjs';
 import { ApiError } from '@app/core/models/api-error.model';
 import { DATASET_ADAPTER } from '@app/features/discovery/adapters/dataset.adapter';
+import { ApiService } from '@app/core/services/api.service';
 import {
   Dataset,
   DatasetFilters,
+  DatasetTagOption,
   DatasetTopic,
   EMPTY_DATASET_FILTERS,
 } from '@app/features/discovery/models/dataset.model';
@@ -38,11 +40,13 @@ import {
 @Injectable({ providedIn: 'root' })
 export class DatasetService {
   private readonly adapter = inject(DATASET_ADAPTER);
+  private readonly api = inject(ApiService);
   private readonly destroyRef = inject(DestroyRef);
 
   private readonly datasets = signal<Dataset[]>([]);
   private readonly facetDatasets = signal<Dataset[]>([]);
   private readonly topicsState = signal<DatasetTopic[]>([]);
+  private readonly tagsState = signal<DatasetTagOption[]>([]);
   private readonly filters = signal<DatasetFilters>({
     ...EMPTY_DATASET_FILTERS,
   });
@@ -55,6 +59,7 @@ export class DatasetService {
   private catalogInitStarted = false;
 
   readonly topics = this.topicsState.asReadonly();
+  readonly tags = this.tagsState.asReadonly();
   readonly activeFilters = this.filters.asReadonly();
   readonly catalogLoadState = this.catalogState.asReadonly();
   readonly detailLoadState = this.detailState.asReadonly();
@@ -72,6 +77,38 @@ export class DatasetService {
   readonly frequencies = computed(() => [
     ...new Set(this.facetDatasets().map((d) => d.frequency)),
   ]);
+
+  readonly licenses = computed(() =>
+    [
+      ...new Set(
+        this.facetDatasets()
+          .map((d) => d.license)
+          .filter(Boolean),
+      ),
+    ].sort((a, b) => a.localeCompare(b)),
+  );
+
+  readonly publishers = computed(() =>
+    [
+      ...new Set(
+        this.facetDatasets()
+          .map((d) => d.publisher)
+          .filter(Boolean),
+      ),
+    ].sort((a, b) => a.localeCompare(b)),
+  );
+
+  readonly years = computed(() =>
+    [
+      ...new Set(
+        this.facetDatasets()
+          .map((d) => d.year)
+          .filter((year): year is number => typeof year === 'number'),
+      ),
+    ]
+      .sort((a, b) => b - a)
+      .map(String),
+  );
 
   constructor() {
     this.queryReload$
@@ -118,14 +155,38 @@ export class DatasetService {
           forkJoin({
             datasets: this.adapter.list(),
             topics: this.adapter.listTopics(),
+            tags: this.api
+              .get<DatasetTagOption[]>('/v1/dataset/tags/')
+              .pipe(catchError(() => of([] as DatasetTagOption[]))),
           }),
         ),
         takeUntilDestroyed(this.destroyRef),
       )
-      .subscribe(({ datasets, topics }) => {
+      .subscribe(({ datasets, topics, tags }) => {
         this.facetDatasets.set(datasets);
         this.topicsState.set(buildPublishedTopics(topics, datasets));
+        this.tagsState.set(
+          tags.length > 0 ? tags : this.tagsFromDatasets(datasets),
+        );
       });
+  }
+
+  private tagsFromDatasets(datasets: Dataset[]): DatasetTagOption[] {
+    const bySlug = new Map<string, DatasetTagOption>();
+    for (const dataset of datasets) {
+      for (const keyword of dataset.keywords) {
+        const slug = keyword
+          .trim()
+          .toLowerCase()
+          .replace(/\s+/g, '-')
+          .replace(/[^a-z0-9-]/g, '');
+        if (!slug || bySlug.has(slug)) {
+          continue;
+        }
+        bySlug.set(slug, { id: slug, name: keyword, slug });
+      }
+    }
+    return [...bySlug.values()].sort((a, b) => a.name.localeCompare(b.name));
   }
 
   ensureCatalogLoaded(): void {

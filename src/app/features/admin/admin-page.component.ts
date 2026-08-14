@@ -1,4 +1,4 @@
-import { DecimalPipe } from '@angular/common';
+import { DatePipe, DecimalPipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -7,9 +7,15 @@ import {
   inject,
   signal,
 } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Params, Router, RouterLink } from '@angular/router';
 import { AuthService } from '@app/core/services/auth.service';
-import { DatasetUsageRow, AdminAnalyticsService } from '@app/features/admin';
+import {
+  AdminActivityEntry,
+  DatasetUsageRow,
+  AdminAnalyticsService,
+} from '@app/features/admin';
+import { AdminActivityTypeFilter } from '@app/features/admin/models/admin-analytics.model';
 import { DatasetWorkflowPanelComponent } from '@app/features/admin/components/dataset-workflow-panel.component';
 import { TaxonomyManagerComponent } from '@app/features/admin/components/taxonomy-manager.component';
 import {
@@ -27,6 +33,7 @@ import {
   DataTableColumn,
   DataTableComponent,
   BadgeComponent,
+  ButtonComponent,
   IconComponent,
   NbsSwapEnterDirective,
 } from '@shared/ui';
@@ -62,12 +69,15 @@ const ADMIN_NAV_ITEMS: readonly AdminNavItem[] = [
   selector: 'app-admin-page',
   standalone: true,
   imports: [
+    DatePipe,
     DecimalPipe,
+    FormsModule,
     RouterLink,
     DataTableComponent,
     DatasetWorkflowPanelComponent,
     TaxonomyManagerComponent,
     BadgeComponent,
+    ButtonComponent,
     IconComponent,
     NbsSwapEnterDirective,
   ],
@@ -151,6 +161,47 @@ export class AdminPageComponent {
   }
 
   protected readonly topDemandDataset = this.analytics.topResolvedRow;
+
+  protected readonly workflowEventCards = computed(() => {
+    const summary = this.analytics.datasetActivitySummary();
+    if (!summary) {
+      return [];
+    }
+    const totals = summary.totals;
+    return [
+      { label: 'Workflow events', value: totals.workflow_events },
+      { label: 'File events', value: totals.file_events },
+      { label: 'Metadata events', value: totals.metadata_events },
+      { label: 'Version events', value: totals.version_events },
+    ];
+  });
+
+  protected activityLabel(entry: AdminActivityEntry): string {
+    if (entry.activity_type === 'api_usage') {
+      return entry.method
+        ? `${entry.method} ${entry.endpoint ?? 'API request'}`
+        : entry.summary;
+    }
+    return entry.summary || entry.action;
+  }
+
+  protected onActivityTypeChange(value: string): void {
+    const type =
+      value === 'dataset_audit' || value === 'api_usage'
+        ? value
+        : ('' as AdminActivityTypeFilter);
+    this.analytics.setActivityType(type);
+  }
+
+  protected goToPreviousActivityPage(): void {
+    const page = this.analytics.activityPaginationState().page;
+    this.analytics.loadActivityPage(page - 1);
+  }
+
+  protected goToNextActivityPage(): void {
+    const page = this.analytics.activityPaginationState().page;
+    this.analytics.loadActivityPage(page + 1);
+  }
 
   protected onUsageRowClick(row: DatasetUsageRow): void {
     if (!row.resolved) {

@@ -4,13 +4,6 @@
     <p class="nbs-page-lead">
       Interactive charts and regional comparisons — no download required.
     </p>
-    @if (showMockNotice) {
-    <output
-      class="mt-3 block max-w-md rounded-md border border-nbs-warning-border bg-nbs-warning-soft px-3 py-2 text-xs leading-5 text-nbs-warning">
-      Development preview: sample indicators are shown until the live API is
-      available.
-    </output>
-    }
   </header>
 
   @if (exploreData.catalogLoadState().status === 'loading') {
