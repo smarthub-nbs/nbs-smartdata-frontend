@@ -7,6 +7,11 @@ import {
   RegionalValue,
   TimeSeriesPoint,
 } from '@app/features/explore/models/explore.model';
+import {
+  GeoChartQuery,
+  hasCensusGeography,
+  yFieldName,
+} from '@app/features/explore/utils/census-geo.util';
 
 interface BackendCategory {
   id: string;
@@ -63,6 +68,7 @@ interface BackendChartPoint {
   y?: ChartScalar;
   value?: ChartScalar;
   count: number;
+  key?: string | number | null;
 }
 
 interface BackendChartSeries {
@@ -75,7 +81,6 @@ interface BackendChartResponse {
   warnings?: string[];
 }
 
-const MAX_INDICATORS = 8;
 const TIME_FIELDS = [
   'time_name',
   'month',
@@ -98,6 +103,27 @@ const REGION_FIELDS = [
 const Y_FIELDS = ['data_value', 'datavalue', 'value', 'count'] as const;
 const IDENTIFIER_COLUMN = /(_code|_level|_id|_key|_tag)$/i;
 
+function indicatorYear(name: string): number {
+  const match = /(?:19|20)\d{2}/.exec(name);
+  return match ? Number(match[0]) : 0;
+}
+
+function compareExploreIndicators(
+  left: ExploreIndicator,
+  right: ExploreIndicator,
+): number {
+  const yearDelta = indicatorYear(right.name) - indicatorYear(left.name);
+  if (yearDelta !== 0) {
+    return yearDelta;
+  }
+  const leftBreakdown = left.name.includes('—') ? 1 : 0;
+  const rightBreakdown = right.name.includes('—') ? 1 : 0;
+  if (leftBreakdown !== rightBreakdown) {
+    return leftBreakdown - rightBreakdown;
+  }
+  return left.name.localeCompare(right.name);
+}
+
 @Injectable()
 export class HttpIndicatorAdapter implements IndicatorAdapter {
   private readonly api = inject(ApiService);
@@ -105,7 +131,7 @@ export class HttpIndicatorAdapter implements IndicatorAdapter {
   list(): Observable<ExploreIndicator[]> {
     return this.api.get<BackendDataset[]>('/v1/dataset/').pipe(
       switchMap((datasets) => {
-        const ids = datasets.slice(0, MAX_INDICATORS).map((dataset) => dataset.id);
+        const ids = datasets.map((dataset) => dataset.id);
         if (ids.length === 0) {
           return of([]);
         }
@@ -142,13 +168,37 @@ export class HttpIndicatorAdapter implements IndicatorAdapter {
           ),
         ).pipe(
           map((indicators) =>
-            indicators.filter(
-              (indicator): indicator is ExploreIndicator => indicator !== null,
-            ),
+            indicators
+              .filter(
+                (indicator): indicator is ExploreIndicator => indicator !== null,
+              )
+              .sort(compareExploreIndicators),
           ),
         );
       }),
     );
+  }
+
+  getPlaces(fileId: string, query: GeoChartQuery): Observable<RegionalValue[]> {
+    const params: Record<string, string> = {
+      chart_type: 'bar',
+      x_field: query.xField,
+      y_field: query.yField,
+      metric: query.metric,
+      key_field: query.keyField,
+      area_level: query.areaLevel,
+      limit: String(query.limit),
+      sort: 'desc',
+    };
+    if (query.parentCode) {
+      params['parent_code'] = query.parentCode;
+    }
+    if (query.areaCodePrefix) {
+      params['area_code_prefix'] = query.areaCodePrefix;
+    }
+    return this.api
+      .get<BackendChartResponse>(`/v1/dataset/files/${fileId}/chart/`, params)
+      .pipe(map((response) => this.toRegional(response)));
   }
 
   private buildIndicator(
@@ -158,7 +208,7 @@ export class HttpIndicatorAdapter implements IndicatorAdapter {
     return this.api
       .get<BackendFileDataResponse>(`/v1/dataset/files/${fileId}/data/`, {
         offset: '0',
-        limit: '25',
+        limit: '5',
       })
       .pipe(
         switchMap((preview) => {
@@ -166,6 +216,26 @@ export class HttpIndicatorAdapter implements IndicatorAdapter {
           const rows = preview.rows ?? [];
           if (columns.length === 0) {
             return of(null);
+          }
+
+          if (hasCensusGeography(columns)) {
+            const yField = yFieldName(columns);
+            const metadata = this.resolveMetadata(dataset.metadata);
+            return of({
+              id: dataset.id,
+              name: this.resolveTitle(metadata, dataset.slug),
+              unit: yField,
+              description:
+                metadata?.description?.trim() ||
+                'Official census geography for this indicator.',
+              topicSlug: dataset.category?.slug ?? 'uncategorized',
+              kind: 'census-geo' as const,
+              fileId,
+              yField,
+              overview: [],
+              timeSeries: [],
+              regional: [],
+            } satisfies ExploreIndicator);
           }
 
           const fields = this.pickFields(columns, rows);
@@ -225,6 +295,9 @@ export class HttpIndicatorAdapter implements IndicatorAdapter {
                   metadata?.description?.trim() ||
                   'Chart generated from the published dataset file.',
                 topicSlug: dataset.category?.slug ?? 'uncategorized',
+                kind: 'time-series' as const,
+                fileId,
+                overview: [],
                 timeSeries:
                   timeSeries.length > 0
                     ? timeSeries
@@ -315,9 +388,14 @@ export class HttpIndicatorAdapter implements IndicatorAdapter {
         if (value === null) {
           return null;
         }
+        const rawKey =
+          point.key != null && String(point.key).trim() !== ''
+            ? String(point.key)
+            : undefined;
         return {
           region: String(point.label ?? point.x ?? ''),
           value,
+          ...(rawKey ? { key: rawKey } : {}),
         };
       })
       .filter((point): point is RegionalValue => point !== null);

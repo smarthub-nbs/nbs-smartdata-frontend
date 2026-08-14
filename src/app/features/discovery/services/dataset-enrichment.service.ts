@@ -74,12 +74,7 @@ const BAR_X_CANDIDATES = [
   'commodity',
   'age_group',
 ] as const;
-const Y_CANDIDATES = [
-  'data_value',
-  'datavalue',
-  'value',
-  'count',
-] as const;
+const Y_CANDIDATES = ['data_value', 'datavalue', 'value', 'count'] as const;
 const IDENTIFIER_COLUMN = /(_code|_level|_id|_key|_tag)$/i;
 
 interface BackendStatusHistory {

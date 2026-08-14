@@ -13,13 +13,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { Chart, ChartConfiguration, Chart as ChartInstance } from 'chart.js';
-import {
-  catchError,
-  distinctUntilChanged,
-  of,
-  switchMap,
-  tap,
-} from 'rxjs';
+import { catchError, distinctUntilChanged, of, switchMap, tap } from 'rxjs';
 import { Dataset } from '@app/features/discovery/models/dataset.model';
 import { DatasetEnrichmentService } from '@app/features/discovery/services/dataset-enrichment.service';
 import {
@@ -94,9 +88,7 @@ export class DatasetPreviewChartComponent {
             .getFileChart(request.fileId, {
               chartType: request.chartType,
               limit: 12,
-              ...(request.chartType === 'bar'
-                ? { sort: 'desc' as const }
-                : {}),
+              ...(request.chartType === 'bar' ? { sort: 'desc' as const } : {}),
             })
             .pipe(
               catchError(() => of(null)),

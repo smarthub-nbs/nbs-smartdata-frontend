@@ -1,14 +1,25 @@
-<div class="space-y-6">
+<div class="space-y-5 pb-8">
   <header class="nbs-page-header">
     <h1 class="nbs-page-title">Explore data</h1>
-    <p class="nbs-page-lead">
-      Interactive charts and regional comparisons — no download required.
+    @if (selectedIndicator(); as indicator) {
+    <p class="mt-2 text-base font-medium text-slate-900">{{ indicator.name }}</p>
+    <p class="nbs-page-lead">{{ indicatorLead() }}</p>
+    <p class="mt-2">
+      <a [routerLink]="['/datasets', indicator.id]"
+        class="text-sm font-medium text-nbs-primary hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/40">
+        Dataset record and download
+      </a>
     </p>
+    } @else {
+    <p class="nbs-page-lead">
+      Official figures for one place at a time — no download required.
+    </p>
+    }
   </header>
 
   @if (exploreData.catalogLoadState().status === 'loading') {
   <app-page-state variant="loading" title="Loading indicators" label="Explore"
-    message="Preparing charts and regional comparisons…" />
+    message="Preparing charts…" />
   } @else if (exploreData.catalogLoadState().status === 'error') {
   <app-page-state variant="error" title="Could not load explore data" label="Error"
     [message]="catalogErrorMessage() ?? 'Request failed'">
@@ -22,93 +33,260 @@
   <app-page-state variant="empty" title="No chartable datasets" label="Explore"
     message="Published catalog datasets need a primary data file before they can appear here." />
   } @else {
-  <section class="nbs-card p-4">
-    <div class="grid gap-4 md:grid-cols-3">
+  <section class="nbs-card overflow-hidden">
+    <div class="grid gap-4 p-4 md:grid-cols-3">
       <label>
         <span class="mb-1 block text-xs font-medium text-slate-600">Indicator</span>
         <select
-          class="h-10 w-full rounded-md border border-slate-300 px-3 text-sm focus:border-nbs-primary focus:outline-none focus:ring-2 focus:ring-nbs-primary/30"
-          [ngModel]="selectedId()" (ngModelChange)="onIndicatorChange($event)">
-          @for (item of exploreData.allIndicators(); track item.id) {
-          <option [value]="item.id">{{ item.name }}</option>
+          class="h-10 w-full cursor-pointer rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-800 transition-colors duration-200 focus:border-nbs-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/30"
+          [value]="selectedId()" (change)="onSelectIndicator($event)">
+          @for (group of indicatorGroups(); track group.label) {
+          <optgroup [label]="group.label">
+            @for (item of group.items; track item.id) {
+            <option [value]="item.id" [selected]="item.id === selectedId()">
+              {{ item.name }}
+            </option>
+            }
+          </optgroup>
           }
         </select>
       </label>
 
+      @if (!isCensus()) {
       <label>
-        <span class="mb-1 block text-xs font-medium text-slate-600">Trend chart</span>
+        <span class="mb-1 block text-xs font-medium text-slate-600">Chart</span>
         <select
-          class="h-10 w-full rounded-md border border-slate-300 px-3 text-sm focus:border-nbs-primary focus:outline-none focus:ring-2 focus:ring-nbs-primary/30"
-          [ngModel]="chartType()" (ngModelChange)="chartType.set($event)">
-          <option value="line">Line chart</option>
-          <option value="bar">Bar chart</option>
+          class="h-10 w-full cursor-pointer rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-800 transition-colors duration-200 focus:border-nbs-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/30"
+          [value]="chartType()" (change)="onChartTypeChange($event)">
+          <option value="line" [selected]="chartType() === 'line'">Line chart</option>
+          <option value="bar" [selected]="chartType() === 'bar'">Bar chart</option>
         </select>
       </label>
-
       <div class="flex items-end">
         <app-button variant="outline" size="sm" (clicked)="exportTrendChart()">
           Export trend (PNG)
         </app-button>
       </div>
+      } @else {
+      <div class="md:col-span-2">
+        <app-explore-geo-filter [areaValue]="areaValue()" [regionKey]="regionKey()" [regions]="regionOptions()"
+          [showRegion]="!isOverview()" [regionLabel]="regionFilterLabel()"
+          (areaChange)="onAreaChange($event)" (regionChange)="onRegionChange($event)" />
+      </div>
+      }
     </div>
+
+    @if (isCensus()) {
+    <div class="flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-nbs-border bg-nbs-surface px-4 py-2.5">
+      <p class="text-xs font-medium uppercase tracking-wide text-nbs-muted">Location</p>
+      <nav aria-label="Location">
+        <ol class="flex flex-wrap items-center gap-1 text-sm">
+          @for (crumb of crumbs(); track $index) {
+          <li class="flex items-center gap-1">
+            @if ($index > 0) {
+            <span class="text-slate-400" aria-hidden="true">›</span>
+            }
+            @if (crumb.frame === null) {
+            <span class="rounded-md bg-white px-2 py-0.5 font-medium text-slate-900 ring-1 ring-nbs-border">
+              {{ crumb.label }}
+            </span>
+            } @else {
+            <button type="button"
+              class="cursor-pointer rounded-md px-2 py-0.5 text-nbs-primary transition-colors duration-200 hover:bg-white hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/40"
+              (click)="openCrumb(crumb.frame)">
+              {{ crumb.label }}
+            </button>
+            }
+          </li>
+          }
+        </ol>
+      </nav>
+    </div>
+    }
   </section>
 
   @if (selectedIndicator(); as indicator) {
-  <section class="nbs-card p-5">
-    <h2 class="text-lg font-semibold text-slate-900">
-      {{ indicator.name }}
-    </h2>
-    <p class="mt-1 text-sm text-nbs-muted">{{ indicator.description }}</p>
-    <div class="mt-4">
-      <app-indicator-chart #trendChart [indicator]="indicator" [chartType]="chartType()" />
+  @if (isCensus() && isOverview()) {
+  @if (placesLoading() && overviewCards().length === 0) {
+  <div class="grid gap-3 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]" aria-busy="true" aria-live="polite">
+    <span class="sr-only">Loading national figures</span>
+    <div class="nbs-kpi h-36 animate-pulse bg-slate-100 motion-reduce:animate-none"></div>
+    <div class="grid gap-3">
+      <div class="nbs-kpi h-[4.25rem] animate-pulse bg-slate-100 motion-reduce:animate-none"></div>
+      <div class="nbs-kpi h-[4.25rem] animate-pulse bg-slate-100 motion-reduce:animate-none"></div>
     </div>
-  </section>
-
-  <div class="grid gap-6 lg:grid-cols-2">
-    <section class="nbs-card p-5">
-      <div class="flex items-center justify-between gap-2">
-        <h2 class="text-sm font-semibold text-slate-900">
-          Regional comparison
-        </h2>
+  </div>
+  } @else {
+  @if (nationalHero(); as hero) {
+  <div class="grid gap-3 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+    <button type="button"
+      class="nbs-kpi cursor-pointer text-left transition-colors duration-200 hover:border-nbs-primary/40 hover:bg-nbs-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/40"
+      (click)="drill({ key: hero.key, label: hero.label })">
+      <p class="text-xs font-medium uppercase tracking-wide text-slate-600">{{ hero.label }}</p>
+      <p class="mt-2 text-3xl font-semibold tabular-nums text-slate-900">{{ formatCensus(hero.value) }}</p>
+      <p class="mt-1 text-xs text-nbs-muted">{{ measureLabel() }}</p>
+      <p class="mt-3 flex items-center gap-1 text-xs font-medium text-nbs-primary">
+        {{ overviewAction(hero.key) }}
+        <span aria-hidden="true">→</span>
+      </p>
+    </button>
+    <div class="grid gap-3">
+      @for (part of nationalParts(); track $index) {
+      <button type="button"
+        class="nbs-kpi cursor-pointer py-4 text-left transition-colors duration-200 hover:border-nbs-primary/40 hover:bg-nbs-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/40"
+        (click)="drill({ key: part.key, label: part.label })">
+        <p class="text-xs font-medium uppercase tracking-wide text-slate-600">{{ part.label }}</p>
+        <p class="mt-1 text-xl font-semibold tabular-nums text-slate-900">{{ formatCensus(part.value) }}</p>
+        <p class="mt-2 flex items-center gap-1 text-xs font-medium text-nbs-primary">
+          {{ overviewAction(part.key) }}
+          <span aria-hidden="true">→</span>
+        </p>
+      </button>
+      }
+    </div>
+  </div>
+  }
+  }
+  <p class="text-xs text-nbs-muted">
+    Mainland and Island make up Tanzania; they are not extra people.
+  </p>
+  } @else if (isCensus()) {
+  <section class="nbs-card p-5">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <h2 class="nbs-section-title">{{ grainLabel() }}</h2>
+        @if (nextGrainLabel()) {
+        <p class="mt-1 text-xs text-nbs-muted">
+          Click a bar or table row to open {{ nextGrainLabel()?.toLowerCase() }}.
+        </p>
+        }
+      </div>
+      <div class="flex flex-wrap items-end gap-2">
+        <label>
+          <span class="mb-1 block text-xs font-medium text-slate-600">Chart</span>
+          <select
+            class="h-9 cursor-pointer rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-800 transition-colors duration-200 focus:border-nbs-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/30"
+            [value]="chartType()" (change)="onChartTypeChange($event)">
+            <option value="bar" [selected]="chartType() === 'bar'">Bar chart</option>
+            <option value="line" [selected]="chartType() === 'line'">Line chart</option>
+          </select>
+        </label>
         <app-button variant="ghost" size="sm" (clicked)="exportRegionalChart()">
           Export PNG
         </app-button>
+        <app-button variant="ghost" size="sm" (clicked)="exportTableCsv()">
+          Download CSV
+        </app-button>
+      </div>
+    </div>
+    <div class="relative mt-4 max-h-[28rem] overflow-y-auto">
+      @if (placesLoading()) {
+      <p
+        class="absolute inset-0 z-10 flex items-center justify-center bg-white/80 text-sm text-nbs-muted">
+        Loading this view…
+      </p>
+      }
+      <app-regional-comparison-chart #censusRegionalChart [places]="places()" [title]="indicator.name"
+        [unit]="measureLabel()" [chartType]="chartType()" [interactive]="canDrill()"
+        (placeActivate)="onPlaceActivate($event)" />
+    </div>
+  </section>
+  } @else {
+  <section class="nbs-card p-5">
+    <app-indicator-chart #trendChart [indicator]="indicator" [chartType]="chartType()" />
+  </section>
+
+  <div class="grid gap-6 lg:grid-cols-2">
+    <section class="nbs-card p-5 lg:col-span-2">
+      <div class="flex items-center justify-between gap-2">
+        <h2 class="nbs-section-title">Regional comparison</h2>
+        <div class="flex items-center gap-2">
+          <app-button variant="ghost" size="sm" (clicked)="exportRegionalChart()">
+            Export PNG
+          </app-button>
+          <app-button variant="ghost" size="sm" (clicked)="exportTableCsv()">
+            Download CSV
+          </app-button>
+        </div>
       </div>
       <div class="mt-4">
-        <app-regional-comparison-chart #regionalChart [indicator]="indicator" />
+        <app-regional-comparison-chart #timeSeriesRegionalChart [places]="indicator.regional"
+          [title]="indicator.name" [unit]="measureLabel()" [chartType]="chartType()" />
       </div>
     </section>
-
-    <app-regional-map-panel [indicator]="indicator" />
   </div>
+  }
 
-  <section class="overflow-hidden rounded-lg border border-nbs-border bg-white shadow-sm">
-    <h2 class="border-b border-nbs-border px-5 py-3 text-sm font-semibold text-slate-900">
-      Data table
-    </h2>
+  @if (!(isCensus() && isOverview())) {
+  <section class="overflow-hidden rounded-xl border border-nbs-border bg-white shadow-nbs-card">
+    <div class="flex items-baseline justify-between gap-3 border-b border-nbs-border px-5 py-3">
+      <h2 class="nbs-section-title">
+        {{ isCensus() ? grainLabel() : 'Regions' }}
+      </h2>
+      <p class="text-xs text-nbs-muted">
+        {{ figureCount() }}
+        {{ figureCount() === 1 ? 'figure' : 'figures' }}
+        @if (isCensus()) {
+        · same as chart
+        }
+      </p>
+    </div>
+    @if (placesTruncated()) {
+    <p class="border-b border-nbs-border px-5 py-2 text-xs text-nbs-muted">
+      Showing the {{ figureCount() }} largest places in this view.
+    </p>
+    }
+    @if (placesError(); as error) {
+    <div class="px-5 py-4 text-sm text-slate-700">
+      <p>{{ error }}</p>
+      <div class="mt-3">
+        <app-button variant="outline" size="sm" (clicked)="retryGrain()">
+          Try again
+        </app-button>
+      </div>
+    </div>
+    } @else {
     <div class="overflow-x-auto">
       <table class="min-w-full text-sm">
-        <thead class="bg-nbs-surface text-left text-xs uppercase text-nbs-muted">
+        <caption class="sr-only">
+          {{ isCensus() ? grainLabel() : 'Region' }} values for {{ indicator.name }}
+        </caption>
+        <thead class="bg-nbs-surface text-left text-xs uppercase tracking-wide text-nbs-muted">
           <tr>
-            <th class="px-5 py-3">Region</th>
-            <th class="px-5 py-3">Value ({{ indicator.unit }})</th>
+            <th scope="col" class="px-5 py-3">{{ isCensus() ? grainLabel() : 'Region' }}</th>
+            <th scope="col" class="px-5 py-3">{{ measureLabel() }}</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-100">
-          @for (row of indicator.regional; track row.region) {
-          <tr>
+          @for (row of tablePlaces(); track $index) {
+          <tr class="transition-colors duration-150 hover:bg-nbs-surface">
             <td class="px-5 py-2.5 font-medium text-slate-800">
+              @if (isCensus() && canDrill() && row.key) {
+              <button type="button"
+                class="cursor-pointer text-left text-nbs-primary transition-colors duration-200 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/40"
+                (click)="onPlaceActivate(row)">
+                {{ row.region }}
+              </button>
+              } @else {
               {{ row.region }}
+              }
             </td>
-            <td class="px-5 py-2.5 text-slate-600">
-              {{ exploreData.formatValue(row.value, indicator.unit) }}
+            <td class="px-5 py-2.5 tabular-nums text-slate-600">
+              {{ isCensus() ? formatCensus(row.value) : exploreData.formatValue(row.value, indicator.unit) }}
             </td>
           </tr>
           }
         </tbody>
       </table>
+      @if (isCensus() && !placesLoading() && tablePlaces().length === 0) {
+      <p class="px-5 py-4 text-sm text-nbs-muted">
+        No figures at this grain for this place.
+      </p>
+      }
     </div>
+    }
   </section>
+  }
   }
   }
 </div>

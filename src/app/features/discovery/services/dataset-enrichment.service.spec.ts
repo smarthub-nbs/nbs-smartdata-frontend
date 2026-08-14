@@ -137,7 +137,12 @@ describe('DatasetEnrichmentService', () => {
           {
             name: 'sum of data_value',
             points: [
-              { label: 'Tanzania', x: 'Tanzania', y: 61741120, value: 61741120 },
+              {
+                label: 'Tanzania',
+                x: 'Tanzania',
+                y: 61741120,
+                value: 61741120,
+              },
             ],
           },
         ],
