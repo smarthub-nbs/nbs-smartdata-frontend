@@ -150,7 +150,7 @@ describe('DatasetEnrichmentService', () => {
     }) as ApiService['get']);
 
     service
-      .getFileChart('file-tisp', { chartType: 'bar', sort: 'desc', limit: 12 })
+      .getFileChart('file-tisp', { chartType: 'bar', sort: 'desc' })
       .subscribe();
 
     expect(api.get).toHaveBeenCalledWith('/v1/dataset/files/file-tisp/chart/', {
@@ -160,6 +160,8 @@ describe('DatasetEnrichmentService', () => {
       y_field: 'data_value',
       metric: 'sum',
       sort: 'desc',
+      key_field: 'area_code',
+      area_level: 'LVL1,LVL2',
     });
   });
 
@@ -217,6 +219,117 @@ describe('DatasetEnrichmentService', () => {
       y_field: 'data_value',
       metric: 'sum',
       sort: 'desc',
+    });
+  });
+
+  it('requests file preview rows with offset and limit', () => {
+    api.get.and.returnValue(
+      of({
+        file_id: 'file-1',
+        filename: 'climate.csv',
+        file_format: 'csv',
+        columns: ['region'],
+        rows: [{ region: 'Dodoma' }],
+        offset: 50,
+        limit: 50,
+        returned_rows: 1,
+        total_rows: 80,
+      }),
+    );
+
+    let offset = -1;
+    service
+      .getFilePreview('file-1', {
+        limit: 50,
+        offset: 50,
+        areaLevel: 'LVL5',
+        parentCode: '1',
+      })
+      .subscribe((preview) => {
+        offset = preview.offset;
+      });
+
+    expect(api.get).toHaveBeenCalledWith('/v1/dataset/files/file-1/data/', {
+      offset: '50',
+      limit: '50',
+      area_level: 'LVL5',
+      parent_code: '1',
+    });
+    expect(offset).toBe(50);
+  });
+
+  it('builds a national snapshot for census files', () => {
+    api.get.and.callFake(((url: string) => {
+      if (url.includes('/data/')) {
+        return of({
+          file_id: 'file-tisp',
+          filename: 'population-size-2022.json',
+          file_format: 'json',
+          columns: [
+            'area_name',
+            'area_code',
+            'area_level',
+            'data_value',
+          ],
+          rows: [
+            {
+              area_name: 'Tanzania',
+              area_code: 'TZ',
+              area_level: 'LVL1',
+              data_value: 61741120,
+            },
+          ],
+          offset: 0,
+          limit: 1,
+          returned_rows: 1,
+          total_rows: 3,
+        });
+      }
+
+      return of({
+        chart_type: 'bar',
+        series: [
+          {
+            name: 'sum of data_value',
+            points: [
+              {
+                label: 'Tanzania',
+                x: 'Tanzania',
+                y: 61741120,
+                value: 61741120,
+                key: 'TZ',
+              },
+              {
+                label: 'Mainland',
+                x: 'Mainland',
+                y: 50000000,
+                value: 50000000,
+                key: 'TZMAIN',
+              },
+            ],
+          },
+        ],
+      });
+    }) as ApiService['get']);
+
+    let kind = '';
+    let figureKeys: string[] = [];
+    service.getPreviewSnapshot('file-tisp').subscribe((snapshot) => {
+      kind = snapshot.kind;
+      figureKeys = snapshot.figures.map((figure) => figure.key);
+    });
+
+    expect(kind).toBe('census');
+    expect(figureKeys).toEqual(['TZ', 'TZMAIN']);
+    expect(api.get).toHaveBeenCalledWith('/v1/dataset/files/file-tisp/chart/', {
+      chart_type: 'bar',
+      limit: '12',
+      x_field: 'area_name',
+      y_field: 'data_value',
+      metric: 'sum',
+      sort: 'desc',
+      key_field: 'area_code',
+      area_level: 'LVL1,LVL2',
     });
   });
 });

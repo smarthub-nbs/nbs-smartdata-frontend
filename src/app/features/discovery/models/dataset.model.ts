@@ -96,10 +96,24 @@ export interface DatasetTagOption {
 export interface DatasetChartPoint {
   label: string;
   value: number;
+  key?: string;
 }
 
 export interface DatasetChartPreview {
   chartType: string;
   label: string;
   points: DatasetChartPoint[];
+}
+
+export interface DatasetSnapshotFigure {
+  key: string;
+  label: string;
+  value: number;
+}
+
+export interface DatasetPreviewSnapshot {
+  kind: 'census' | 'series';
+  label: string;
+  figures: DatasetSnapshotFigure[];
+  series: DatasetChartPreview | null;
 }

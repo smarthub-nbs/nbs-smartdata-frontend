@@ -2,11 +2,21 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, map, of, switchMap } from 'rxjs';
 import { ApiService } from '@app/core/services/api.service';
 import {
+  DatasetChartPoint,
   DatasetChartPreview,
   DatasetFilePreview,
   DatasetIndexingStatus,
+  DatasetPreviewSnapshot,
   DatasetUpdateRecord,
 } from '@app/features/discovery/models/dataset.model';
+import {
+  OVERVIEW_FRAME,
+  displayAreaName,
+  geoChartQuery,
+  hasCensusGeography,
+  sortOverviewCards,
+  yFieldName,
+} from '@app/features/explore/utils/census-geo.util';
 
 type PreviewCell = string | number | boolean | null;
 
@@ -32,6 +42,16 @@ interface BackendFileDataResponse {
 interface ChartFieldSelection {
   xField: string | null;
   yField: string | null;
+  areaLevel?: string;
+  keyField?: string;
+  limit?: number;
+}
+
+export interface FilePreviewQuery {
+  limit?: number;
+  offset?: number;
+  areaLevel?: string;
+  parentCode?: string;
 }
 
 interface FileChartOptions {
@@ -42,7 +62,12 @@ interface FileChartOptions {
   metric?: string;
   xField?: string;
   yField?: string;
+  areaLevel?: string;
+  parentCode?: string;
+  areaCodePrefix?: string;
+  keyField?: string;
 }
+
 
 const LINE_X_CANDIDATES = [
   'time_name',
@@ -97,6 +122,7 @@ interface BackendChartPoint {
   x?: string | number | null;
   y?: string | number | null;
   value?: string | number | null;
+  key?: string | number | null;
 }
 
 interface BackendChartSeries {
@@ -113,12 +139,25 @@ interface BackendChartResponse {
 export class DatasetEnrichmentService {
   private readonly api = inject(ApiService);
 
-  getFilePreview(fileId: string, limit = 10): Observable<DatasetFilePreview> {
+  getFilePreview(
+    fileId: string,
+    query: FilePreviewQuery = {},
+  ): Observable<DatasetFilePreview> {
+    const params: Record<string, string> = {
+      offset: String(query.offset ?? 0),
+      limit: String(query.limit ?? 10),
+    };
+    if (query.areaLevel) {
+      params['area_level'] = query.areaLevel;
+    }
+    if (query.parentCode) {
+      params['parent_code'] = query.parentCode;
+    }
     return this.api
-      .get<BackendFileDataResponse>(`/v1/dataset/files/${fileId}/data/`, {
-        offset: '0',
-        limit: String(limit),
-      })
+      .get<BackendFileDataResponse>(
+        `/v1/dataset/files/${fileId}/data/`,
+        params,
+      )
       .pipe(map((response) => this.toFilePreview(response)));
   }
 
@@ -138,37 +177,106 @@ export class DatasetEnrichmentService {
           } satisfies DatasetChartPreview);
         }
 
-        const params: Record<string, string> = {
-          chart_type: chartType,
-          limit: String(options.limit ?? 12),
-          x_field: fields.xField,
-          metric: options.metric ?? (fields.yField ? 'sum' : 'count'),
-        };
-        if (options.sort) {
-          params['sort'] = options.sort;
-        }
-        if (options.groupBy) {
-          params['group_by'] = options.groupBy;
-        }
-        if (fields.yField) {
-          params['y_field'] = fields.yField;
-        }
-        if (
-          !options.sort &&
-          fields.xField &&
-          this.isGeographicField(fields.xField)
-        ) {
-          params['sort'] = 'desc';
-        }
-
+        const areaLevel = options.areaLevel ?? fields.areaLevel;
         return this.api
           .get<BackendChartResponse>(
             `/v1/dataset/files/${fileId}/chart/`,
-            params,
+            this.chartParams(chartType, fields, options, areaLevel),
           )
           .pipe(map((response) => this.toChartPreview(response, chartType)));
       }),
     );
+  }
+
+  getPreviewSnapshot(fileId: string): Observable<DatasetPreviewSnapshot> {
+    return this.getFilePreview(fileId, { limit: 1 }).pipe(
+      switchMap((preview) => {
+        if (hasCensusGeography(preview.columns)) {
+          const query = geoChartQuery(
+            OVERVIEW_FRAME,
+            yFieldName(preview.columns),
+          );
+          return this.getFileChart(fileId, {
+            chartType: 'bar',
+            xField: query.xField,
+            yField: query.yField,
+            metric: query.metric,
+            keyField: query.keyField,
+            areaLevel: query.areaLevel,
+            limit: query.limit,
+          }).pipe(
+            map((chart) => ({
+              kind: 'census' as const,
+              label: chart.label,
+              figures: sortOverviewCards(
+                chart.points.map((point) => {
+                  const key = point.key || point.label;
+                  return {
+                    key,
+                    label: displayAreaName(point.label, key),
+                    value: point.value,
+                  };
+                }),
+              ),
+              series: null,
+            })),
+          );
+        }
+
+        return this.getFileChart(fileId, { chartType: 'bar' }).pipe(
+          map((chart) => ({
+            kind: 'series' as const,
+            label: chart.label,
+            figures: [],
+            series: chart,
+          })),
+        );
+      }),
+    );
+  }
+
+  private chartParams(
+    chartType: 'line' | 'bar',
+    fields: ChartFieldSelection,
+    options: FileChartOptions,
+    areaLevel?: string,
+  ): Record<string, string> {
+    const params: Record<string, string> = {
+      chart_type: chartType,
+      limit: String(options.limit ?? fields.limit ?? 12),
+      x_field: fields.xField ?? '',
+      metric: options.metric ?? (fields.yField ? 'sum' : 'count'),
+    };
+    if (options.sort) {
+      params['sort'] = options.sort;
+    }
+    if (options.groupBy) {
+      params['group_by'] = options.groupBy;
+    }
+    if (fields.yField) {
+      params['y_field'] = fields.yField;
+    }
+    if (
+      !options.sort &&
+      fields.xField &&
+      this.isGeographicField(fields.xField)
+    ) {
+      params['sort'] = 'desc';
+    }
+    const keyField = options.keyField ?? fields.keyField;
+    if (keyField) {
+      params['key_field'] = keyField;
+    }
+    if (areaLevel) {
+      params['area_level'] = areaLevel;
+    }
+    if (options.parentCode) {
+      params['parent_code'] = options.parentCode;
+    }
+    if (options.areaCodePrefix) {
+      params['area_code_prefix'] = options.areaCodePrefix;
+    }
+    return params;
   }
 
   private resolveChartFields(
@@ -249,6 +357,21 @@ export class DatasetEnrichmentService {
         return rows.some((row) => this.isNumeric(row[column]));
       }) ??
       null;
+
+    if (
+      xField &&
+      hasCensusGeography(columns) &&
+      this.isGeographicField(xField)
+    ) {
+      const query = geoChartQuery(OVERVIEW_FRAME, yFieldName(columns));
+      return {
+        xField: this.findColumn(columns, [query.xField]) ?? xField,
+        yField: this.findColumn(columns, [query.yField]) ?? yField,
+        areaLevel: query.areaLevel,
+        keyField: this.findColumn(columns, [query.keyField]) ?? undefined,
+        limit: query.limit,
+      };
+    }
 
     return { xField, yField };
   }
@@ -357,11 +480,16 @@ export class DatasetEnrichmentService {
           return null;
         }
         const label = String(point.label ?? point.x ?? '');
-        return { label: label || String(value), value };
+        const mapped: DatasetChartPoint = {
+          label: label || String(value),
+          value,
+        };
+        if (point.key !== undefined && point.key !== null && point.key !== '') {
+          mapped.key = String(point.key);
+        }
+        return mapped;
       })
-      .filter(
-        (point): point is { label: string; value: number } => point !== null,
-      );
+      .filter((point): point is DatasetChartPoint => point !== null);
 
     return {
       chartType: response.chart_type ?? fallbackType,
