@@ -1,0 +1,68 @@
+<section class="nbs-panel space-y-3" aria-labelledby="dataset-preview-chart-heading">
+  <div class="flex flex-wrap items-start justify-between gap-3">
+    <div>
+      <h2 id="dataset-preview-chart-heading" class="text-sm font-semibold text-slate-900">
+        @if (loading()) {
+        Snapshot
+        } @else if (isCensus()) {
+        National snapshot
+        } @else {
+        Data preview
+        }
+      </h2>
+      @if (!loading() && !unavailable()) {
+      <p class="mt-0.5 text-xs text-nbs-muted">
+        {{ snapshotLabel() }} from the primary file
+      </p>
+      }
+    </div>
+    @if (isCensus() && !loading() && !unavailable()) {
+    <app-button variant="primary" size="sm" (clicked)="openExplore()">
+      Compare regions
+    </app-button>
+    }
+  </div>
+
+  @if (loading()) {
+  <div class="flex h-36 items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50">
+    <p class="text-sm text-nbs-muted">Loading snapshot…</p>
+  </div>
+  } @else if (unavailable()) {
+  <div class="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center">
+    <p class="text-sm text-slate-700">A snapshot is not available for this file.</p>
+    <p class="mt-1 text-xs text-nbs-muted">
+      The table below shows sample rows from the primary file.
+    </p>
+  </div>
+  } @else if (isCensus()) {
+  @if (nationalFigure(); as hero) {
+  <div class="grid gap-3 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+    <div class="nbs-kpi">
+      <p class="text-xs font-medium uppercase tracking-wide text-slate-600">{{ hero.label }}</p>
+      <p class="mt-2 text-3xl font-semibold tabular-nums text-slate-900">
+        {{ formatValue(hero.value) }}
+      </p>
+    </div>
+    <div class="grid gap-3">
+      @for (part of partFigures(); track part.key) {
+      <div class="nbs-kpi py-4">
+        <p class="text-xs font-medium uppercase tracking-wide text-slate-600">{{ part.label }}</p>
+        <p class="mt-1 text-xl font-semibold tabular-nums text-slate-900">
+          {{ formatValue(part.value) }}
+        </p>
+      </div>
+      }
+    </div>
+  </div>
+  }
+  @if (partFigures().length) {
+  <p class="text-xs text-nbs-muted">
+    Mainland and Island make up Tanzania; they are not extra people.
+  </p>
+  }
+  } @else {
+  <div class="relative h-48 w-full">
+    <canvas #canvas [attr.aria-label]="snapshotLabel() + ' preview chart'"></canvas>
+  </div>
+  }
+</section>

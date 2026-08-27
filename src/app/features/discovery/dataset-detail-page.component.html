@@ -16,6 +16,7 @@
     <div class="lg:col-span-2 space-y-6">
       <app-dataset-metadata-panel [dataset]="dataset()!"
         [indexingStatus]="facade.isAdmin() ? facade.indexing() : null" />
+      <app-dataset-preview-chart [dataset]="dataset()!" />
       <app-dataset-file-preview [dataset]="dataset()!" (totalRowsLoaded)="updateRecordCount($event)" />
 
       @if (auth.isAuthenticated()) {

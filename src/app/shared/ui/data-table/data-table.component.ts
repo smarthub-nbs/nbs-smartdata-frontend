@@ -10,19 +10,20 @@ import {
   DataTableColumn,
   DataTableSortState,
 } from '@shared/ui/models/data-table-column.model';
+import { AlertComponent } from '@shared/ui/alert/alert.component';
 import { IconComponent, type IconName } from '@shared/ui/icon/icon.component';
 
 @Component({
   selector: 'app-data-table',
   standalone: true,
-  imports: [IconComponent],
+  imports: [AlertComponent, IconComponent],
   template: `
     <div
       class="w-full overflow-hidden rounded-xl border border-nbs-border bg-white shadow-nbs-card"
     >
       <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-slate-200">
-          <thead class="bg-nbs-surface">
+          <thead class="sticky top-0 z-[1] bg-nbs-surface">
             <tr>
               @for (column of columns(); track column.key) {
                 <th
@@ -76,12 +77,25 @@ import { IconComponent, type IconName } from '@shared/ui/icon/icon.component';
                   Loading table data
                 </td>
               </tr>
+            } @else if (error()) {
+              <tr>
+                <td [attr.colspan]="columns().length" class="px-4 py-8">
+                  <app-alert variant="error">{{ error() }}</app-alert>
+                </td>
+              </tr>
             } @else if (paginatedRows().length === 0) {
               <tr>
                 <td
                   [attr.colspan]="columns().length"
                   class="px-4 py-12 text-center text-sm text-nbs-muted"
                 >
+                  @if (emptyIcon()) {
+                    <app-icon
+                      [name]="emptyIcon()!"
+                      [size]="28"
+                      class="mx-auto mb-3 text-nbs-muted/60"
+                    />
+                  }
                   {{ emptyMessage() }}
                 </td>
               </tr>
@@ -104,7 +118,7 @@ import { IconComponent, type IconName } from '@shared/ui/icon/icon.component';
         </table>
       </div>
 
-      @if (showPagination() && totalPages() > 1) {
+      @if (showPaginationFooter()) {
         <div
           class="flex items-center justify-between border-t border-nbs-border px-4 py-3 text-sm text-slate-600"
         >
@@ -142,7 +156,9 @@ export class DataTableComponent<T extends object> {
   readonly data = input<T[]>([]);
   readonly columns = input<DataTableColumn<T>[]>([]);
   readonly loading = input(false);
+  readonly error = input<string | null>(null);
   readonly emptyMessage = input('No data available');
+  readonly emptyIcon = input<IconName | null>(null);
   readonly pageSize = input(10);
   readonly showPagination = input(true);
   readonly rowClickable = input(false);
@@ -184,6 +200,13 @@ export class DataTableComponent<T extends object> {
     const start = (this.currentPage() - 1) * this.pageSize();
     return this.sortedRows().slice(start, start + this.pageSize());
   });
+
+  protected readonly showPaginationFooter = computed(
+    () =>
+      this.showPagination() &&
+      this.sortedRows().length > 0 &&
+      this.totalPages() > 1,
+  );
 
   protected readonly rangeLabel = computed(() => {
     const total = this.sortedRows().length;

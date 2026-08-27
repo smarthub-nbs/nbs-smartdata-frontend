@@ -21,7 +21,9 @@ const VARIANT_CLASSES: Record<ButtonVariant, string> = {
   ghost:
     'bg-transparent text-slate-700 hover:bg-slate-100 active:bg-slate-200 focus-visible:ring-slate-400',
   danger:
-    'bg-nbs-danger text-white hover:bg-nbs-danger-hover active:bg-red-800 focus-visible:ring-red-500',
+    'bg-nbs-danger text-white hover:bg-nbs-danger-hover active:bg-red-800 focus-visible:ring-nbs-danger',
+  'danger-outline':
+    'border border-nbs-danger-border bg-white text-nbs-danger hover:border-nbs-danger hover:bg-nbs-danger hover:text-white active:bg-red-800 focus-visible:ring-nbs-danger',
 };
 
 const SIZE_CLASSES: Record<ButtonSize, string> = {
@@ -33,6 +35,10 @@ const SIZE_CLASSES: Record<ButtonSize, string> = {
 @Component({
   selector: 'app-button',
   standalone: true,
+  host: {
+    '[class.block]': 'fullWidth()',
+    '[class.w-full]': 'fullWidth()',
+  },
   template: `
     <button
       [attr.type]="type()"

@@ -1,14 +1,22 @@
+import { DatePipe, DecimalPipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  computed,
   inject,
   signal,
   viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormsModule } from '@angular/forms';
 import { AuthService } from '@app/core/services/auth.service';
-import { StatusFilter } from '@app/features/admin/models/admin-dataset.model';
+import {
+  DatasetBulkAction,
+  DatasetBulkUploadItemInput,
+  RecentBulkJob,
+  StatusFilter,
+} from '@app/features/admin/models/admin-dataset.model';
 import { AdminTaxonomyStore } from '@app/features/admin/services/admin-taxonomy.store';
 import { AdminWorkspaceFacade } from '@app/features/admin/services/admin-workspace.facade';
 import { DatasetQueueListComponent } from '@app/features/admin/components/dataset-queue-list.component';
@@ -17,17 +25,48 @@ import {
   CreateDraftPayload,
   DatasetCreateDraftComponent,
 } from '@app/features/admin/components/dataset-create-draft.component';
-import { ButtonComponent, IconComponent } from '@shared/ui';
+import {
+  ButtonComponent,
+  AlertComponent,
+  EmptyStateComponent,
+  IconComponent,
+  ModalComponent,
+} from '@shared/ui';
+
+interface StatusFilterItem {
+  key: StatusFilter;
+  label: string;
+}
+
+interface BulkUploadRow {
+  file: File;
+  datasetId: string;
+}
+
+const STATUS_FILTERS: readonly StatusFilterItem[] = [
+  { key: 'all', label: 'All' },
+  { key: 'draft', label: 'Draft' },
+  { key: 'in_review', label: 'In review' },
+  { key: 'approved', label: 'Approved' },
+  { key: 'rejected', label: 'Rejected' },
+  { key: 'published', label: 'Published' },
+];
 
 @Component({
   selector: 'app-dataset-workflow-panel',
   standalone: true,
   imports: [
+    DatePipe,
+    DecimalPipe,
+    FormsModule,
     ButtonComponent,
+    AlertComponent,
+    EmptyStateComponent,
     IconComponent,
     DatasetQueueListComponent,
     DatasetWorkflowDetailComponent,
     DatasetCreateDraftComponent,
+    ModalComponent,
   ],
   templateUrl: './dataset-workflow-panel.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -46,27 +85,121 @@ export class DatasetWorkflowPanelComponent {
   protected readonly categoriesLoading = this.taxonomy.loading;
   protected readonly categoriesError = this.taxonomy.error;
   protected readonly pendingSwitchId = signal('');
+  protected readonly mobileDetailOpen = signal(false);
+  protected readonly createDraftOpen = signal(false);
+  protected readonly bulkUploadOpen = signal(false);
+  protected readonly bulkRejectReason = signal('');
+  protected readonly bulkUploadRows = signal<BulkUploadRow[]>([]);
+  protected readonly bulkPublishAfter = signal(false);
 
   protected readonly canReview = this.auth.canReviewDatasets;
   protected readonly canPublish = this.auth.canPublishDatasets;
+  protected readonly statusFilters = STATUS_FILTERS;
+
+  protected readonly showQueueOnMobile = computed(
+    () => !this.mobileDetailOpen(),
+  );
+
+  protected readonly showDetailOnMobile = computed(() =>
+    this.mobileDetailOpen(),
+  );
+
+  protected readonly showDetailEmptyState = computed(
+    () =>
+      !this.facade.queueLoading() &&
+      !this.facade.selectedRecord() &&
+      this.facade.items().length > 0,
+  );
 
   constructor() {
     this.taxonomy.ensureLoaded();
+    if (this.facade.selectedId()) {
+      this.mobileDetailOpen.set(true);
+    }
   }
 
   protected openCreateDraft(): void {
-    this.createDraft()?.open();
+    this.createDraftOpen.set(true);
+  }
+
+  protected closeCreateDraft(): void {
+    this.createDraftOpen.set(false);
+    this.createDraft()?.reset();
+  }
+
+  protected openBulkUpload(): void {
+    this.bulkUploadRows.set([]);
+    this.bulkPublishAfter.set(false);
+    this.bulkUploadOpen.set(true);
+  }
+
+  protected closeBulkUpload(): void {
+    this.bulkUploadOpen.set(false);
+    this.bulkUploadRows.set([]);
+  }
+
+  protected onBulkFilesSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const files = Array.from(input.files ?? []);
+    const defaultDatasetId =
+      this.facade.selectedId() || this.facade.items()[0]?.id || '';
+    this.bulkUploadRows.set(
+      files.map((file) => ({ file, datasetId: defaultDatasetId })),
+    );
+    input.value = '';
+  }
+
+  protected setBulkUploadDataset(index: number, datasetId: string): void {
+    this.bulkUploadRows.update((rows) =>
+      rows.map((row, i) => (i === index ? { ...row, datasetId } : row)),
+    );
+  }
+
+  protected submitBulkUpload(): void {
+    const items: DatasetBulkUploadItemInput[] = this.bulkUploadRows()
+      .filter((row) => row.datasetId)
+      .map((row) => ({
+        datasetId: row.datasetId,
+        file: row.file,
+        isPrimary: true,
+      }));
+    if (items.length === 0) {
+      return;
+    }
+    this.facade.runBulkUpload(items, {
+      publishAfterUpload: this.bulkPublishAfter(),
+    });
+    this.closeBulkUpload();
+  }
+
+  protected runBulk(action: DatasetBulkAction): void {
+    const reason =
+      action === 'reject' ? this.bulkRejectReason().trim() : undefined;
+    this.facade.runBulkAction(action, reason);
+    if (action === 'reject') {
+      this.bulkRejectReason.set('');
+    }
+  }
+
+  protected onRecentJobClick(job: RecentBulkJob): void {
+    this.facade.resumeBulkJob(job);
   }
 
   protected onSelect(id: string): void {
     if (id === this.facade.selectedId()) {
+      this.mobileDetailOpen.set(true);
       return;
     }
-    if (this.detail()?.isMetadataDirty()) {
+    if (this.detail()?.hasUnsavedChanges()) {
       this.pendingSwitchId.set(id);
       return;
     }
     this.facade.selectDataset(id);
+    this.mobileDetailOpen.set(true);
+  }
+
+  protected backToQueue(): void {
+    this.mobileDetailOpen.set(false);
   }
 
   protected confirmDiscardSwitch(): void {
@@ -74,9 +207,10 @@ export class DatasetWorkflowPanelComponent {
     if (!nextId) {
       return;
     }
-    this.detail()?.discardMetadata();
+    this.detail()?.discardUnsavedChanges();
     this.pendingSwitchId.set('');
     this.facade.selectDataset(nextId);
+    this.mobileDetailOpen.set(true);
   }
 
   protected cancelPendingSwitch(): void {
@@ -85,6 +219,7 @@ export class DatasetWorkflowPanelComponent {
 
   protected onFilter(filter: StatusFilter): void {
     this.facade.setStatusFilter(filter);
+    this.mobileDetailOpen.set(false);
   }
 
   protected onSearch(term: string): void {
@@ -96,7 +231,11 @@ export class DatasetWorkflowPanelComponent {
       .createDraft(payload.draft, payload.file)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: () => this.createDraft()?.reset(),
+        next: () => {
+          this.createDraftOpen.set(false);
+          this.createDraft()?.reset();
+          this.mobileDetailOpen.set(true);
+        },
         error: () => undefined,
       });
   }
@@ -110,5 +249,32 @@ export class DatasetWorkflowPanelComponent {
   protected onResourcesChanged(datasetId: string): void {
     this.facade.refreshDataset(datasetId);
     this.detail()?.reloadTagLinks();
+  }
+
+  protected onTransferOwner(event: {
+    datasetId: string;
+    newOwnerId: string;
+  }): void {
+    this.facade.transferOwner(event.datasetId, event.newOwnerId);
+  }
+
+  protected statCount(filter: StatusFilter): number {
+    return this.facade.statusCounts()[filter];
+  }
+
+  protected statFilterClasses(filter: StatusFilter): string {
+    const base =
+      'inline-flex cursor-pointer items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/40 motion-reduce:transition-none';
+    const active = this.facade.statusFilter() === filter;
+    return active
+      ? `${base} bg-nbs-primary text-white`
+      : `${base} bg-slate-100 text-slate-600 hover:bg-slate-200`;
+  }
+
+  protected statCountClasses(filter: StatusFilter): string {
+    const base = 'tabular-nums';
+    return this.facade.statusFilter() === filter
+      ? `${base} text-white/75`
+      : `${base} text-slate-400`;
   }
 }

@@ -7,6 +7,8 @@ export const MOCK_INDICATORS: ExploreIndicator[] = [
     unit: '%',
     description: 'Annual population growth rate at regional level.',
     topicSlug: 'population',
+    kind: 'time-series',
+    overview: [],
     timeSeries: [
       { label: '2018', value: 2.9 },
       { label: '2019', value: 3.0 },
@@ -30,6 +32,8 @@ export const MOCK_INDICATORS: ExploreIndicator[] = [
     unit: '%',
     description: 'Year-on-year change in consumer price index.',
     topicSlug: 'economy',
+    kind: 'time-series',
+    overview: [],
     timeSeries: [
       { label: '2019', value: 3.4 },
       { label: '2020', value: 3.2 },
@@ -52,6 +56,8 @@ export const MOCK_INDICATORS: ExploreIndicator[] = [
     unit: '%',
     description: 'Quarterly real GDP growth at national level.',
     topicSlug: 'economy',
+    kind: 'time-series',
+    overview: [],
     timeSeries: [
       { label: 'Q1 2023', value: 5.2 },
       { label: 'Q2 2023', value: 5.0 },
@@ -75,6 +81,8 @@ export const MOCK_INDICATORS: ExploreIndicator[] = [
     unit: 'tonnes/ha',
     description: 'Average maize yield from crop production survey.',
     topicSlug: 'agriculture',
+    kind: 'time-series',
+    overview: [],
     timeSeries: [
       { label: '2019/20', value: 1.8 },
       { label: '2020/21', value: 1.9 },

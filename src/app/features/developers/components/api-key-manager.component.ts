@@ -12,6 +12,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ApiError } from '@app/core/models/api-error.model';
 import { AuthService } from '@app/core/services/auth.service';
+import { ToastService } from '@app/core/services/toast.service';
 import { ApiKeyUsageListComponent } from '@app/features/developers/components/api-key-usage-list.component';
 import { DeveloperApiService } from '@app/features/developers/services/developer-api.service';
 import { PageStateComponent } from '@app/shared/components/page-state/page-state.component';
@@ -35,6 +36,7 @@ export class ApiKeyManagerComponent implements OnInit {
   protected readonly auth = inject(AuthService);
   protected readonly api = inject(DeveloperApiService);
   private readonly router = inject(Router);
+  private readonly toast = inject(ToastService);
   private readonly destroyRef = inject(DestroyRef);
 
   protected newKeyLabel = '';
@@ -75,10 +77,13 @@ export class ApiKeyManagerComponent implements OnInit {
           this.revealedKey.set(plainKey);
           this.keyVisible.set(true);
           this.api.setLastIssuedKey(plainKey);
+          this.toast.success('API key created.');
         },
         error: (err: unknown) => {
+          const message = this.resolveErrorMessage(err);
           this.creating.set(false);
-          this.errorMessage.set(this.resolveErrorMessage(err));
+          this.errorMessage.set(message);
+          this.toast.error(message);
         },
       });
   }
@@ -98,11 +103,14 @@ export class ApiKeyManagerComponent implements OnInit {
           this.revealedKey.set(plainKey);
           this.keyVisible.set(true);
           this.api.setLastIssuedKey(plainKey);
+          this.toast.success('API key regenerated.');
         },
         error: (err: unknown) => {
+          const message = this.resolveErrorMessage(err);
           this.regeneratingId.set('');
           this.confirmRegenerateId.set(null);
-          this.errorMessage.set(this.resolveErrorMessage(err));
+          this.errorMessage.set(message);
+          this.toast.error(message);
         },
       });
   }
@@ -146,10 +154,13 @@ export class ApiKeyManagerComponent implements OnInit {
       .subscribe({
         next: () => {
           this.revokingId.set('');
+          this.toast.success('API key revoked.');
         },
         error: (err: unknown) => {
+          const message = this.resolveErrorMessage(err);
           this.revokingId.set('');
-          this.errorMessage.set(this.resolveErrorMessage(err));
+          this.errorMessage.set(message);
+          this.toast.error(message);
         },
       });
   }

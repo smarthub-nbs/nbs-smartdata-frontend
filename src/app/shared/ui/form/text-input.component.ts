@@ -12,11 +12,13 @@ import {
   NG_VALUE_ACCESSOR,
 } from '@angular/forms';
 import { FormFieldComponent } from '@shared/ui/form/form-field.component';
+import { IconComponent } from '@shared/ui/icon/icon.component';
+import { formControlClasses } from '@shared/ui/utils/form-control-styles';
 
 @Component({
   selector: 'app-text-input',
   standalone: true,
-  imports: [FormsModule, FormFieldComponent],
+  imports: [FormsModule, FormFieldComponent, IconComponent],
   providers: [
     {
       provide: NG_VALUE_ACCESSOR,
@@ -33,19 +35,35 @@ import { FormFieldComponent } from '@shared/ui/form/form-field.component';
       [htmlFor]="inputId"
       [fieldId]="inputId"
     >
-      <input
-        [id]="inputId"
-        [type]="type()"
-        [class]="inputClasses()"
-        [placeholder]="placeholder()"
-        [disabled]="isDisabled()"
-        [readonly]="readonly()"
-        [attr.aria-invalid]="!!error() || null"
-        [attr.aria-describedby]="describedBy()"
-        [value]="value()"
-        (input)="onInput($event)"
-        (blur)="onTouched()"
-      />
+      <div class="relative">
+        <input
+          [id]="inputId"
+          [type]="resolvedType()"
+          [class]="inputClasses()"
+          [placeholder]="placeholder()"
+          [disabled]="fieldDisabled()"
+          [readonly]="readonly()"
+          [attr.aria-invalid]="!!error() || null"
+          [attr.aria-describedby]="describedBy()"
+          [value]="value()"
+          (input)="onInput($event)"
+          (blur)="onTouched()"
+        />
+        @if (isPassword()) {
+          <button
+            type="button"
+            class="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 transition-colors hover:text-slate-600 focus:outline-none focus-visible:text-nbs-primary disabled:cursor-not-allowed disabled:opacity-60"
+            [disabled]="fieldDisabled()"
+            [attr.aria-label]="
+              showPassword() ? 'Hide password' : 'Show password'
+            "
+            [attr.aria-pressed]="showPassword()"
+            (click)="togglePassword()"
+          >
+            <app-icon [name]="showPassword() ? 'eye-off' : 'eye'" [size]="18" />
+          </button>
+        }
+      </div>
     </app-form-field>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -60,18 +78,28 @@ export class TextInputComponent implements ControlValueAccessor {
   );
   readonly required = input(false);
   readonly readonly = input(false);
+  readonly disabled = input(false);
 
   protected readonly inputId = `input-${Math.random().toString(36).slice(2, 9)}`;
   protected readonly value = signal('');
   protected readonly isDisabled = signal(false);
+  protected readonly showPassword = signal(false);
+
+  protected readonly fieldDisabled = computed(
+    () => this.isDisabled() || this.disabled(),
+  );
+
+  protected readonly isPassword = computed(() => this.type() === 'password');
+
+  protected readonly resolvedType = computed(() =>
+    this.isPassword() && this.showPassword() ? 'text' : this.type(),
+  );
 
   protected readonly inputClasses = computed(() => {
-    const base =
-      'h-10 w-full rounded-md border bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-0 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:opacity-60 read-only:cursor-not-allowed read-only:bg-slate-50 read-only:text-slate-500 read-only:focus:ring-0';
-    const state = this.error()
-      ? 'border-nbs-danger focus:border-nbs-danger focus:ring-nbs-danger/30'
-      : 'border-slate-300 focus:border-nbs-primary focus:ring-nbs-primary/30';
-    return `${base} ${state}`;
+    const padding = this.isPassword() ? 'pl-3 pr-10' : 'px-3';
+    const readOnly =
+      'read-only:cursor-not-allowed read-only:bg-slate-50 read-only:text-slate-500 read-only:focus:ring-0';
+    return `${formControlClasses({ error: !!this.error(), padding })} ${readOnly}`;
   });
 
   protected readonly describedBy = computed(() => {
@@ -112,5 +140,9 @@ export class TextInputComponent implements ControlValueAccessor {
 
   protected onTouched(): void {
     this.onTouchedCallback();
+  }
+
+  protected togglePassword(): void {
+    this.showPassword.update((shown) => !shown);
   }
 }

@@ -1,0 +1,99 @@
+<section
+  class="nbs-card overflow-hidden p-5 sm:p-6"
+  aria-labelledby="search-visualization-title"
+  [style.min-height.px]="panelHeight()"
+>
+  <div
+    class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
+  >
+    <div>
+      <p
+        class="text-xs font-semibold uppercase tracking-[0.14em] text-nbs-primary"
+      >
+        Visualize the results
+      </p>
+      <h2
+        id="search-visualization-title"
+        class="mt-1 text-lg font-semibold text-slate-900"
+      >
+        Choose the best view for this answer
+      </h2>
+      <p class="mt-1 text-sm text-nbs-muted">
+        @if (recommendedView() === 'cards') {
+          This result is best presented as a quick summary card.
+        } @else if (recommendedView() === 'line') {
+          These values look like a time series, so a line chart is recommended.
+        } @else {
+          Compare the returned values by area or category.
+        }
+      </p>
+    </div>
+    @if (hasChartData()) {
+      <div
+        class="flex rounded-lg border border-slate-200 bg-nbs-surface p-1"
+        role="group"
+        aria-label="Visualization type"
+      >
+        @for (type of ['cards', 'bar', 'line', 'pie']; track type) {
+          <button
+            type="button"
+            class="rounded-md px-3 py-1.5 text-xs font-semibold capitalize transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary"
+            [class.bg-white]="viewType() === type"
+            [class.text-nbs-primary]="viewType() === type"
+            [class.text-slate-500]="viewType() !== type"
+            [attr.aria-pressed]="viewType() === type"
+            (click)="selectView($any(type))"
+          >
+            {{ type === 'cards' ? 'Cards' : type + ' chart' }}
+          </button>
+        }
+      </div>
+    }
+  </div>
+  @if (viewType() === 'cards') {
+    <div class="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      @for (point of points(); track point.label) {
+        <article
+          class="rounded-xl border border-nbs-primary/10 bg-nbs-primary/5 p-4"
+        >
+          <p class="break-words text-xs font-semibold leading-5 text-slate-700">
+            {{ point.label }}
+          </p>
+          <p
+            class="mt-2 text-2xl font-semibold tracking-tight text-nbs-primary"
+          >
+            {{ point.value | number }}
+          </p>
+          <p class="mt-1 line-clamp-2 text-xs text-nbs-muted">
+            {{ point.context }}
+          </p>
+        </article>
+      }
+    </div>
+  }
+  <div
+    class="mt-5 w-full"
+    [class.hidden]="viewType() === 'cards'"
+    [style.height.px]="chartHeight()"
+  >
+    <canvas #canvas aria-label="Dynamic chart of search result values"></canvas>
+  </div>
+  <p class="mt-2 text-xs text-slate-500">
+    Values are derived from the official NBS/TISP records returned above.
+  </p>
+  <div
+    class="mt-4 flex cursor-ns-resize touch-none select-none items-center justify-center rounded-lg border border-dashed border-slate-200 py-2 text-xs text-slate-400 transition-colors hover:border-nbs-primary/40 hover:text-nbs-primary"
+    role="separator"
+    aria-label="Resize visualization panel"
+    aria-orientation="horizontal"
+    tabindex="0"
+    (pointerdown)="startResize($event)"
+    (pointermove)="resizePanel($event)"
+    (pointerup)="stopResize()"
+    (pointercancel)="stopResize()"
+    (keydown)="resizeWithKeyboard($event)"
+  >
+    <span class="mr-2 text-base leading-none" aria-hidden="true">⋮⋮</span>
+    Drag to resize
+  </div>
+</section>

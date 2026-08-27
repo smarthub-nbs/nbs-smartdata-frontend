@@ -2,7 +2,9 @@ import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { Dataset } from '@app/features/discovery/models/dataset.model';
 import { DatasetService } from '@app/features/discovery/services/dataset.service';
+import { AiAnswerService } from '@app/features/search/services/ai-answer.service';
 import { SmartSearchService } from '@app/features/search/services/smart-search.service';
+import { TispSearchService } from '@app/features/search/services/tisp-search.service';
 
 const gdpDataset: Dataset = {
   id: 'gdp-national-accounts',
@@ -36,18 +38,54 @@ const censusDataset: Dataset = {
   license: 'Open Government Licence - Tanzania',
 };
 
+const tispPopulationDataset: Dataset = {
+  id: 'external-tisp-census-population-tz-2022',
+  title: 'Population size in Tanzania (2022)',
+  description:
+    'TISP census data reports 61,741,120 for Tanzania in 2022. Area level: LVL1.',
+  topicSlug: 'population',
+  topicName: 'Population',
+  format: 'JSON',
+  frequency: 'Annual',
+  region: 'National',
+  keywords: ['TISP', 'census', 'population', 'Tanzania', '2022'],
+  publisher: 'National Bureau of Statistics',
+  updatedAt: '2026-07-02',
+  recordCount: 1,
+  license: 'Official NBS public data',
+  sourceUrl: 'https://tisp.nbs.go.tz:8000/census/dmdata/',
+  dataSummary: 'Population size in Tanzania was 61,741,120 in 2022.',
+};
+
 describe('SmartSearchService', () => {
   let service: SmartSearchService;
   let datasetService: jasmine.SpyObj<DatasetService>;
+  let tispSearchService: jasmine.SpyObj<TispSearchService>;
+  let aiAnswerService: jasmine.SpyObj<AiAnswerService>;
 
   beforeEach(() => {
     datasetService = jasmine.createSpyObj('DatasetService', ['searchCatalog']);
     datasetService.searchCatalog.and.returnValue(of([gdpDataset]));
+    tispSearchService = jasmine.createSpyObj('TispSearchService', ['search']);
+    tispSearchService.search.and.returnValue(of([]));
+    aiAnswerService = jasmine.createSpyObj('AiAnswerService', [
+      'generateAnswer',
+    ]);
+    aiAnswerService.generateAnswer.and.returnValue(
+      of({
+        answer: '',
+        usedAi: false,
+        model: null,
+        reason: 'openai_not_configured',
+      }),
+    );
 
     TestBed.configureTestingModule({
       providers: [
         SmartSearchService,
         { provide: DatasetService, useValue: datasetService },
+        { provide: TispSearchService, useValue: tispSearchService },
+        { provide: AiAnswerService, useValue: aiAnswerService },
       ],
     });
 
@@ -57,6 +95,7 @@ describe('SmartSearchService', () => {
   it('returns ranked results for economy-related queries', (done) => {
     service.smartSearch('gdp growth').subscribe((response) => {
       expect(response.query).toBe('gdp growth');
+      expect(response.answer).toContain('closest match');
       expect(response.results.length).toBeGreaterThan(0);
       expect(response.results[0]?.dataset.id).toBe('gdp-national-accounts');
       expect(response.interpretation).toContain('Economy');
@@ -78,6 +117,45 @@ describe('SmartSearchService', () => {
   it('suggests economy indicators for GDP queries', (done) => {
     service.smartSearch('gdp').subscribe((response) => {
       expect(response.suggestedIndicators).toContain('GDP growth');
+      done();
+    });
+  });
+
+  it('builds a conversational answer from TISP data summaries', (done) => {
+    datasetService.searchCatalog.and.returnValue(of([]));
+    tispSearchService.search.and.returnValue(of([tispPopulationDataset]));
+
+    service.smartSearch('population Tanzania 2022').subscribe((response) => {
+      expect(response.answer).toContain(
+        'Population size in Tanzania was 61,741,120 in 2022.',
+      );
+      expect(response.answerFacts).toEqual([
+        'Population size in Tanzania was 61,741,120 in 2022.',
+      ]);
+      expect(response.usedAi).toBeFalse();
+      done();
+    });
+  });
+
+  it('uses the backend AI answer when it is available', (done) => {
+    datasetService.searchCatalog.and.returnValue(of([]));
+    tispSearchService.search.and.returnValue(of([tispPopulationDataset]));
+    aiAnswerService.generateAnswer.and.returnValue(
+      of({
+        answer:
+          'AI summary: Tanzania population was 61,741,120 in 2022 according to NBS/TISP.',
+        usedAi: true,
+        model: 'gpt-test',
+        reason: '',
+      }),
+    );
+
+    service.smartSearch('population Tanzania 2022').subscribe((response) => {
+      expect(response.answer).toBe(
+        'AI summary: Tanzania population was 61,741,120 in 2022 according to NBS/TISP.',
+      );
+      expect(response.usedAi).toBeTrue();
+      expect(response.aiModel).toBe('gpt-test');
       done();
     });
   });

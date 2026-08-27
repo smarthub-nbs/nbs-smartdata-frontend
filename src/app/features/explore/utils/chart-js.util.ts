@@ -1,4 +1,5 @@
 import {
+  ArcElement,
   BarController,
   BarElement,
   CategoryScale,
@@ -9,6 +10,7 @@ import {
   LineController,
   LineElement,
   PointElement,
+  PieController,
   Title,
   Tooltip,
 } from 'chart.js';
@@ -21,6 +23,7 @@ export function ensureChartJsRegistered(): void {
     return;
   }
   Chart.register(
+    ArcElement,
     BarController,
     BarElement,
     CategoryScale,
@@ -30,6 +33,7 @@ export function ensureChartJsRegistered(): void {
     LineController,
     LineElement,
     PointElement,
+    PieController,
     Title,
     Tooltip,
   );

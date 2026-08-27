@@ -64,6 +64,10 @@ export class UsersPageComponent {
     this.facade.openCreateForm();
   }
 
+  protected refreshUsers(): void {
+    this.facade.retryLoadUsers();
+  }
+
   protected onRowSelected(user: ManagedUser): void {
     this.facade.selectUser(user.id);
   }

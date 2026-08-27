@@ -20,9 +20,11 @@ import {
 } from 'rxjs';
 import { ApiError } from '@app/core/models/api-error.model';
 import { DATASET_ADAPTER } from '@app/features/discovery/adapters/dataset.adapter';
+import { ApiService } from '@app/core/services/api.service';
 import {
   Dataset,
   DatasetFilters,
+  DatasetTagOption,
   DatasetTopic,
   EMPTY_DATASET_FILTERS,
 } from '@app/features/discovery/models/dataset.model';
@@ -38,11 +40,13 @@ import {
 @Injectable({ providedIn: 'root' })
 export class DatasetService {
   private readonly adapter = inject(DATASET_ADAPTER);
+  private readonly api = inject(ApiService);
   private readonly destroyRef = inject(DestroyRef);
 
   private readonly datasets = signal<Dataset[]>([]);
   private readonly facetDatasets = signal<Dataset[]>([]);
   private readonly topicsState = signal<DatasetTopic[]>([]);
+  private readonly tagsState = signal<DatasetTagOption[]>([]);
   private readonly filters = signal<DatasetFilters>({
     ...EMPTY_DATASET_FILTERS,
   });
@@ -55,6 +59,7 @@ export class DatasetService {
   private catalogInitStarted = false;
 
   readonly topics = this.topicsState.asReadonly();
+  readonly tags = this.tagsState.asReadonly();
   readonly activeFilters = this.filters.asReadonly();
   readonly catalogLoadState = this.catalogState.asReadonly();
   readonly detailLoadState = this.detailState.asReadonly();
@@ -72,6 +77,38 @@ export class DatasetService {
   readonly frequencies = computed(() => [
     ...new Set(this.facetDatasets().map((d) => d.frequency)),
   ]);
+
+  readonly licenses = computed(() =>
+    [
+      ...new Set(
+        this.facetDatasets()
+          .map((d) => d.license)
+          .filter(Boolean),
+      ),
+    ].sort((a, b) => a.localeCompare(b)),
+  );
+
+  readonly publishers = computed(() =>
+    [
+      ...new Set(
+        this.facetDatasets()
+          .map((d) => d.publisher)
+          .filter(Boolean),
+      ),
+    ].sort((a, b) => a.localeCompare(b)),
+  );
+
+  readonly years = computed(() =>
+    [
+      ...new Set(
+        this.facetDatasets()
+          .map((d) => d.year)
+          .filter((year): year is number => typeof year === 'number'),
+      ),
+    ]
+      .sort((a, b) => b - a)
+      .map(String),
+  );
 
   constructor() {
     this.queryReload$
@@ -107,8 +144,10 @@ export class DatasetService {
           return;
         }
 
-        this.datasets.set(result.datasets);
-        this.catalogState.set(successState(result.datasets));
+        this.datasets.update((existing) =>
+          this.mergeCatalogDatasets(existing, result.datasets),
+        );
+        this.catalogState.set(successState(this.datasets()));
         this.catalogStale.set(false);
       });
 
@@ -118,14 +157,44 @@ export class DatasetService {
           forkJoin({
             datasets: this.adapter.list(),
             topics: this.adapter.listTopics(),
+            tags: this.api
+              .get<DatasetTagOption[]>('/v1/dataset/tags/')
+              .pipe(catchError(() => of([] as DatasetTagOption[]))),
           }),
         ),
         takeUntilDestroyed(this.destroyRef),
       )
-      .subscribe(({ datasets, topics }) => {
-        this.facetDatasets.set(datasets);
-        this.topicsState.set(buildPublishedTopics(topics, datasets));
+      .subscribe(({ datasets, topics, tags }) => {
+        this.facetDatasets.update((existing) =>
+          this.mergeCatalogDatasets(existing, datasets),
+        );
+        this.topicsState.set(
+          buildPublishedTopics(topics, this.facetDatasets()),
+        );
+        this.tagsState.set(
+          tags.length > 0
+            ? tags
+            : this.tagsFromDatasets(this.facetDatasets()),
+        );
       });
+  }
+
+  private tagsFromDatasets(datasets: Dataset[]): DatasetTagOption[] {
+    const bySlug = new Map<string, DatasetTagOption>();
+    for (const dataset of datasets) {
+      for (const keyword of dataset.keywords) {
+        const slug = keyword
+          .trim()
+          .toLowerCase()
+          .replace(/\s+/g, '-')
+          .replace(/[^a-z0-9-]/g, '');
+        if (!slug || bySlug.has(slug)) {
+          continue;
+        }
+        bySlug.set(slug, { id: slug, name: keyword, slug });
+      }
+    }
+    return [...bySlug.values()].sort((a, b) => a.name.localeCompare(b.name));
   }
 
   ensureCatalogLoaded(): void {
@@ -283,17 +352,78 @@ export class DatasetService {
     this.catalogLoad$.next({ ...this.filters() });
   }
 
+  private mergeCatalogDatasets(
+    existing: Dataset[],
+    incoming: Dataset[],
+  ): Dataset[] {
+    const byId = new Map(existing.map((dataset) => [dataset.id, dataset]));
+    return incoming.map((dataset) => {
+      const previous = byId.get(dataset.id);
+      return previous
+        ? this.mergeDatasetRecord(previous, dataset)
+        : dataset;
+    });
+  }
+
   private mergeDataset(dataset: Dataset): void {
     const apply = (items: Dataset[]) => {
       const index = items.findIndex((item) => item.id === dataset.id);
       if (index < 0) {
         return [...items, dataset];
       }
-      return items.map((item) => (item.id === dataset.id ? dataset : item));
+      return items.map((item) =>
+        item.id === dataset.id
+          ? this.mergeDatasetRecord(item, dataset)
+          : item,
+      );
     };
 
     this.datasets.update(apply);
     this.facetDatasets.update(apply);
+  }
+
+  /**
+   * Catalog list payloads omit metadata/files. Keep richer detail fields when a
+   * shallower list refresh would otherwise wipe them.
+   */
+  private mergeDatasetRecord(existing: Dataset, incoming: Dataset): Dataset {
+    const incomingHasDetail = Boolean(
+      incoming.primaryFileId || incoming.metadataId,
+    );
+    const existingHasDetail = Boolean(
+      existing.primaryFileId || existing.metadataId,
+    );
+
+    if (existingHasDetail && !incomingHasDetail) {
+      return {
+        ...incoming,
+        primaryFileId: existing.primaryFileId,
+        metadataId: existing.metadataId,
+        title: existing.title,
+        description: existing.description,
+        year: existing.year,
+        frequency: existing.frequency,
+        region: existing.region,
+        publisher: existing.publisher,
+        license: existing.license,
+        keywords:
+          existing.keywords.length > 0 ? existing.keywords : incoming.keywords,
+        format: existing.format,
+        recordCount: existing.recordCount || incoming.recordCount,
+        status: incoming.status ?? existing.status,
+        updatedAt: incoming.updatedAt || existing.updatedAt,
+      };
+    }
+
+    return {
+      ...existing,
+      ...incoming,
+      primaryFileId: incoming.primaryFileId ?? existing.primaryFileId,
+      metadataId: incoming.metadataId ?? existing.metadataId,
+      recordCount: incoming.recordCount || existing.recordCount,
+      keywords:
+        incoming.keywords.length > 0 ? incoming.keywords : existing.keywords,
+    };
   }
 
   private resolveErrorMessage(error: unknown, fallback: string): string {

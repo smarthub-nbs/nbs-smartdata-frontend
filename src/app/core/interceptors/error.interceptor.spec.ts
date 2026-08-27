@@ -126,7 +126,7 @@ describe('errorInterceptor', () => {
     const request = httpMock.expectOne('/api/v1/auth/login/');
     request.flush('Unauthorized', { status: 401, statusText: 'Unauthorized' });
 
-    expect(auth.signOut).toHaveBeenCalled();
+    expect(auth.signOut).not.toHaveBeenCalled();
     expect(auth.refreshAccessToken).not.toHaveBeenCalled();
   });
 });

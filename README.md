@@ -19,28 +19,28 @@ npm ci
 npm start
 ```
 
-Open `http://localhost:4200/`. API requests proxy to `http://localhost:8000` via [`proxy.conf.json`](proxy.conf.json).
+Open `http://127.0.0.1:4200/`. API requests proxy to `http://127.0.0.1:8000` via [`proxy.conf.json`](proxy.conf.json).
 
 ### Environments
 
-| File | Use |
-|------|-----|
-| `src/environments/environment.ts` | Production build |
-| `src/environments/environment.development.ts` | `ng serve` (mock explore API on) |
-| `src/environments/environment.e2e.ts` | Playwright (mock discovery + explore) |
+| File                                          | Use                                   |
+| --------------------------------------------- | ------------------------------------- |
+| `src/environments/environment.ts`             | Production build                      |
+| `src/environments/environment.development.ts` | `ng serve` (mock explore API on)      |
+| `src/environments/environment.e2e.ts`         | Playwright (mock discovery + explore) |
 
 ## Scripts
 
-| Command | Description |
-|---------|-------------|
-| `npm start` | Dev server |
-| `npm run build` | Production build |
-| `npm run lint` | ESLint |
-| `npm run format:check` | Prettier check |
-| `npm run check:architecture` | Feature boundary rules |
-| `npm run test:ci` | Unit tests (headless) |
-| `npm run e2e` | Playwright smoke tests |
-| `npm run e2e:chrome` | E2E using installed Chrome |
+| Command                      | Description                |
+| ---------------------------- | -------------------------- |
+| `npm start`                  | Dev server                 |
+| `npm run build`              | Production build           |
+| `npm run lint`               | ESLint                     |
+| `npm run format:check`       | Prettier check             |
+| `npm run check:architecture` | Feature boundary rules     |
+| `npm run test:ci`            | Unit tests (headless)      |
+| `npm run e2e`                | Playwright smoke tests     |
+| `npm run e2e:chrome`         | E2E using installed Chrome |
 
 ## Testing
 
@@ -69,6 +69,12 @@ src/app/
 ```
 
 Path aliases: `@app/*`, `@shared/*`, `@env/*`
+
+## Design system
+
+UI tokens, primitives, and patterns: [`docs/design-system/README.md`](docs/design-system/README.md).
+
+Full notes live in the Obsidian vault under `NBS/SmartData/` (linked from that README). Cursor applies [`.cursor/rules/nbs-design-system.mdc`](../.cursor/rules/nbs-design-system.mdc) when editing `src/**`.
 
 ## Auth note
 

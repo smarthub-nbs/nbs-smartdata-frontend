@@ -4,6 +4,7 @@ import {
 } from '@angular/common/http';
 import {
   HttpTestingController,
+  TestRequest,
   provideHttpClientTesting,
 } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
@@ -13,6 +14,17 @@ import { AuthError, AuthService } from '@app/core/services/auth.service';
 import { environment } from '@env/environment';
 
 const apiBase = environment.apiBaseUrl;
+
+function flushCsrf(httpMock: HttpTestingController): TestRequest {
+  const csrf = httpMock.expectOne(`${apiBase}/v1/auth/csrf/`);
+  expect(csrf.request.method).toBe('GET');
+  csrf.flush({
+    success: true,
+    message: 'ok',
+    data: { csrf_token: 'csrf-token', header_name: 'X-CSRFToken' },
+  });
+  return csrf;
+}
 
 const currentUserResponse = {
   id: 'user-1',
@@ -71,15 +83,18 @@ describe('AuthService', () => {
         result = value;
       });
 
+    flushCsrf(httpMock);
+
     const login = httpMock.expectOne(`${apiBase}/v1/auth/login/`);
     expect(login.request.body).toEqual({
       email: 'admin@example.com',
       password: 'secret',
     });
+    expect(login.request.headers.get('X-CSRFToken')).toBe('csrf-token');
     login.flush({
       success: true,
       message: 'ok',
-      data: { access: 'access-token', refresh: 'refresh-token' },
+      data: { access: 'access-token' },
     });
 
     const me = httpMock.expectOne(`${apiBase}/v1/auth/me/`);
@@ -93,7 +108,33 @@ describe('AuthService', () => {
     expect(service.isAuthenticated()).toBeTrue();
     expect(service.user()?.role).toBe('admin');
     expect(service.getAccessToken()).toBe('access-token');
-    expect(localStorage.getItem('nbs_refresh_token')).toBe('refresh-token');
+    expect(localStorage.getItem('nbs_access_token')).toBe('access-token');
+  });
+
+  it('stores access only when login omits refresh (cookie-based auth)', () => {
+    let result: unknown;
+
+    service
+      .signInWithPassword('admin@example.com', 'secret')
+      .subscribe((value) => {
+        result = value;
+      });
+
+    httpMock.expectOne(`${apiBase}/v1/auth/login/`).flush({
+      success: true,
+      message: 'ok',
+      data: { access: 'access-token' },
+    });
+
+    httpMock.expectOne(`${apiBase}/v1/auth/me/`).flush({
+      success: true,
+      message: 'ok',
+      data: currentUserResponse,
+    });
+
+    expect(result).toBeNull();
+    expect(service.getAccessToken()).toBe('access-token');
+    expect(localStorage.getItem('nbs_refresh_token')).toBeNull();
   });
 
   it('returns an auth error when sign in fails', () => {
@@ -104,6 +145,8 @@ describe('AuthService', () => {
       .subscribe((value) => {
         error = value;
       });
+
+    flushCsrf(httpMock);
 
     const login = httpMock.expectOne(`${apiBase}/v1/auth/login/`);
     login.flush(
@@ -132,11 +175,14 @@ describe('AuthService', () => {
         result = value;
       });
 
+    flushCsrf(httpMock);
+
     const register = httpMock.expectOne(`${apiBase}/v1/auth/register/`);
+    expect(register.request.headers.get('X-CSRFToken')).toBe('csrf-token');
     register.flush({
       success: true,
       message: 'ok',
-      data: { access: 'access-token', refresh: 'refresh-token' },
+      data: { access: 'access-token' },
     });
 
     const me = httpMock.expectOne(`${apiBase}/v1/auth/me/`);
@@ -166,6 +212,8 @@ describe('AuthService', () => {
         error = value;
       });
 
+    flushCsrf(httpMock);
+
     const register = httpMock.expectOne(`${apiBase}/v1/auth/register/`);
     register.flush(
       {
@@ -179,16 +227,18 @@ describe('AuthService', () => {
     expect(service.isAuthenticated()).toBeFalse();
   });
 
-  it('refreshes the access token when a refresh token exists', () => {
-    localStorage.setItem('nbs_refresh_token', 'refresh-token');
+  it('refreshes the access token via HttpOnly cookie', () => {
     let token!: string | null;
 
     service.refreshAccessToken().subscribe((value) => {
       token = value;
     });
 
+    flushCsrf(httpMock);
+
     const refresh = httpMock.expectOne(`${apiBase}/v1/auth/refresh/`);
-    expect(refresh.request.body).toEqual({ refresh: 'refresh-token' });
+    expect(refresh.request.body).toEqual({});
+    expect(refresh.request.headers.get('X-CSRFToken')).toBe('csrf-token');
     refresh.flush({
       success: true,
       message: 'ok',
@@ -200,7 +250,6 @@ describe('AuthService', () => {
   });
 
   it('clears the session when refresh fails', () => {
-    localStorage.setItem('nbs_refresh_token', 'refresh-token');
     localStorage.setItem('nbs_access_token', 'old-access');
     localStorage.setItem(
       'nbs_user',
@@ -220,7 +269,10 @@ describe('AuthService', () => {
       token = value;
     });
 
+    flushCsrf(httpMock);
+
     const refresh = httpMock.expectOne(`${apiBase}/v1/auth/refresh/`);
+    expect(refresh.request.body).toEqual({});
     refresh.flush(
       { success: false, error: { code: 'token_invalid', message: 'Expired.' } },
       { status: 401, statusText: 'Unauthorized' },
@@ -232,7 +284,6 @@ describe('AuthService', () => {
   });
 
   it('signs out, clears storage, and navigates to login', () => {
-    localStorage.setItem('nbs_refresh_token', 'refresh-token');
     localStorage.setItem('nbs_access_token', 'access-token');
     localStorage.setItem(
       'nbs_user',
@@ -248,7 +299,11 @@ describe('AuthService', () => {
 
     service.signOut();
 
+    flushCsrf(httpMock);
+
     const logout = httpMock.expectOne(`${apiBase}/v1/auth/logout/`);
+    expect(logout.request.body).toEqual({});
+    expect(logout.request.headers.get('X-CSRFToken')).toBe('csrf-token');
     logout.flush({ success: true, message: 'ok' });
 
     expect(localStorage.getItem('nbs_access_token')).toBeNull();
@@ -258,11 +313,14 @@ describe('AuthService', () => {
   });
 
   it('navigates to login with idle reason when signed out due to inactivity', () => {
-    localStorage.setItem('nbs_refresh_token', 'refresh-token');
+    localStorage.setItem('nbs_access_token', 'access-token');
 
     service.signOut({ reason: 'idle' });
 
+    flushCsrf(httpMock);
+
     const logout = httpMock.expectOne(`${apiBase}/v1/auth/logout/`);
+    expect(logout.request.body).toEqual({});
     logout.flush({ success: true, message: 'ok' });
 
     expect(router.navigate).toHaveBeenCalledWith(['/login'], {
@@ -279,10 +337,12 @@ describe('AuthService', () => {
         result = value;
       });
 
+    flushCsrf(httpMock);
+
     httpMock.expectOne(`${apiBase}/v1/auth/login/`).flush({
       success: true,
       message: 'ok',
-      data: { access: 'access-token', refresh: 'refresh-token' },
+      data: { access: 'access-token' },
     });
 
     httpMock.expectOne(`${apiBase}/v1/auth/me/`).flush({

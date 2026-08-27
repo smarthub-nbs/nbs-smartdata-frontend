@@ -1,60 +1,182 @@
-<section class="nbs-panel space-y-6">
-  <div class="flex flex-wrap items-center justify-between gap-3">
-    <h2 class="text-sm font-semibold text-slate-900">Publishing queue</h2>
-    <app-button variant="outline" size="sm" (clicked)="openCreateDraft()">
-      <span class="flex items-center gap-1.5">
-        <app-icon name="plus" [size]="16" />
-        New draft
-      </span>
-    </app-button>
+<section class="space-y-6 nbs-surface-elevated">
+  <div class="flex flex-wrap items-center justify-between gap-4">
+    <div>
+      <h2 class="text-sm font-semibold text-slate-900">Publishing queue</h2>
+      <p class="mt-0.5 text-xs text-nbs-muted">
+        Select a dataset to review and publish.
+      </p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      @if (canReview()) {
+      <app-button variant="outline" size="sm" (clicked)="openBulkUpload()">
+        Bulk upload
+      </app-button>
+      }
+      <app-button variant="outline" size="sm" (clicked)="openCreateDraft()">
+        <span class="flex items-center gap-1.5">
+          <app-icon name="plus" [size]="16" />
+          New draft
+        </span>
+      </app-button>
+    </div>
   </div>
 
-  @if (facade.summaryError()) {
-  <output
-    class="flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-    <app-icon name="alert-triangle" [size]="14" class="text-amber-600" />
-    Status counts could not refresh. Showing the most recent values.
-  </output>
+  @if (facade.bulkJobMessage()) {
+  <app-alert variant="info" role="status" class="text-xs">
+    {{ facade.bulkJobMessage() }}
+  </app-alert>
   }
 
-  <app-dataset-create-draft [inline]="true" [categories]="categories()" [tags]="tags()" [canCreateTags]="canReview()"
-    [categoriesLoading]="categoriesLoading()" [categoriesError]="categoriesError()"
-    [creating]="facade.actionLoading() === 'create'" (draftCreate)="onCreateDraft($event)" />
+  @if (canReview()) {
+  <section class="rounded-lg border border-slate-200 bg-white" aria-labelledby="recent-bulk-jobs-heading">
+    <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-3 py-2">
+      <h3 id="recent-bulk-jobs-heading" class="text-xs font-semibold uppercase tracking-wide text-nbs-muted">
+        Recent jobs
+      </h3>
+      <app-button variant="ghost" size="sm" [loading]="facade.recentBulkJobsLoading()"
+        (clicked)="facade.loadRecentBulkJobs()">
+        Refresh
+      </app-button>
+    </div>
+    @if (facade.recentBulkJobsLoading() && facade.recentBulkJobs().length === 0) {
+    <p class="px-3 py-3 text-xs text-nbs-muted">Loading jobs…</p>
+    } @else if (facade.recentBulkJobs().length === 0) {
+    <p class="px-3 py-3 text-xs text-nbs-muted">No bulk jobs yet.</p>
+    } @else {
+    <ul class="divide-y divide-slate-100">
+      @for (job of facade.recentBulkJobs(); track job.kind + '-' + job.id) {
+      <li>
+        <button type="button"
+          class="flex w-full flex-wrap items-center justify-between gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-slate-50 focus:outline-none focus-visible:bg-slate-50 disabled:cursor-default disabled:hover:bg-transparent"
+          [disabled]="job.status !== 'queued' && job.status !== 'running'" (click)="onRecentJobClick(job)">
+          <div class="min-w-0">
+            <p class="font-medium text-slate-900">{{ job.label }}</p>
+            <p class="text-xs text-nbs-muted">
+              {{ job.status }} · {{ job.processedCount }}/{{ job.totalCount }}
+              @if (job.failedCount > 0) {
+              · {{ job.failedCount }} failed
+              }
+            </p>
+          </div>
+          <time class="shrink-0 text-xs tabular-nums text-nbs-muted" [attr.datetime]="job.createdAt">
+            {{ job.createdAt | date: 'short' }}
+          </time>
+        </button>
+      </li>
+      }
+    </ul>
+    }
+  </section>
+  }
+
+  @if (facade.restorableId(); as restorableId) {
+  <app-alert variant="warning" role="status" class="text-xs">
+    <div class="flex flex-wrap items-center justify-between gap-2">
+      <span>A dataset was deleted and can still be restored.</span>
+      <div class="flex gap-2">
+        <app-button variant="outline" size="sm" [loading]="facade.actionLoading() === 'restore'"
+          (clicked)="facade.restore(restorableId)">
+          Restore
+        </app-button>
+        <app-button variant="ghost" size="sm" (clicked)="facade.dismissRestorable()">
+          Dismiss
+        </app-button>
+      </div>
+    </div>
+  </app-alert>
+  }
+
+  @if (canReview() && facade.checkedCount() > 0) {
+  <div class="flex flex-wrap items-end gap-2 rounded-lg border border-slate-200 bg-slate-50/80 p-3">
+    <p class="mr-auto text-sm text-slate-700">
+      {{ facade.checkedCount() }} selected
+    </p>
+    <app-button variant="outline" size="sm" [loading]="facade.actionLoading() === 'bulk'"
+      (clicked)="runBulk('approve')">
+      Approve
+    </app-button>
+    <label class="flex min-w-[12rem] flex-1 flex-col gap-1">
+      <span class="text-[11px] font-medium text-nbs-muted">Reject reason</span>
+      <input type="text" class="h-9 rounded-md border border-slate-200 px-2 text-sm" [ngModel]="bulkRejectReason()"
+        (ngModelChange)="bulkRejectReason.set($event)" placeholder="Required for reject" />
+    </label>
+    <app-button variant="outline" size="sm" [loading]="facade.actionLoading() === 'bulk'" (clicked)="runBulk('reject')">
+      Reject
+    </app-button>
+    @if (canPublish()) {
+    <app-button variant="primary" size="sm" [loading]="facade.actionLoading() === 'bulk'"
+      (clicked)="runBulk('publish')">
+      Publish
+    </app-button>
+    }
+    <app-button variant="ghost" size="sm" (clicked)="facade.clearChecked()">
+      Clear
+    </app-button>
+  </div>
+  }
+
+  @if (facade.summaryError()) {
+  <app-alert variant="warning" role="status" class="text-xs">
+    Status counts could not refresh. Showing the most recent values.
+  </app-alert>
+  }
+
+  @if (!facade.hasNoDatasets() || facade.queueLoading()) {
+  <nav class="flex flex-wrap items-center gap-2" aria-label="Filter by status">
+    @for (item of statusFilters; track item.key) {
+    <button type="button" [class]="statFilterClasses(item.key)"
+      [attr.aria-current]="facade.statusFilter() === item.key ? 'true' : null" (click)="onFilter(item.key)">
+      {{ item.label }}
+      <span [class]="statCountClasses(item.key)">{{ statCount(item.key) | number }}</span>
+    </button>
+    }
+  </nav>
+  }
 
   @if (facade.queueError()) {
   <p class="text-sm text-nbs-danger" role="alert">
     {{ facade.queueError() }}
   </p>
   } @else if (facade.hasNoDatasets() && !facade.queueLoading()) {
-  <div class="rounded-md border border-dashed border-slate-300 bg-nbs-surface p-4">
-    <p class="text-sm font-medium text-slate-900">No datasets yet</p>
-    <p class="mt-1 text-sm text-nbs-muted">
-      Use New draft above to create your first dataset, then upload a primary
-      file and submit for review.
-    </p>
-    <app-button class="mt-3" variant="primary" size="sm" (clicked)="openCreateDraft()">
+  <app-empty-state icon="inbox" title="No datasets yet"
+    message="Create your first draft, then upload a primary file and submit for review.">
+    <app-button class="mt-4 block" variant="primary" size="sm" (clicked)="openCreateDraft()">
       Create first draft
     </app-button>
-  </div>
+  </app-empty-state>
   } @else {
-  <div class="grid items-start gap-4 lg:grid-cols-[minmax(0,16rem)_minmax(0,1fr)]">
-    <div class="lg:sticky lg:top-6">
+  <div
+    class="border-t border-slate-100 pt-5 grid items-start gap-6 lg:grid-cols-[minmax(0,17rem)_minmax(0,1fr)] lg:gap-0">
+    <aside class="lg:sticky lg:top-6 lg:self-start lg:pr-5" [class.max-lg:hidden]="showDetailOnMobile()">
       <app-dataset-queue-list [items]="facade.items()" [pagination]="facade.pagination()"
-        [statusCounts]="facade.statusCounts()" [statusFilter]="facade.statusFilter()" [searchTerm]="facade.searchTerm()"
-        [selectedId]="facade.selectedId()" [loading]="facade.queueLoading()"
+        [searchTerm]="facade.searchTerm()" [selectedId]="facade.selectedId()" [checkedIds]="facade.checkedIds()"
+        [canBulkSelect]="canReview()" [allPageChecked]="facade.allPageChecked()" [loading]="facade.queueLoading()"
         [hasActiveSearch]="facade.hasActiveSearch()" [pageRangeLabel]="facade.pageRangeLabel()"
-        (filterChange)="onFilter($event)" (searchInput)="onSearch($event)" (previousPage)="facade.goToPreviousPage()"
-        (nextPage)="facade.goToNextPage()" (selectDataset)="onSelect($event)" />
-    </div>
+        (searchInput)="onSearch($event)" (previousPage)="facade.goToPreviousPage()" (nextPage)="facade.goToNextPage()"
+        (selectDataset)="onSelect($event)" (toggleChecked)="facade.toggleChecked($event)"
+        (toggleCheckAll)="facade.toggleCheckAllOnPage()" />
+    </aside>
 
-    <div class="space-y-4">
+    <div class="min-w-0 lg:border-l lg:border-slate-200/70 lg:pl-6" [class.max-lg:hidden]="showQueueOnMobile()">
+      @if (facade.selectedRecord(); as record) {
+      <div class="lg:hidden">
+        <button type="button"
+          class="mb-4 inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1.5 text-sm font-medium text-nbs-primary transition-colors hover:bg-nbs-primary/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary/40"
+          (click)="backToQueue()">
+          <app-icon name="arrow-right" [size]="15" class="rotate-180" />
+          Back to queue
+        </button>
+        <p class="truncate text-sm font-semibold text-slate-900">{{ record.title }}</p>
+      </div>
+      }
+
       @if (pendingSwitchId()) {
-      <div class="rounded-md border border-amber-200 bg-amber-50 px-3 py-3" role="alert">
-        <p class="flex items-center gap-2 text-sm font-medium text-amber-900">
-          <app-icon name="alert-triangle" [size]="15" class="text-amber-600" />
-          You have unsaved metadata changes.
+      <div class="rounded-lg border border-nbs-warning-border bg-nbs-warning-soft px-4 py-4" role="alert">
+        <p class="flex items-center gap-2 text-sm font-medium text-nbs-warning">
+          <app-icon name="alert-triangle" [size]="15" class="text-nbs-warning" />
+          You have unsaved changes.
         </p>
-        <p class="mt-1 text-xs text-amber-800">
+        <p class="mt-1 text-xs text-nbs-warning">
           Switch datasets and discard them, or keep editing the current one.
         </p>
         <div class="mt-3 flex flex-wrap gap-2">
@@ -72,14 +194,95 @@
       <app-dataset-workflow-detail [record]="record" [categories]="categories()" [tags]="tags()"
         [canCreateTags]="canReview()" [categoriesLoading]="categoriesLoading()" [categoriesError]="categoriesError()"
         [canReview]="canReview()" [canPublish]="canPublish()" [actionLoading]="facade.actionLoading()"
-        [message]="facade.message()" [messageError]="facade.messageError()" [publishedId]="facade.publishedId()"
-        (submitForReview)="facade.submit($event)" (approve)="facade.approve($event)" (reject)="facade.reject($event)"
-        (publish)="facade.publish($event)" (uploadFile)="facade.uploadFile(record.id, $event)"
-        (categoryChange)="facade.updateCategory(record.id, $event)" (metadataSaved)="facade.onMetadataSaved(record.id)"
-        (tagsChanged)="onTagsChanged(record.id)" (resourcesChanged)="onResourcesChanged(record.id)"
-        (deleteDataset)="facade.deleteDataset($event)" />
+        [publishedId]="facade.publishedId()" (submitForReview)="facade.submit($event)"
+        (approve)="facade.approve($event)" (reject)="facade.reject($event)" (publish)="facade.publish($event)"
+        (unpublish)="facade.unpublish($event)" (transferOwner)="onTransferOwner($event)"
+        (uploadFile)="facade.uploadFile(record.id, $event)" (categoryChange)="facade.updateCategory(record.id, $event)"
+        (metadataSaved)="facade.onMetadataSaved(record.id)" (tagsChanged)="onTagsChanged(record.id)"
+        (resourcesChanged)="onResourcesChanged(record.id)" (deleteDataset)="facade.deleteDataset($event)" />
+      } @else if (showDetailEmptyState()) {
+      <app-empty-state icon="inbox" [iconSize]="32" title="Select a dataset"
+        message="Choose a dataset from the queue to review metadata, tags, and workflow actions." />
       }
     </div>
   </div>
   }
 </section>
+
+@if (createDraftOpen()) {
+<app-modal size="xl" ariaLabel="Create draft dataset" (closed)="closeCreateDraft()">
+  <div modalHeader class="flex min-w-0 items-center gap-3">
+    <span class="flex size-10 shrink-0 items-center justify-center rounded-full bg-nbs-primary/10 text-nbs-primary">
+      <app-icon name="plus" [size]="20" />
+    </span>
+    <div class="min-w-0">
+      <h2 class="text-base font-semibold text-slate-900">New draft</h2>
+      <p class="text-sm text-nbs-muted">
+        Fill in the details to start a new dataset.
+      </p>
+    </div>
+  </div>
+  <app-dataset-create-draft #createDraft presentation="modal" [categories]="categories()" [tags]="tags()"
+    [canCreateTags]="canReview()" [categoriesLoading]="categoriesLoading()" [categoriesError]="categoriesError()"
+    [creating]="facade.actionLoading() === 'create'" (draftCreate)="onCreateDraft($event)" />
+  <div modalFooter
+    class="flex flex-wrap items-center justify-end gap-2 rounded-b-xl border-t border-nbs-border bg-slate-50/50 px-5 py-4">
+    <app-button variant="ghost" size="sm" (clicked)="closeCreateDraft()">
+      Cancel
+    </app-button>
+    <app-button variant="primary" size="sm" [loading]="facade.actionLoading() === 'create'"
+      (clicked)="createDraft.submit()">
+      Create draft dataset
+    </app-button>
+  </div>
+</app-modal>
+}
+
+@if (bulkUploadOpen()) {
+<app-modal size="xl" ariaLabel="Bulk upload dataset files" (closed)="closeBulkUpload()">
+  <div modalHeader>
+    <h2 class="text-base font-semibold text-slate-900">Bulk upload</h2>
+    <p class="mt-1 text-sm text-nbs-muted">
+      Upload files to existing datasets. Map each file to a dataset on this page.
+    </p>
+  </div>
+  <div class="space-y-4 px-1">
+    <label class="block">
+      <span class="mb-1 block text-sm font-medium text-slate-900">Files</span>
+      <input type="file" multiple accept=".csv,.json,.xlsx,.xls,.xml,.sdmx,.pdf,.tsv,.txt,.zip"
+        class="block w-full text-sm" (change)="onBulkFilesSelected($event)" />
+    </label>
+    @if (bulkUploadRows().length > 0) {
+    <ul class="space-y-2">
+      @for (row of bulkUploadRows(); track $index) {
+      <li class="flex flex-wrap items-center gap-2 rounded-md border border-slate-200 px-3 py-2">
+        <span class="min-w-0 flex-1 truncate text-sm text-slate-900">{{ row.file.name }}</span>
+        <label class="min-w-[14rem]">
+          <span class="sr-only">Dataset for {{ row.file.name }}</span>
+          <select class="h-9 w-full rounded-md border border-slate-200 px-2 text-sm" [ngModel]="row.datasetId"
+            (ngModelChange)="setBulkUploadDataset($index, $event)">
+            <option value="">Select dataset</option>
+            @for (item of facade.items(); track item.id) {
+            <option [value]="item.id">{{ item.title }}</option>
+            }
+          </select>
+        </label>
+      </li>
+      }
+    </ul>
+    <label class="inline-flex items-center gap-2 text-sm text-slate-700">
+      <input type="checkbox" class="size-3.5 rounded border-slate-300 text-nbs-primary" [ngModel]="bulkPublishAfter()"
+        (ngModelChange)="bulkPublishAfter.set($event)" />
+      Publish after upload
+    </label>
+    }
+  </div>
+  <div modalFooter class="flex justify-end gap-2">
+    <app-button variant="ghost" size="sm" (clicked)="closeBulkUpload()">Cancel</app-button>
+    <app-button variant="primary" size="sm" [loading]="facade.actionLoading() === 'bulk-upload'"
+      [disabled]="bulkUploadRows().length === 0" (clicked)="submitBulkUpload()">
+      Queue upload
+    </app-button>
+  </div>
+</app-modal>
+}

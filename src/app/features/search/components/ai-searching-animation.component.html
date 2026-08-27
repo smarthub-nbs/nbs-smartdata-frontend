@@ -1,0 +1,236 @@
+<section
+  class="ai-searching rounded-2xl border border-nbs-primary/15 bg-white shadow-nbs-card"
+  role="status"
+  aria-live="polite"
+  aria-label="Searching official statistics"
+>
+  <div class="ai-searching__progress" aria-hidden="true"><span></span></div>
+  <div class="p-5 sm:p-8">
+    <div class="flex items-start gap-4">
+      <div class="ai-searching__status-icon" aria-hidden="true">
+        <span class="ai-searching__status-pulse"></span>
+        <span class="ai-searching__status-dot"></span>
+      </div>
+      <div>
+        <p
+          class="text-xs font-semibold uppercase tracking-[0.14em] text-nbs-primary"
+        >
+          AI search in progress
+        </p>
+        <h2 class="mt-1 text-xl font-semibold text-slate-900">
+          Searching official statistics…
+        </h2>
+        <p class="ai-searching__status mt-2 text-sm leading-6 text-nbs-muted">
+          {{ currentStatus() }}
+        </p>
+      </div>
+    </div>
+
+    <div class="ai-searching__illustration" aria-hidden="true">
+      <svg
+        viewBox="0 0 360 290"
+        class="h-auto w-full"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <defs>
+          <linearGradient
+            id="robot-body"
+            x1="100"
+            y1="100"
+            x2="260"
+            y2="270"
+            gradientUnits="userSpaceOnUse"
+          >
+            <stop stop-color="#ffffff" />
+            <stop offset="1" stop-color="#d9f1fa" />
+          </linearGradient>
+          <linearGradient
+            id="robot-blue"
+            x1="110"
+            y1="80"
+            x2="250"
+            y2="220"
+            gradientUnits="userSpaceOnUse"
+          >
+            <stop stop-color="#eaf9fd" />
+            <stop offset="1" stop-color="#a9dff0" />
+          </linearGradient>
+          <radialGradient id="lens">
+            <stop stop-color="#ffffff" stop-opacity=".88" />
+            <stop offset="1" stop-color="#a5e2f2" stop-opacity=".58" />
+          </radialGradient>
+          <filter id="soft-shadow" x="-30%" y="-30%" width="160%" height="180%">
+            <feDropShadow
+              dx="0"
+              dy="8"
+              stdDeviation="7"
+              flood-color="#064c70"
+              flood-opacity=".14"
+            />
+          </filter>
+        </defs>
+
+        <g class="ai-searching__search-lines" opacity=".55">
+          <circle cx="180" cy="137" r="106" />
+          <circle cx="180" cy="137" r="123" />
+          <path d="M58 137h244" />
+          <path d="M180 15v244" />
+        </g>
+        <g class="ai-searching__sparkles">
+          <path d="m60 75 3 8 8 3-8 3-3 8-3-8-8-3 8-3 3-8Z" />
+          <path
+            d="m304 48 2.5 6.5L313 57l-6.5 2.5L304 66l-2.5-6.5L295 57l6.5-2.5L304 48Z"
+          />
+          <path d="m302 202 3 8 8 3-8 3-3 8-3-8-8-3 8-3 3-8Z" />
+          <circle cx="76" cy="212" r="4" />
+          <circle cx="284" cy="82" r="3" />
+        </g>
+
+        <g class="ai-searching__robot" filter="url(#soft-shadow)">
+          <g class="ai-searching__head">
+            <path
+              d="M177 39V25"
+              stroke="#0272A7"
+              stroke-width="5"
+              stroke-linecap="round"
+            />
+            <circle
+              cx="177"
+              cy="18"
+              r="8"
+              fill="#EDC91E"
+              stroke="#0272A7"
+              stroke-width="4"
+            />
+            <rect
+              x="100"
+              y="41"
+              width="157"
+              height="117"
+              rx="42"
+              fill="url(#robot-blue)"
+              stroke="#0272A7"
+              stroke-width="5"
+            />
+            <path
+              d="M119 85c9-24 29-36 58-36h33c23 0 38 9 47 27"
+              stroke="white"
+              stroke-opacity=".7"
+              stroke-width="7"
+              stroke-linecap="round"
+            />
+            <g class="ai-searching__face">
+              <ellipse cx="148" cy="97" rx="13" ry="17" fill="#0A1F3D" />
+              <ellipse cx="207" cy="97" rx="13" ry="17" fill="#0A1F3D" />
+              <circle cx="152" cy="91" r="4" fill="white" />
+              <circle cx="211" cy="91" r="4" fill="white" />
+              <path
+                d="M163 126c9 8 20 8 29 0"
+                stroke="#0272A7"
+                stroke-width="4"
+                stroke-linecap="round"
+              />
+            </g>
+            <circle cx="116" cy="123" r="7" fill="#EDC91E" opacity=".75" />
+            <circle cx="242" cy="123" r="7" fill="#EDC91E" opacity=".75" />
+          </g>
+          <path
+            d="M119 163c0-13 11-24 24-24h69c13 0 24 11 24 24v62c0 14-11 25-25 25h-67c-14 0-25-11-25-25v-62Z"
+            fill="url(#robot-body)"
+            stroke="#0272A7"
+            stroke-width="5"
+          />
+          <path
+            d="M136 178h68"
+            stroke="#a9dff0"
+            stroke-width="8"
+            stroke-linecap="round"
+          />
+          <circle cx="153" cy="205" r="8" fill="#219F94" />
+          <circle cx="180" cy="205" r="8" fill="#EDC91E" />
+          <circle cx="207" cy="205" r="8" fill="#0272A7" />
+          <path
+            d="M119 177 91 195M241 177l27 22"
+            stroke="#0272A7"
+            stroke-width="12"
+            stroke-linecap="round"
+          />
+          <circle
+            cx="89"
+            cy="197"
+            r="12"
+            fill="#d9f1fa"
+            stroke="#0272A7"
+            stroke-width="5"
+          />
+          <circle
+            cx="271"
+            cy="201"
+            r="12"
+            fill="#d9f1fa"
+            stroke="#0272A7"
+            stroke-width="5"
+          />
+          <path
+            d="M142 250v16M217 250v16"
+            stroke="#0272A7"
+            stroke-width="9"
+            stroke-linecap="round"
+          />
+        </g>
+
+        <g class="ai-searching__magnifier" filter="url(#soft-shadow)">
+          <circle
+            cx="245"
+            cy="105"
+            r="49"
+            fill="url(#lens)"
+            stroke="#0272A7"
+            stroke-width="7"
+          />
+          <circle
+            cx="245"
+            cy="105"
+            r="39"
+            stroke="white"
+            stroke-opacity=".8"
+            stroke-width="3"
+          />
+          <ellipse cx="231" cy="88" rx="14" ry="9" fill="white" opacity=".7" />
+          <path
+            d="m279 139 35 35"
+            stroke="#0272A7"
+            stroke-width="13"
+            stroke-linecap="round"
+          />
+          <path
+            d="m287 147 25 25"
+            stroke="#219F94"
+            stroke-width="5"
+            stroke-linecap="round"
+          />
+          <g class="ai-searching__enlarged-eye">
+            <ellipse
+              cx="245"
+              cy="105"
+              rx="18"
+              ry="23"
+              fill="white"
+              stroke="#0A1F3D"
+              stroke-width="4"
+            />
+            <ellipse cx="249" cy="107" rx="9" ry="13" fill="#0A1F3D" />
+            <circle cx="253" cy="101" r="4" fill="white" />
+          </g>
+        </g>
+        <g class="ai-searching__thinking-dots">
+          <circle cx="154" cy="282" r="4" />
+          <circle cx="180" cy="282" r="4" />
+          <circle cx="206" cy="282" r="4" />
+        </g>
+      </svg>
+    </div>
+    <p class="sr-only">{{ currentStatus() }}</p>
+  </div>
+</section>

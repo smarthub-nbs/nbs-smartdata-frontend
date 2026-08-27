@@ -9,6 +9,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { map } from 'rxjs';
 import { DatasetMetadataPanelComponent } from '@app/features/discovery/components/dataset-metadata-panel.component';
 import { DatasetFilePreviewComponent } from '@app/features/discovery/components/dataset-file-preview.component';
+import { DatasetPreviewChartComponent } from '@app/features/discovery/components/dataset-preview-chart.component';
 import { DatasetUpdateHistoryComponent } from '@app/features/discovery/components/dataset-update-history.component';
 import { DatasetDetailHeaderComponent } from '@app/features/discovery/components/dataset-detail-header.component';
 import { DatasetDetailFallbackComponent } from '@app/features/discovery/components/dataset-detail-fallback.component';
@@ -18,7 +19,6 @@ import { DatasetService } from '@app/features/discovery';
 import { DatasetDownloadMenuComponent } from '@app/features/developers';
 import { RecommendedDatasetsComponent } from '@app/features/search';
 import { PageStateComponent } from '@app/shared/components/page-state/page-state.component';
-import { resolveIndicatorForTopic } from '@app/features/explore';
 import { DatasetDetailFacadeService } from '@app/features/discovery/services/dataset-detail-facade.service';
 
 @Component({
@@ -30,6 +30,7 @@ import { DatasetDetailFacadeService } from '@app/features/discovery/services/dat
     DatasetDetailFallbackComponent,
     DatasetMetadataPanelComponent,
     DatasetFilePreviewComponent,
+    DatasetPreviewChartComponent,
     DatasetUpdateHistoryComponent,
     RecommendedDatasetsComponent,
     DatasetDownloadMenuComponent,
@@ -103,12 +104,8 @@ export class DatasetDetailPageComponent {
 
   protected goToExplore(): void {
     const dataset = this.dataset();
-    const indicator = dataset
-      ? resolveIndicatorForTopic(dataset.topicSlug)
-      : resolveIndicatorForTopic('');
-
     void this.router.navigate(['/explore'], {
-      queryParams: { indicator },
+      queryParams: dataset ? { indicator: dataset.id } : undefined,
     });
   }
 

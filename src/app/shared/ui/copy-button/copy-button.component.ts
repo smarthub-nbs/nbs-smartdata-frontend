@@ -115,16 +115,16 @@ export class CopyButtonComponent {
     let state: string;
 
     if (this.state() === 'failed') {
-      state = 'text-nbs-danger hover:bg-red-50';
+      state = 'text-nbs-danger hover:bg-nbs-danger-soft';
     } else if (this.tone() === 'inverse') {
       state =
         this.state() === 'copied'
-          ? 'text-emerald-300 hover:bg-white/10'
+          ? 'text-nbs-success-border hover:bg-white/10'
           : 'text-slate-300 hover:bg-white/10 hover:text-white';
     } else {
       state =
         this.state() === 'copied'
-          ? 'text-nbs-accent hover:bg-nbs-accent/10'
+          ? 'text-nbs-success hover:bg-nbs-success-soft'
           : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700';
     }
 

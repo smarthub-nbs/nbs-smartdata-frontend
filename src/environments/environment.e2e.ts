@@ -8,4 +8,6 @@ export const environment: Environment = {
   appName: 'NBS SmartData Hub',
   sessionIdleTimeoutMs: 0,
   sessionIdleWarningMs: 0,
+  googleClientId: '',
+  githubClientId: '',
 };

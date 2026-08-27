@@ -51,6 +51,8 @@ export interface Dataset {
   updatedAt: string;
   recordCount: number;
   license: string;
+  sourceUrl?: string;
+  dataSummary?: string;
 }
 
 export interface DatasetTopic {
@@ -67,6 +69,10 @@ export interface DatasetFilters {
   format: string;
   frequency: string;
   region: string;
+  tag: string;
+  license: string;
+  publisher: string;
+  year: string;
 }
 
 export const EMPTY_DATASET_FILTERS: DatasetFilters = {
@@ -75,4 +81,39 @@ export const EMPTY_DATASET_FILTERS: DatasetFilters = {
   format: '',
   frequency: '',
   region: '',
+  tag: '',
+  license: '',
+  publisher: '',
+  year: '',
 };
+
+export interface DatasetTagOption {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+export interface DatasetChartPoint {
+  label: string;
+  value: number;
+  key?: string;
+}
+
+export interface DatasetChartPreview {
+  chartType: string;
+  label: string;
+  points: DatasetChartPoint[];
+}
+
+export interface DatasetSnapshotFigure {
+  key: string;
+  label: string;
+  value: number;
+}
+
+export interface DatasetPreviewSnapshot {
+  kind: 'census' | 'series';
+  label: string;
+  figures: DatasetSnapshotFigure[];
+  series: DatasetChartPreview | null;
+}

@@ -9,17 +9,18 @@ import { UserAvatarComponent } from '@app/features/users/components/user-avatar.
 import { ManagedUser } from '@app/features/users/models/user-management.model';
 import { UsersWorkspaceFacade } from '@app/features/users/services/users-workspace.facade';
 import { formatGroupLabel } from '@app/features/users/utils/user-display.util';
-import { IconComponent } from '@shared/ui';
+import { BadgeComponent, IconComponent } from '@shared/ui';
 
 @Component({
   selector: 'app-user-table',
   standalone: true,
-  imports: [DatePipe, IconComponent, UserAvatarComponent],
+  imports: [DatePipe, BadgeComponent, IconComponent, UserAvatarComponent],
   templateUrl: './user-table.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class UserTableComponent {
   protected readonly facade = inject(UsersWorkspaceFacade);
+  protected readonly skeletonRows = [0, 1, 2, 3, 4];
 
   readonly rowSelected = output<ManagedUser>();
 
