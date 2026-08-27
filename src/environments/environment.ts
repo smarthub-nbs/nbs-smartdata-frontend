@@ -4,7 +4,7 @@ export const environment: Environment = {
   production: true,
   useMockApi: false,
   useMockExploreApi: false,
-  apiBaseUrl: 'https://api.smartdata.nbs.go.tz',
+  apiBaseUrl: 'https://nbs-smartdata-backend.onrender.com/api',
   appName: 'NBS SmartData Hub',
   sessionIdleTimeoutMs: 5 * 60 * 1000,
   sessionIdleWarningMs: 30 * 1000,
