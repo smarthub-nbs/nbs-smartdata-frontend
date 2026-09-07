@@ -62,6 +62,7 @@
     <label class="block">
       <span class="mb-1 block text-xs font-medium text-slate-600">Tag</span>
       <input type="text" formControlName="tagName" placeholder="e.g. Population" list="draft-tag-options"
+        [attr.aria-invalid]="controlError('tagName') || null"
         class="h-10 w-full rounded-md border border-slate-300 px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-nbs-primary focus:outline-none focus:ring-2 focus:ring-nbs-primary/30" />
       <datalist id="draft-tag-options">
         @for (tag of tags(); track tag.id) {
@@ -71,6 +72,11 @@
       <p class="mt-1 text-xs text-nbs-muted">
         At least one tag is required before review. You can add more tags later.
       </p>
+      @if (controlError('tagName')) {
+      <p class="mt-1 text-xs text-nbs-danger" role="alert">
+        {{ controlError('tagName') }}
+      </p>
+      }
     </label>
     } @else {
     <app-select-input formControlName="tagName" label="Tag" [required]="true" [options]="tagOptions()"
@@ -80,7 +86,8 @@
     <app-text-input formControlName="region" label="Region" [required]="true" [error]="controlError('region')" />
     <app-select-input formControlName="year" label="Year" [required]="true" [options]="yearOptions"
       [error]="controlError('year')" />
-    <app-select-input formControlName="frequency" label="Frequency" [required]="true" [options]="frequencyOptions" />
+    <app-select-input formControlName="frequency" label="Frequency" [required]="true" [options]="frequencyOptions"
+      [error]="controlError('frequency')" />
     <app-text-input formControlName="license" label="License" [required]="true" [error]="controlError('license')" />
     <div class="md:col-span-2">
       <app-form-field label="Description" [required]="true">
