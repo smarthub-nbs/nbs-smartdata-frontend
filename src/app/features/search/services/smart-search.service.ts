@@ -16,6 +16,7 @@ interface ParsedQuery {
 }
 
 const REGION_ALIASES: Record<string, string> = {
+  dom: 'Dodoma',
   dodoma: 'Dodoma',
   dar: 'Dar es Salaam',
   'dar es salaam': 'Dar es Salaam',
@@ -82,6 +83,24 @@ const TOPIC_KEYWORDS: Record<string, string[]> = {
   justice: ['justice', 'court', 'case', 'backlog', 'filed', 'decided'],
 };
 
+const SWAHILI_QUERY_MARKERS = [
+  'idadi',
+  'watu',
+  'wakazi',
+  'wangapi',
+  'mkoa',
+  'mwaka',
+  'kilimo',
+  'afya',
+  'elimu',
+  'uchumi',
+  'sensa',
+  'maji',
+  'utalii',
+  'wanawake',
+  'wanaume',
+];
+
 @Injectable({ providedIn: 'root' })
 export class SmartSearchService {
   private readonly datasetService = inject(DatasetService);
@@ -90,15 +109,16 @@ export class SmartSearchService {
 
   smartSearch(query: string): Observable<SmartSearchResponse> {
     const trimmed = query.trim();
-    const parsed = this.parseQuery(trimmed);
+    const retrievalQuery = this.normalizeRetrievalQuery(trimmed);
+    const parsed = this.parseQuery(retrievalQuery);
 
     return forkJoin({
-      catalog: this.datasetService.searchCatalog(trimmed),
-      tisp: this.tispSearch.search(trimmed),
+      catalog: this.datasetService.searchCatalog(retrievalQuery),
+      tisp: this.tispSearch.search(retrievalQuery),
     }).pipe(
       map(({ catalog, tisp }) => {
         const datasets = this.mergeDatasets(catalog, tisp);
-        const results = this.scoreDatasets(datasets, parsed, trimmed);
+        const results = this.scoreDatasets(datasets, parsed, retrievalQuery);
         const answerFacts = this.buildAnswerFacts(results);
         return {
           query: trimmed,
@@ -113,6 +133,38 @@ export class SmartSearchService {
       }),
       switchMap((response) => this.enhanceWithAi(response)),
     );
+  }
+
+  private normalizeRetrievalQuery(query: string): string {
+    let normalized = query.toLowerCase().replace(/[^a-z0-9\s-]/g, ' ');
+
+    normalized = normalized
+      .replace(/\bidadi\s+ya\s+(?:watu|wakazi)\b/g, 'population')
+      .replace(/\b(?:watu|wakazi)\s+wangapi\b/g, 'population')
+      .replace(/\bwangapi\s+(?:watu|wakazi)\b/g, 'population')
+      .replace(/\b(?:watu|wakazi)\b/g, 'population')
+      .replace(/\bkilimo\b/g, 'agriculture')
+      .replace(/\bafya\b/g, 'health')
+      .replace(/\belimu\b/g, 'education')
+      .replace(/\buchumi\b/g, 'economy')
+      .replace(/\bsensa\b/g, 'census')
+      .replace(/\bmaji\b/g, 'water')
+      .replace(/\butalii\b/g, 'tourism')
+      .replace(/\bmfumuko\s+wa\s+bei\b/g, 'inflation')
+      .replace(/\bnumber\s+of\s+(?:people|persons|residents)\b/g, 'population')
+      .replace(/\b(?:people|persons|residents)\b/g, 'population')
+      .replace(/\bwanawake\b/g, 'female')
+      .replace(/\bwanaume\b/g, 'male')
+      .replace(/\bdom\b/g, 'dodoma')
+      .replace(/\bdsm\b/g, 'dar es salaam')
+      .replace(
+        /\b(?:in|at|for|the|of|with|official|source|ya|wa|kwa|katika|ni|je|mkoa|mwaka|idadi|ngapi|wangapi|na|niambie|uniambie|uniambia|umetoa|wapi|hii|cha|taarifa|chanzo)\b/g,
+        ' ',
+      )
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    return normalized || query.trim();
   }
 
   getRecommendations(datasetId: string, limit = 3): Dataset[] {
@@ -332,7 +384,12 @@ export class SmartSearchService {
     results: SmartSearchResult[],
     facts: string[],
   ): string {
+    const isSwahili = this.isSwahiliQuery(query);
+
     if (results.length === 0) {
+      if (isSwahili) {
+        return `Sikupata rekodi ya NBS/TISP inayolingana na “${query}”. Jaribu mada, eneo, au mwaka kwa maelezo zaidi.`;
+      }
       return `I could not find a matching NBS/TISP data record for "${query}". Try a broader topic, area, or year.`;
     }
 
@@ -343,6 +400,19 @@ export class SmartSearchService {
 
     if (facts.length > 0) {
       const additionalFacts = facts.slice(1, 3);
+      if (isSwahili) {
+        const localizedFacts = facts.map((fact) =>
+          this.localizeFactForSwahili(fact),
+        );
+        return [
+          `Kulingana na data ya NBS/TISP, ${localizedFacts[0]}`,
+          additionalFacts.length
+            ? `Pia nimepata ${localizedFacts.slice(1, 3).join(' ')}`
+            : '',
+        ]
+          .filter(Boolean)
+          .join(' ');
+      }
       return [
         `Based on the NBS/TISP data I found, ${facts[0]}`,
         additionalFacts.length
@@ -353,7 +423,28 @@ export class SmartSearchService {
         .join(' ');
     }
 
+    if (isSwahili) {
+      return `Kulingana na vyanzo vya NBS/TISP, matokeo yanayokaribiana zaidi ni “${primary.dataset.title}”. ${primary.dataset.description}`;
+    }
     return `Based on the NBS/TISP sources, the closest match is "${primary.dataset.title}". ${primary.dataset.description}`;
+  }
+
+  private isSwahiliQuery(query: string): boolean {
+    const normalized = ` ${query.toLowerCase().replace(/[^a-z0-9\s]/g, ' ')} `;
+    return SWAHILI_QUERY_MARKERS.some((marker) =>
+      normalized.includes(` ${marker} `),
+    );
+  }
+
+  private localizeFactForSwahili(fact: string): string {
+    const populationMatch =
+      /^Population size in (.+?) was ([\d,.]+) in (\d{4})\.?$/i.exec(
+        fact.trim(),
+      );
+    if (populationMatch) {
+      return `idadi ya watu katika ${populationMatch[1]} ilikuwa ${populationMatch[2]} mwaka ${populationMatch[3]}.`;
+    }
+    return fact;
   }
 
   private buildAnswerFacts(results: SmartSearchResult[]): string[] {

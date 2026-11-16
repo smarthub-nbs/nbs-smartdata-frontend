@@ -23,7 +23,7 @@ import {
   chartTooltipOptions,
 } from '@app/features/explore/utils/chart-colors.util';
 
-type SearchViewType = 'cards' | 'bar' | 'line' | 'pie';
+type SearchViewType = 'cards' | 'bar' | 'line' | 'pie' | 'pyramid';
 interface VisualizationPoint {
   label: string;
   value: number;
@@ -48,8 +48,22 @@ export class SearchDataVisualizationComponent implements AfterViewInit {
   protected readonly points = computed(() =>
     this.extractPoints(this.results()),
   );
-  protected readonly hasChartData = computed(() => this.points().length > 1);
+  protected readonly pyramidData = computed(
+    () =>
+      this.results()
+        .map((result) => result.dataset.searchVisualization)
+        .find(
+          (visualization) => visualization?.type === 'population-pyramid',
+        ) ?? null,
+  );
+  protected readonly hasChartData = computed(
+    () => Boolean(this.pyramidData()) || this.points().length > 1,
+  );
+  protected readonly availableViews = computed<SearchViewType[]>(() =>
+    this.pyramidData() ? ['cards', 'pyramid'] : ['cards', 'bar', 'line', 'pie'],
+  );
   protected readonly recommendedView = computed<SearchViewType>(() => {
+    if (this.pyramidData()) return 'pyramid';
     const points = this.points();
     if (points.length < 2) return 'cards';
     const hasMultipleYears = this.results()
@@ -67,10 +81,23 @@ export class SearchDataVisualizationComponent implements AfterViewInit {
   private resizeStartY = 0;
   private resizeStartHeight = 520;
   private isResizing = false;
+  private activeResultsKey = '';
 
   constructor() {
     effect(() => {
-      this.results();
+      const results = this.results();
+      const resultsKey = results.map((result) => result.dataset.id).join('|');
+      if (resultsKey !== this.activeResultsKey) {
+        this.activeResultsKey = resultsKey;
+        this.viewType.set(
+          results.some(
+            (result) =>
+              result.dataset.searchVisualization?.type === 'population-pyramid',
+          )
+            ? 'pyramid'
+            : 'cards',
+        );
+      }
       this.viewType();
       if (this.viewReady) {
         this.renderChart();
@@ -121,12 +148,19 @@ export class SearchDataVisualizationComponent implements AfterViewInit {
     const context = canvas.getContext('2d');
     const points = this.points();
     const type = this.viewType();
-    if (!context || points.length === 0) return;
+    if (!context) return;
 
     if (type === 'cards') {
       this.destroyChart();
       return;
     }
+
+    if (type === 'pyramid') {
+      this.renderPopulationPyramid(context);
+      return;
+    }
+
+    if (points.length === 0) return;
 
     ensureChartJsRegistered();
     this.destroyChart();
@@ -189,6 +223,77 @@ export class SearchDataVisualizationComponent implements AfterViewInit {
     this.chart = new Chart(context, config);
   }
 
+  private renderPopulationPyramid(context: CanvasRenderingContext2D): void {
+    const pyramid = this.pyramidData();
+    if (!pyramid) return;
+
+    ensureChartJsRegistered();
+    this.destroyChart();
+    const labels = [...pyramid.labels].reverse();
+    const male = [...pyramid.male].reverse().map((value) => -value);
+    const female = [...pyramid.female].reverse();
+    const config: ChartConfiguration<'bar'> = {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Male',
+            data: male,
+            backgroundColor: CHART_COLORS.primary,
+            borderColor: CHART_COLORS.primary,
+            borderWidth: 1,
+          },
+          {
+            label: 'Female',
+            data: female,
+            backgroundColor: CHART_COLORS.accent,
+            borderColor: CHART_COLORS.accent,
+            borderWidth: 1,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        indexAxis: 'y',
+        animation: { duration: 650 },
+        plugins: {
+          legend: {
+            ...chartLegendOptions(),
+            display: true,
+            position: 'top',
+          },
+          tooltip: {
+            ...chartTooltipOptions(),
+            callbacks: {
+              label: (item) =>
+                `${item.dataset.label}: ${Math.abs(
+                  Number(item.raw),
+                ).toLocaleString()}`,
+            },
+          },
+        },
+        scales: {
+          x: {
+            stacked: true,
+            ticks: {
+              color: chartAxisTicksColor(),
+              callback: (value) => Math.abs(Number(value)).toLocaleString(),
+            },
+            grid: { color: chartGridColor() },
+          },
+          y: {
+            stacked: true,
+            ticks: { color: chartAxisTicksColor(), autoSkip: false },
+            grid: { display: false },
+          },
+        },
+      },
+    };
+    this.chart = new Chart(context, config);
+  }
+
   private extractPoints(results: SmartSearchResult[]): VisualizationPoint[] {
     const points: VisualizationPoint[] = [];
     for (const result of results) {
@@ -211,8 +316,9 @@ export class SearchDataVisualizationComponent implements AfterViewInit {
         const title = result.dataset.title.replace(/\s+/g, ' ').trim();
         const subgroup = title.match(/\(([^)]+)\)/)?.[1];
         const indicator = title.replace(/\s*\([^)]*\)/, '').trim();
+        const factLabel = fact.match(/^(.+?)\s+in\s+/i)?.[1]?.trim();
         points.push({
-          label: indicator || result.dataset.title,
+          label: factLabel || indicator || result.dataset.title,
           value,
           context:
             [area, subgroup, year].filter(Boolean).join(' · ') ||

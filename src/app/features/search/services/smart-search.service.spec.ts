@@ -57,6 +57,29 @@ const tispPopulationDataset: Dataset = {
   dataSummary: 'Population size in Tanzania was 61,741,120 in 2022.',
 };
 
+const dodomaPopulationDataset: Dataset = {
+  ...tispPopulationDataset,
+  id: 'external-tisp-census-population-dodoma-2022',
+  title: 'Population size in Dodoma (2022)',
+  description: 'TISP census population data for Dodoma in 2022.',
+  region: 'Dodoma',
+  keywords: ['TISP', 'census', 'population', 'Dodoma', '2022'],
+  dataSummary: 'Population size in Dodoma was 3,085,625 in 2022.',
+};
+
+const arushaPopulationBySexDataset: Dataset = {
+  ...tispPopulationDataset,
+  id: 'nbs-2022-phc-region-sex-arusha',
+  title: 'Arusha Region population by sex — 2022 PHC',
+  description: 'Official NBS 2022 census totals for Arusha Region.',
+  region: 'Arusha',
+  keywords: ['NBS', 'census', 'population', 'Arusha', 'male', 'female'],
+  sourceUrl:
+    'https://www.nbs.go.tz/uploads/statistics/documents/official-report.pdf',
+  dataSummary:
+    'Total population in Arusha Region was 2,356,255 in 2022; Female population in Arusha Region was 1,230,639 (52.2%) in 2022; Male population in Arusha Region was 1,125,616 (47.8%) in 2022.',
+};
+
 describe('SmartSearchService', () => {
   let service: SmartSearchService;
   let datasetService: jasmine.SpyObj<DatasetService>;
@@ -158,5 +181,134 @@ describe('SmartSearchService', () => {
       expect(response.aiModel).toBe('gpt-test');
       done();
     });
+  });
+
+  it('normalizes conversational population queries and region abbreviations', (done) => {
+    datasetService.searchCatalog.and.returnValue(of([]));
+    tispSearchService.search.and.returnValue(of([dodomaPopulationDataset]));
+    aiAnswerService.generateAnswer.and.returnValue(
+      of({
+        answer: 'Dodoma had 3,085,625 people in 2022.',
+        usedAi: true,
+        model: 'openrouter/free',
+        reason: '',
+      }),
+    );
+
+    service.smartSearch('number of people in dom').subscribe((response) => {
+      expect(datasetService.searchCatalog).toHaveBeenCalledWith(
+        'population dodoma',
+      );
+      expect(tispSearchService.search).toHaveBeenCalledWith(
+        'population dodoma',
+      );
+      expect(response.query).toBe('number of people in dom');
+      expect(response.results[0]?.dataset.region).toBe('Dodoma');
+      expect(response.answer).toBe('Dodoma had 3,085,625 people in 2022.');
+      expect(response.usedAi).toBeTrue();
+      done();
+    });
+  });
+
+  it('supports Swahili population queries and asks AI with the original wording', (done) => {
+    datasetService.searchCatalog.and.returnValue(of([]));
+    tispSearchService.search.and.returnValue(of([dodomaPopulationDataset]));
+    aiAnswerService.generateAnswer.and.returnValue(
+      of({
+        answer: 'Dodoma ilikuwa na watu 3,085,625 mwaka 2022.',
+        usedAi: true,
+        model: 'openrouter/free',
+        reason: '',
+      }),
+    );
+
+    service.smartSearch('idadi ya watu dom').subscribe((response) => {
+      expect(datasetService.searchCatalog).toHaveBeenCalledWith(
+        'population dodoma',
+      );
+      expect(tispSearchService.search).toHaveBeenCalledWith(
+        'population dodoma',
+      );
+      expect(aiAnswerService.generateAnswer).toHaveBeenCalledWith(
+        jasmine.objectContaining({ query: 'idadi ya watu dom' }),
+      );
+      expect(response.answer).toBe(
+        'Dodoma ilikuwa na watu 3,085,625 mwaka 2022.',
+      );
+      expect(response.usedAi).toBeTrue();
+      done();
+    });
+  });
+
+  it('uses a Swahili fallback answer when AI is unavailable', (done) => {
+    datasetService.searchCatalog.and.returnValue(of([]));
+    tispSearchService.search.and.returnValue(of([dodomaPopulationDataset]));
+
+    service.smartSearch('idadi ya watu Dodoma').subscribe((response) => {
+      expect(response.answer).toContain('Kulingana na data ya NBS/TISP');
+      expect(response.answer).toContain('idadi ya watu katika Dodoma');
+      expect(response.answer).toContain('3,085,625');
+      expect(response.usedAi).toBeFalse();
+      done();
+    });
+  });
+
+  it('normalizes a Swahili sex breakdown and source request', (done) => {
+    datasetService.searchCatalog.and.returnValue(of([]));
+    tispSearchService.search.and.returnValue(
+      of([arushaPopulationBySexDataset]),
+    );
+    aiAnswerService.generateAnswer.and.returnValue(
+      of({
+        answer:
+          'Mkoa wa Arusha ulikuwa na watu 2,356,255: wanawake 1,230,639 na wanaume 1,125,616. Chanzo ni ripoti rasmi ya NBS.',
+        usedAi: true,
+        model: 'openrouter/free',
+        reason: '',
+      }),
+    );
+
+    service
+      .smartSearch(
+        'idadi ya watu arusha wanawake na wanaume. na uniambia umetoa wapi hii taarifa',
+      )
+      .subscribe((response) => {
+        expect(datasetService.searchCatalog).toHaveBeenCalledWith(
+          'population arusha female male',
+        );
+        expect(tispSearchService.search).toHaveBeenCalledWith(
+          'population arusha female male',
+        );
+        expect(aiAnswerService.generateAnswer).toHaveBeenCalledWith(
+          jasmine.objectContaining({
+            query:
+              'idadi ya watu arusha wanawake na wanaume. na uniambia umetoa wapi hii taarifa',
+          }),
+        );
+        expect(response.usedAi).toBeTrue();
+        expect(response.answer).toContain('2,356,255');
+        done();
+      });
+  });
+
+  it('normalizes the Arusha example button query', (done) => {
+    datasetService.searchCatalog.and.returnValue(of([]));
+    tispSearchService.search.and.returnValue(
+      of([arushaPopulationBySexDataset]),
+    );
+
+    service
+      .smartSearch(
+        'idadi ya watu Arusha wanawake na wanaume. niambie chanzo cha taarifa',
+      )
+      .subscribe(() => {
+        expect(datasetService.searchCatalog).toHaveBeenCalledWith(
+          'population arusha female male',
+        );
+        expect(tispSearchService.search).toHaveBeenCalledWith(
+          'population arusha female male',
+        );
+        done();
+      });
   });
 });

@@ -21,6 +21,8 @@
       <p class="mt-1 text-sm text-nbs-muted">
         @if (recommendedView() === 'cards') {
           This result is best presented as a quick summary card.
+        } @else if (recommendedView() === 'pyramid') {
+          Male values appear on the left and female values on the right.
         } @else if (recommendedView() === 'line') {
           These values look like a time series, so a line chart is recommended.
         } @else {
@@ -34,7 +36,7 @@
         role="group"
         aria-label="Visualization type"
       >
-        @for (type of ['cards', 'bar', 'line', 'pie']; track type) {
+        @for (type of availableViews(); track type) {
           <button
             type="button"
             class="rounded-md px-3 py-1.5 text-xs font-semibold capitalize transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary"
@@ -44,7 +46,13 @@
             [attr.aria-pressed]="viewType() === type"
             (click)="selectView($any(type))"
           >
-            {{ type === 'cards' ? 'Cards' : type + ' chart' }}
+            {{
+              type === 'cards'
+                ? 'Cards'
+                : type === 'pyramid'
+                  ? 'Population pyramid'
+                  : type + ' chart'
+            }}
           </button>
         }
       </div>
@@ -76,7 +84,14 @@
     [class.hidden]="viewType() === 'cards'"
     [style.height.px]="chartHeight()"
   >
-    <canvas #canvas aria-label="Dynamic chart of search result values"></canvas>
+    <canvas
+      #canvas
+      [attr.aria-label]="
+        viewType() === 'pyramid'
+          ? 'Population pyramid by age group and sex'
+          : 'Dynamic chart of search result values'
+      "
+    ></canvas>
   </div>
   <p class="mt-2 text-xs text-slate-500">
     Values are derived from the official NBS/TISP records returned above.

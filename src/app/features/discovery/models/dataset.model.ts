@@ -53,6 +53,12 @@ export interface Dataset {
   license: string;
   sourceUrl?: string;
   dataSummary?: string;
+  searchVisualization?: {
+    type: 'population-pyramid';
+    labels: string[];
+    male: number[];
+    female: number[];
+  };
 }
 
 export interface DatasetTopic {

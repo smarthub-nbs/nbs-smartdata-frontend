@@ -1,73 +1,140 @@
 <header class="shrink-0 border-b border-nbs-border bg-white">
-  <div class="nbs-container flex h-14 items-center justify-between gap-4">
-    <div class="flex min-w-0 items-center gap-4">
-      <a routerLink="/"
-        class="flex shrink-0 items-center gap-2 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary">
-        <span class="flex size-9 items-center justify-center rounded-md bg-white p-1 ring-1 ring-nbs-border"
-          aria-hidden="true">
-          <img src="/nbs-logo.png" alt="" class="size-full object-contain" />
-        </span>
-        <span class="hidden sm:block">
-          <span class="block text-sm font-semibold leading-tight text-slate-900">NBS</span>
-          <span class="block text-xs leading-tight text-nbs-muted">SmartData Hub</span>
-        </span>
-      </a>
-
-      <nav class="hidden items-center gap-1 lg:flex" aria-label="Main navigation">
-        @for (item of visibleNavItems(); track item.route) {
-        <a [routerLink]="item.route" routerLinkActive="bg-nbs-primary/10 text-nbs-primary"
-          [routerLinkActiveOptions]="{ exact: item.route === '/' }"
-          class="rounded-md px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900">
-          {{ item.label }}
-        </a>
-        }
-      </nav>
+  <div
+    class="nbs-container grid min-h-24 grid-cols-2 items-center gap-x-4 gap-y-2 py-3 sm:min-h-28 sm:grid-cols-[1fr_auto_1fr] sm:py-2"
+  >
+    <div class="justify-self-start">
+      <img
+        src="/Ngao.png"
+        width="880"
+        height="870"
+        alt="Coat of Arms of the United Republic of Tanzania"
+        class="h-16 w-auto object-contain sm:h-20"
+      />
     </div>
 
-    <div class="flex items-center gap-2 sm:gap-3">
-      @if (showHeaderSearch()) {
-      <div class="hidden md:block">
-        <app-search-bar variant="compact" label="Search datasets" placeholder="Search statistics…"
-          inputName="headerSearch" [showSubmit]="false" [(query)]="searchQuery" (submitted)="onSearchSubmit($event)" />
+    <a
+      routerLink="/"
+      class="order-3 col-span-2 min-w-0 justify-self-center rounded-md px-3 text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nbs-primary sm:order-none sm:col-span-1"
+      aria-label="NBS SmartData Hub home"
+    >
+      <span
+        class="block text-lg font-semibold leading-tight text-slate-900 sm:text-xl"
+      >
+        NBS SmartData Hub
+      </span>
+      <span
+        class="mt-1 block text-xs font-medium leading-tight text-nbs-muted sm:text-sm"
+      >
+        Official statistics for Tanzania
+      </span>
+    </a>
+
+    <div class="justify-self-end">
+      <img
+        src="/nbs-logo.png"
+        width="340"
+        height="370"
+        alt="National Bureau of Statistics Tanzania logo"
+        class="h-16 w-auto object-contain sm:h-20"
+      />
+    </div>
+  </div>
+
+  <div class="border-t border-nbs-border/70">
+    <div class="nbs-container flex h-14 items-center justify-between gap-4">
+      <div class="flex min-w-0 items-center gap-4">
+        <nav
+          class="hidden items-center gap-1 lg:flex"
+          aria-label="Main navigation"
+        >
+          @for (item of visibleNavItems(); track item.route) {
+            <a
+              [routerLink]="item.route"
+              routerLinkActive="bg-nbs-primary/10 text-nbs-primary"
+              [routerLinkActiveOptions]="{ exact: item.route === '/' }"
+              class="rounded-md px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
+            >
+              {{ item.label }}
+            </a>
+          }
+        </nav>
       </div>
-      }
 
-      @if (auth.isAuthenticated()) {
-      <app-profile-menu [userName]="auth.user()?.name ?? ''" [userEmail]="auth.user()?.email ?? ''"
-        [userRole]="roleLabel()" [userInitials]="auth.user()?.initials ?? '?'" (signOut)="auth.signOut()" />
-      } @else {
-      <app-button variant="primary" size="sm" (clicked)="goToLogin()">
-        Sign in
-      </app-button>
-      }
+      <div class="flex items-center gap-2 sm:gap-3">
+        @if (showHeaderSearch()) {
+          <div class="hidden md:block">
+            <app-search-bar
+              variant="compact"
+              label="Search datasets"
+              placeholder="Search statistics…"
+              inputName="headerSearch"
+              [showSubmit]="false"
+              [(query)]="searchQuery"
+              (submitted)="onSearchSubmit($event)"
+            />
+          </div>
+        }
 
-      <div class="lg:hidden">
-        <app-button variant="ghost" size="sm" type="button" aria-label="Open navigation menu"
-          (clicked)="mobileNav.toggle()">
-          <app-icon name="menu" [size]="20" />
-        </app-button>
+        @if (auth.isAuthenticated()) {
+          <app-profile-menu
+            [userName]="auth.user()?.name ?? ''"
+            [userEmail]="auth.user()?.email ?? ''"
+            [userRole]="roleLabel()"
+            [userInitials]="auth.user()?.initials ?? '?'"
+            (signOut)="auth.signOut()"
+          />
+        } @else {
+          <app-button variant="primary" size="sm" (clicked)="goToLogin()">
+            Sign in
+          </app-button>
+        }
+
+        <div class="lg:hidden">
+          <app-button
+            variant="ghost"
+            size="sm"
+            type="button"
+            aria-label="Open navigation menu"
+            (clicked)="mobileNav.toggle()"
+          >
+            <app-icon name="menu" [size]="20" />
+          </app-button>
+        </div>
       </div>
     </div>
   </div>
 
   @if (mobileNav.open()) {
-  <nav class="border-t border-nbs-border bg-white px-4 py-3 lg:hidden" aria-label="Mobile navigation">
-    @if (showHeaderSearch()) {
-    <div class="mb-3">
-      <app-search-bar variant="compact" label="Search datasets" placeholder="Search statistics…"
-        inputName="mobileHeaderSearch" [showSubmit]="false" [(query)]="searchQuery"
-        (submitted)="onSearchSubmit($event)" />
-    </div>
-    }
-    <div class="flex flex-col gap-1">
-      @for (item of visibleNavItems(); track item.route) {
-      <a [routerLink]="item.route" routerLinkActive="bg-nbs-primary/10 text-nbs-primary"
-        [routerLinkActiveOptions]="{ exact: item.route === '/' }"
-        class="rounded-md px-3 py-2 text-sm font-medium text-slate-700" (click)="mobileNav.close()">
-        {{ item.label }}
-      </a>
+    <nav
+      class="border-t border-nbs-border bg-white px-4 py-3 lg:hidden"
+      aria-label="Mobile navigation"
+    >
+      @if (showHeaderSearch()) {
+        <div class="mb-3">
+          <app-search-bar
+            variant="compact"
+            label="Search datasets"
+            placeholder="Search statistics…"
+            inputName="mobileHeaderSearch"
+            [showSubmit]="false"
+            [(query)]="searchQuery"
+            (submitted)="onSearchSubmit($event)"
+          />
+        </div>
       }
-    </div>
-  </nav>
+      <div class="flex flex-col gap-1">
+        @for (item of visibleNavItems(); track item.route) {
+          <a
+            [routerLink]="item.route"
+            routerLinkActive="bg-nbs-primary/10 text-nbs-primary"
+            [routerLinkActiveOptions]="{ exact: item.route === '/' }"
+            class="rounded-md px-3 py-2 text-sm font-medium text-slate-700"
+            (click)="mobileNav.close()"
+          >
+            {{ item.label }}
+          </a>
+        }
+      </div>
+    </nav>
   }
 </header>
